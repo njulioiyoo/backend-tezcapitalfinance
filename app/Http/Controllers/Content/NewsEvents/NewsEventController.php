@@ -19,9 +19,6 @@ class NewsEventController extends Controller
             'types' => Content::getTypes(),
             'statuses' => Content::getStatuses(),
             'filters' => $request->only(['search', 'type', 'category', 'status']),
-            'auth' => [
-                'user' => $request->user(),
-            ],
         ]);
     }
 

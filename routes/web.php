@@ -8,9 +8,7 @@ Route::get('/', function () {
     return redirect()->route('login');
 })->name('home');
 
-Route::get('dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('dashboard', [App\Http\Controllers\Content\NewsEvents\DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
 
 // Legacy route redirects for backward compatibility
 Route::middleware(['auth', 'verified'])->group(function () {

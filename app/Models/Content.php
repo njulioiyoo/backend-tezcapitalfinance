@@ -348,4 +348,136 @@ class Content extends Model implements Auditable
     {
         return $query->where('type', 'service');
     }
+
+    /**
+     * Analytics Methods for Dashboard
+     */
+    public static function getNewsStats(): array
+    {
+        $news = static::news();
+        
+        return [
+            'total' => $news->count(),
+            'published' => $news->published()->count(),
+            'draft' => $news->where('status', 'draft')->count(),
+            'featured' => $news->featured()->count(),
+            'this_month' => $news->published()->whereMonth('published_at', now()->month)->count(),
+            'this_week' => $news->published()->whereBetween('published_at', [now()->startOfWeek(), now()->endOfWeek()])->count(),
+            'today' => $news->published()->whereDate('published_at', now()->toDateString())->count(),
+        ];
+    }
+
+    public static function getEventsStats(): array
+    {
+        $events = static::events();
+        
+        return [
+            'total' => $events->count(),
+            'upcoming' => $events->upcoming()->count(),
+            'ongoing' => $events->ongoing()->count(),
+            'past' => $events->pastEvents()->count(),
+            'published' => $events->published()->count(),
+            'featured' => $events->featured()->count(),
+            'this_month' => $events->whereMonth('start_date', now()->month)->count(),
+            'cancelled' => $events->where('status', 'cancelled')->count(),
+        ];
+    }
+
+    public static function getTrendingContent(int $limit = 10): array
+    {
+        return static::whereIn('type', ['news', 'event'])
+            ->published()
+            ->orderBy('view_count', 'desc')
+            ->orderBy('like_count', 'desc')
+            ->orderBy('share_count', 'desc')
+            ->limit($limit)
+            ->get(['id', 'type', 'title_id', 'title_en', 'view_count', 'like_count', 'share_count', 'published_at'])
+            ->toArray();
+    }
+
+    public static function getRecentActivity(int $limit = 10): array
+    {
+        return static::whereIn('type', ['news', 'event'])
+            ->published()
+            ->orderBy('published_at', 'desc')
+            ->limit($limit)
+            ->get(['id', 'type', 'title_id', 'title_en', 'published_at', 'view_count', 'is_featured'])
+            ->toArray();
+    }
+
+    public static function getCategoryStats(): array
+    {
+        $newsCategories = static::news()->published()
+            ->selectRaw('category, COUNT(*) as count')
+            ->groupBy('category')
+            ->whereNotNull('category')
+            ->get()
+            ->pluck('count', 'category')
+            ->toArray();
+
+        $eventCategories = static::events()->published()
+            ->selectRaw('category, COUNT(*) as count')
+            ->groupBy('category')
+            ->whereNotNull('category')
+            ->get()
+            ->pluck('count', 'category')
+            ->toArray();
+
+        return [
+            'news' => $newsCategories,
+            'events' => $eventCategories,
+        ];
+    }
+
+    public static function getMonthlyStats(int $months = 6): array
+    {
+        $newsStats = static::news()->published()
+            ->selectRaw('EXTRACT(YEAR FROM published_at) as year, EXTRACT(MONTH FROM published_at) as month, COUNT(*) as count')
+            ->where('published_at', '>=', now()->subMonths($months))
+            ->groupBy('year', 'month')
+            ->orderBy('year')
+            ->orderBy('month')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'period' => Carbon::createFromDate($item->year, $item->month, 1)->format('M Y'),
+                    'count' => $item->count,
+                    'type' => 'news'
+                ];
+            });
+
+        $eventStats = static::events()->published()
+            ->selectRaw('EXTRACT(YEAR FROM start_date) as year, EXTRACT(MONTH FROM start_date) as month, COUNT(*) as count')
+            ->where('start_date', '>=', now()->subMonths($months))
+            ->groupBy('year', 'month')
+            ->orderBy('year')
+            ->orderBy('month')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'period' => Carbon::createFromDate($item->year, $item->month, 1)->format('M Y'),
+                    'count' => $item->count,
+                    'type' => 'events'
+                ];
+            });
+
+        return [
+            'news' => $newsStats->toArray(),
+            'events' => $eventStats->toArray(),
+        ];
+    }
+
+    public static function getTopAuthors(int $limit = 5): array
+    {
+        return static::whereIn('type', ['news', 'event'])
+            ->published()
+            ->whereNotNull('author')
+            ->selectRaw('author, COUNT(*) as content_count, SUM(view_count) as total_views')
+            ->groupBy('author')
+            ->orderBy('content_count', 'desc')
+            ->orderBy('total_views', 'desc')
+            ->limit($limit)
+            ->get()
+            ->toArray();
+    }
 }

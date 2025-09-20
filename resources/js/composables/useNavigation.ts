@@ -283,6 +283,7 @@ export function useNavigation() {
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
                 },
+                credentials: 'same-origin',
             });
             
             if (!response.ok) {

@@ -13,12 +13,15 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
 import { ChevronRight, Separator } from 'lucide-vue-next';
+import { usePermissions } from '@/composables/usePermissions';
+import { computed } from 'vue';
 
-defineProps<{
+const props = defineProps<{
     items: NavItem[];
 }>();
 
 const page = usePage();
+const { canAccessRoute } = usePermissions();
 
 const legacyToNewMapping: Record<string, string> = {
     '/users': '/system/users',
@@ -59,13 +62,64 @@ const isActive = (item: NavItem): boolean => {
     }
     return false;
 };
+
+// Filter menu items based on permissions
+const filteredItems = computed(() => {
+    const filtered = props.items.filter(item => {
+        // Always show separators
+        if (item.is_separator) return true;
+        
+        // Make a copy to avoid mutating original data
+        const itemCopy = { ...item };
+        
+        // For parent items with children, check if any children are accessible
+        if (itemCopy.children && itemCopy.children.length > 0) {
+            // Filter children based on permissions
+            const accessibleChildren = itemCopy.children.filter(child => 
+                child.href ? canAccessRoute(child.href) : true
+            );
+            
+            // If no children are accessible, hide the parent too
+            if (accessibleChildren.length === 0) {
+                return false;
+            }
+            
+            // Update children to only show accessible ones
+            itemCopy.children = accessibleChildren;
+        }
+        
+        // For items with href, check if user can access
+        if (itemCopy.href && !canAccessRoute(itemCopy.href)) {
+            return false;
+        }
+        
+        // For parent items without href but with children, 
+        // only show if there are accessible children
+        if (!itemCopy.href && itemCopy.children && itemCopy.children.length === 0) {
+            return false;
+        }
+        
+        return true;
+    }).map(item => {
+        // Return the filtered copy for items with children
+        if (item.children && item.children.length > 0) {
+            const itemCopy = { ...item };
+            itemCopy.children = item.children.filter(child => 
+                child.href ? canAccessRoute(child.href) : true
+            );
+            return itemCopy;
+        }
+        return item;
+    });
+    return filtered;
+});
 </script>
 
 <template>
     <SidebarGroup class="px-2 py-0">
         <SidebarGroupLabel>Platform</SidebarGroupLabel>
         <SidebarMenu>
-            <template v-for="item in items" :key="item.id">
+            <template v-for="item in filteredItems" :key="item.id">
                 <!-- Separator -->
                 <li v-if="item.is_separator" class="my-2">
                     <hr class="border-sidebar-border" />

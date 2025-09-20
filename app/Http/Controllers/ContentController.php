@@ -2,135 +2,44 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ContentRequest;
 use App\Models\Configuration;
 use App\Models\Content;
+use App\Traits\ContentHelpers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Validation\Rule;
 
 class ContentController extends Controller
 {
+    use ContentHelpers;
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request): Response
     {
-        // Get type from request parameter or route defaults
-        $type = $request->get('type');
-        
-        // If no type in request, get from route defaults
-        if (!$type) {
-            $routeDefaults = $request->route()->defaults ?? [];
-            $type = $routeDefaults['type'] ?? null;
-        }
-        
-        // If no type specified, check current route name to determine default type
-        if (!$type) {
-            $routeName = $request->route()->getName();
-            if (str_contains($routeName, 'partners')) {
-                $type = 'partner';
-            } elseif (str_contains($routeName, 'services')) {
-                $type = 'service';
-            } else {
-                $type = 'news'; // Default fallback
-            }
-        }
-        
-        // Ensure type is always set for safety
-        $type = $type ?: 'news';
+        $type = $this->determineContentType($request);
         $query = Content::ofType($type);
 
-        // Search functionality
-        if ($request->filled('search')) {
-            $search = $request->get('search');
-            $query->where(function ($q) use ($search, $type) {
-                $q->where('title_id', 'like', "%{$search}%")
-                    ->orWhere('title_en', 'like', "%{$search}%")
-                    ->orWhere('excerpt_id', 'like', "%{$search}%")
-                    ->orWhere('excerpt_en', 'like', "%{$search}%")
-                    ->orWhere('author', 'like', "%{$search}%");
-                
-                // Add location search for events
-                if ($type === 'event') {
-                    $q->orWhere('location_id', 'like', "%{$search}%")
-                      ->orWhere('location_en', 'like', "%{$search}%")
-                      ->orWhere('organizer', 'like', "%{$search}%");
-                }
-            });
-        }
-
-        // Filter by category
-        if ($request->filled('category')) {
-            $query->byCategory($request->get('category'));
-        }
-
-        // Filter by status
-        if ($request->filled('status')) {
-            $query->byStatus($request->get('status'));
-        }
-
-        // Filter by featured
-        if ($request->filled('featured')) {
-            $query->featured();
-        }
-
-        // Event-specific filters
+        $query = $this->applySearchFilters($query, $request, $type);
+        $query = $this->applyStandardFilters($query, $request);
+        
         if ($type === 'event') {
-            if ($request->filled('date_from')) {
-                $query->where('start_date', '>=', $request->get('date_from'));
-            }
-            if ($request->filled('date_to')) {
-                $query->where('start_date', '<=', $request->get('date_to'));
-            }
-            if ($request->filled('event_status')) {
-                switch ($request->get('event_status')) {
-                    case 'upcoming':
-                        $query->upcoming();
-                        break;
-                    case 'ongoing':
-                        $query->ongoing();
-                        break;
-                    case 'past':
-                        $query->pastEvents();
-                        break;
-                }
-            }
+            $query = $this->applyEventFilters($query, $request);
         }
 
-        // Default ordering for different content types
-        $orderBy = match($type) {
-            'event' => 'start_date',
-            'partner' => 'sort_order',
-            default => 'published_at',
-        };
-        $orderDir = match($type) {
-            'event' => 'asc',
-            'partner' => 'asc', 
-            default => 'desc',
-        };
-
+        [$orderBy, $orderDir] = $this->getOrderingForType($type);
+        
         $contents = $query->orderBy('is_featured', 'desc')
             ->orderBy('sort_order', 'asc')
             ->orderBy($orderBy, $orderDir)
             ->paginate(15)
             ->withQueryString();
 
-        $categories = match($type) {
-            'event' => Content::getEventCategories(),
-            'partner' => Content::getPartnerCategories(),
-            'service' => Content::getServiceCategories(),
-            default => Content::getNewsCategories(),
-        };
-
-        // Use specific component for partners and services
-        $component = match($type) {
-            'partner' => 'content/partners/Partners',
-            'service' => 'content/services/Services',
-            default => 'content/ContentBasic'
-        };
+        $categories = $this->getCategoriesForType($type);
+        $component = $this->getComponentForType($type);
         
         return Inertia::render($component, [
             'contents' => $contents,
@@ -148,28 +57,8 @@ class ContentController extends Controller
      */
     public function create(Request $request): Response
     {
-        // Determine type from route or request parameter
-        $type = $request->get('type');
-        
-        // If no type specified, check current route name to determine default type
-        if (!$type) {
-            $routeName = $request->route()->getName();
-            if (str_contains($routeName, 'partners')) {
-                $type = 'partner';
-            } elseif (str_contains($routeName, 'services')) {
-                $type = 'service';
-            } else {
-                $type = 'news'; // Default fallback
-            }
-        }
-        $categories = match($type) {
-            'event' => Content::getEventCategories(),
-            'partner' => Content::getPartnerCategories(),
-            'service' => Content::getServiceCategories(),
-            default => Content::getNewsCategories(),
-        };
-
-        // Use specific form component for partners (services use modal)
+        $type = $this->determineContentType($request);
+        $categories = $this->getCategoriesForType($type);
         $component = $type === 'partner' ? 'content/partners/PartnerForm' : 'content/ContentForm';
         
         return Inertia::render($component, [
@@ -185,106 +74,14 @@ class ContentController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(ContentRequest $request)
     {
-
-        $bilingualEnabled = Configuration::get('bilingual_enabled', false);
         $type = $request->get('type', 'news');
-
-        $rules = [
-            'type' => ['required', Rule::in(array_keys(Content::getTypes()))],
-            'tags' => 'nullable|array',
-            'author' => 'nullable|string|max:255',
-            'source_url' => 'nullable|url',
-            'is_published' => 'boolean',
-            'is_featured' => 'boolean',
-            'published_at' => 'nullable|date',
-            'status' => ['required', Rule::in(array_keys(Content::getStatuses()))],
-            'sort_order' => 'integer|min:0',
-            'gallery' => 'nullable|array',
-        ];
-
-        // Category validation based on type
-        if ($type === 'event') {
-            $rules['category'] = ['nullable', Rule::in(array_keys(Content::getEventCategories()))];
-            $rules = array_merge($rules, [
-                'start_date' => 'required|date',
-                'end_date' => 'nullable|date|after_or_equal:start_date',
-                'organizer' => 'nullable|string|max:255',
-                'price' => 'nullable|numeric|min:0',
-                'max_participants' => 'nullable|integer|min:1',
-                'registered_count' => 'integer|min:0',
-            ]);
-        } elseif ($type === 'partner') {
-            $rules['category'] = ['nullable', Rule::in(array_keys(Content::getPartnerCategories()))];
-            // For partners, only basic fields are required (title + featured_image)
-            $rules['source_url'] = 'nullable|url'; // Partner website URL
-        } elseif ($type === 'service') {
-            $rules['category'] = ['nullable', Rule::in(array_keys(Content::getServiceCategories()))];
-        } else {
-            $rules['category'] = ['nullable', Rule::in(array_keys(Content::getNewsCategories()))];
-        }
-
-        // Add bilingual validation rules
-        if ($bilingualEnabled) {
-            $rules = array_merge($rules, [
-                'title_id' => 'required|string|max:255',
-                'title_en' => 'required|string|max:255',
-                'excerpt_id' => 'nullable|string',
-                'excerpt_en' => 'nullable|string',
-                'content_id' => 'nullable|string',
-                'content_en' => 'nullable|string',
-                'meta_title_id' => 'nullable|string|max:60',
-                'meta_title_en' => 'nullable|string|max:60',
-                'meta_description_id' => 'nullable|string|max:160',
-                'meta_description_en' => 'nullable|string|max:160',
-            ]);
-
-            if ($type === 'event') {
-                $rules = array_merge($rules, [
-                    'location_id' => 'nullable|string|max:255',
-                    'location_en' => 'nullable|string|max:255',
-                ]);
-            }
-        } else {
-            $rules = array_merge($rules, [
-                'title_id' => 'required|string|max:255',
-                'excerpt_id' => 'nullable|string',
-                'content_id' => 'nullable|string',
-                'meta_title_id' => 'nullable|string|max:60',
-                'meta_description_id' => 'nullable|string|max:160',
-            ]);
-
-            if ($type === 'event') {
-                $rules['location_id'] = 'nullable|string|max:255';
-            }
-        }
-
-        if ($request->hasFile('featured_image')) {
-            $rules['featured_image'] = 'image|mimes:jpeg,png,jpg,gif,svg|max:2048';
-        } elseif ($type === 'partner') {
-            // For new partners, require featured_image (either file or existing path)
-            $rules['featured_image'] = 'required';
-        }
-
-        // Handle boolean conversion from FormData strings
-        $requestData = $request->all();
-        if (isset($requestData['is_published'])) {
-            $requestData['is_published'] = in_array($requestData['is_published'], ['1', 'true', true], true);
-        }
-        if (isset($requestData['is_featured'])) {
-            $requestData['is_featured'] = in_array($requestData['is_featured'], ['1', 'true', true], true);
-        }
-        
-        // Merge back to request for validation
+        $requestData = $this->convertBooleanFormData($request);
         $request->merge($requestData);
+        $validated = $request->validated();
 
-        $validated = $request->validate($rules);
-
-        // Handle image upload
-        if ($request->hasFile('featured_image')) {
-            $folder = $type === 'partner' ? 'content/partner' : 'content';
-            $imagePath = $request->file('featured_image')->store($folder, 'public');
+        if ($imagePath = $this->handleFileUpload($request, $type)) {
             $validated['featured_image'] = $imagePath;
         }
 
@@ -303,13 +100,7 @@ class ContentController extends Controller
             ], 201);
         }
 
-        // Return to the appropriate index page based on type
-        $routeName = match($type) {
-            'service' => 'content.services.index',
-            'partner' => 'content.partners.index',
-            default => 'content.news-events.index'
-        };
-        
+        $routeName = $this->getRouteNameForType($type);
         return redirect()->route($routeName)->with('success', ucfirst($type) . ' created successfully');
     }
 
@@ -338,14 +129,7 @@ class ContentController extends Controller
      */
     public function edit(Content $content): Response
     {
-        $categories = match($content->type) {
-            'event' => Content::getEventCategories(),
-            'partner' => Content::getPartnerCategories(),
-            'service' => Content::getServiceCategories(),
-            default => Content::getNewsCategories(),
-        };
-
-        // Use specific form component for partners (services use modal)
+        $categories = $this->getCategoriesForType($content->type);
         $component = $content->type === 'partner' ? 'content/partners/PartnerForm' : 'content/ContentForm';
 
         return Inertia::render($component, [
@@ -361,108 +145,20 @@ class ContentController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Content $content)
+    public function update(ContentRequest $request, Content $content)
     {
-
-        $bilingualEnabled = Configuration::get('bilingual_enabled', false);
         $type = $content->type;
-
-        $rules = [
-            'tags' => 'nullable|array',
-            'author' => 'nullable|string|max:255',
-            'source_url' => 'nullable|url',
-            'is_published' => 'boolean',
-            'is_featured' => 'boolean',
-            'published_at' => 'nullable|date',
-            'status' => ['required', Rule::in(array_keys(Content::getStatuses()))],
-            'sort_order' => 'integer|min:0',
-            'gallery' => 'nullable|array',
-        ];
-
-        // Category validation based on type
-        if ($type === 'event') {
-            $rules['category'] = ['nullable', Rule::in(array_keys(Content::getEventCategories()))];
-            $rules = array_merge($rules, [
-                'start_date' => 'required|date',
-                'end_date' => 'nullable|date|after_or_equal:start_date',
-                'organizer' => 'nullable|string|max:255',
-                'price' => 'nullable|numeric|min:0',
-                'max_participants' => 'nullable|integer|min:1',
-                'registered_count' => 'integer|min:0',
-            ]);
-        } elseif ($type === 'partner') {
-            $rules['category'] = ['nullable', Rule::in(array_keys(Content::getPartnerCategories()))];
-            // For partners, only basic fields are required (title + featured_image)
-            $rules['source_url'] = 'nullable|url'; // Partner website URL
-        } elseif ($type === 'service') {
-            $rules['category'] = ['nullable', Rule::in(array_keys(Content::getServiceCategories()))];
-        } else {
-            $rules['category'] = ['nullable', Rule::in(array_keys(Content::getNewsCategories()))];
-        }
-
-        // Add bilingual validation rules
-        if ($bilingualEnabled) {
-            $rules = array_merge($rules, [
-                'title_id' => 'required|string|max:255',
-                'title_en' => 'required|string|max:255',
-                'excerpt_id' => 'nullable|string',
-                'excerpt_en' => 'nullable|string',
-                'content_id' => 'nullable|string',
-                'content_en' => 'nullable|string',
-                'meta_title_id' => 'nullable|string|max:60',
-                'meta_title_en' => 'nullable|string|max:60',
-                'meta_description_id' => 'nullable|string|max:160',
-                'meta_description_en' => 'nullable|string|max:160',
-            ]);
-
-            if ($type === 'event') {
-                $rules = array_merge($rules, [
-                    'location_id' => 'nullable|string|max:255',
-                    'location_en' => 'nullable|string|max:255',
-                ]);
-            }
-        } else {
-            $rules = array_merge($rules, [
-                'title_id' => 'required|string|max:255',
-                'excerpt_id' => 'nullable|string',
-                'content_id' => 'nullable|string',
-                'meta_title_id' => 'nullable|string|max:60',
-                'meta_description_id' => 'nullable|string|max:160',
-            ]);
-
-            if ($type === 'event') {
-                $rules['location_id'] = 'nullable|string|max:255';
-            }
-        }
-
-        if ($request->hasFile('featured_image')) {
-            $rules['featured_image'] = 'image|mimes:jpeg,png,jpg,gif,svg|max:2048';
-        }
-
-        // Handle boolean conversion from FormData strings  
-        $requestData = $request->all();
-        if (isset($requestData['is_published'])) {
-            $requestData['is_published'] = in_array($requestData['is_published'], ['1', 'true', true], true);
-        }
-        if (isset($requestData['is_featured'])) {
-            $requestData['is_featured'] = in_array($requestData['is_featured'], ['1', 'true', true], true);
-        }
-        
-        // Merge back to request for validation
+        $requestData = $this->convertBooleanFormData($request);
         $request->merge($requestData);
+        $validated = $request->validated();
 
-        $validated = $request->validate($rules);
-
-        // Handle image upload
         if ($request->hasFile('featured_image')) {
-            // Delete old image
             if ($content->featured_image) {
                 Storage::disk('public')->delete($content->featured_image);
             }
-
-            $folder = $type === 'partner' ? 'content/partner' : 'content';
-            $imagePath = $request->file('featured_image')->store($folder, 'public');
-            $validated['featured_image'] = $imagePath;
+            if ($imagePath = $this->handleFileUpload($request, $type)) {
+                $validated['featured_image'] = $imagePath;
+            }
         }
 
         // Set published_at if publishing for the first time
@@ -485,13 +181,7 @@ class ContentController extends Controller
             ], 200);
         }
 
-        // Return to the appropriate index page based on type
-        $routeName = match($type) {
-            'service' => 'content.services.index',
-            'partner' => 'content.partners.index',
-            default => 'content.news-events.index'
-        };
-        
+        $routeName = $this->getRouteNameForType($type);
         return redirect()->route($routeName)->with('success', ucfirst($type) . ' updated successfully');
     }
 
@@ -522,13 +212,7 @@ class ContentController extends Controller
             ], 200);
         }
 
-        // Return to the appropriate index page based on type
-        $routeName = match($type) {
-            'service' => 'content.services.index',
-            'partner' => 'content.partners.index',
-            default => 'content.news-events.index'
-        };
-        
+        $routeName = $this->getRouteNameForType($type);
         return redirect()->route($routeName)->with('success', ucfirst($type) . ' deleted successfully');
     }
 
@@ -715,123 +399,7 @@ class ContentController extends Controller
         }
     }
 
-    /**
-     * API endpoint for frontend (services)
-     */
-    public function servicesApi(Request $request): JsonResponse
-    {
-        try {
-            $startTime = microtime(true);
-            
-            $query = Content::where('type', 'service')->where('is_published', true)->where('status', 'published');
 
-            if ($request->filled('category')) {
-                $query->byCategory($request->get('category'));
-            }
-
-            if ($request->filled('featured')) {
-                $query->featured();
-            }
-
-            if ($request->filled('search')) {
-                $search = $request->get('search');
-                $query->where(function ($q) use ($search) {
-                    $q->where('title_id', 'like', "%{$search}%")
-                        ->orWhere('title_en', 'like', "%{$search}%")
-                        ->orWhere('excerpt_id', 'like', "%{$search}%")
-                        ->orWhere('excerpt_en', 'like', "%{$search}%");
-                });
-            }
-
-            $services = $query->orderBy('is_featured', 'desc')
-                ->orderBy('sort_order', 'asc')
-                ->orderBy('published_at', 'desc')
-                ->paginate(3);
-
-            // Transform the data to include full image URLs
-            $services->getCollection()->transform(function ($service) {
-                $service->featured_image_url = $service->featured_image ? asset('storage/' . $service->featured_image) : null;
-                return $service;
-            });
-
-            $endTime = microtime(true);
-            $responseTime = round(($endTime - $startTime) * 1000, 2);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Services data retrieved successfully',
-                'data' => $services,
-                'categories' => Content::getServiceCategories(),
-                'response_time_ms' => $responseTime
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to retrieve services data: ' . $e->getMessage(),
-            ], 500);
-        }
-    }
-
-    /**
-     * API endpoint for frontend (single service detail)
-     */
-    public function serviceDetailApi(Request $request, $id): JsonResponse
-    {
-        try {
-            $startTime = microtime(true);
-            
-            $service = Content::where('type', 'service')
-                ->where('is_published', true)
-                ->where('status', 'published')
-                ->findOrFail($id);
-
-            // Transform the data to include full image URLs
-            $service->featured_image_url = $service->featured_image ? asset('storage/' . $service->featured_image) : null;
-            
-            // Parse gallery images if they exist
-            if ($service->gallery) {
-                try {
-                    $galleryImages = json_decode($service->gallery, true);
-                    if (is_array($galleryImages)) {
-                        $service->gallery_urls = array_map(function($image) {
-                            return asset('storage/' . $image);
-                        }, $galleryImages);
-                    }
-                } catch (\Exception $e) {
-                    $service->gallery_urls = [];
-                }
-            } else {
-                $service->gallery_urls = [];
-            }
-            
-            // Parse tags if they exist
-            if ($service->tags) {
-                try {
-                    $service->tags_array = json_decode($service->tags, true) ?: [];
-                } catch (\Exception $e) {
-                    $service->tags_array = [];
-                }
-            } else {
-                $service->tags_array = [];
-            }
-
-            $endTime = microtime(true);
-            $responseTime = round(($endTime - $startTime) * 1000, 2);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Service detail retrieved successfully',
-                'data' => $service,
-                'categories' => Content::getServiceCategories(),
-                'response_time_ms' => $responseTime
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Service not found or failed to retrieve service detail: ' . $e->getMessage(),
-            ], 404);
-        }
-    }
 
     /**
      * Upload image for rich text editor
