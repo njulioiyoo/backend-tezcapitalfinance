@@ -1,0 +1,489 @@
+<?php
+
+namespace App\Http\Controllers\Content\Services;
+
+use App\Http\Controllers\Controller;
+use App\Models\Content;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+
+class ServiceController extends Controller
+{
+    /**
+     * Get paginated services data for DataTable
+     */
+    public function getData(Request $request): JsonResponse
+    {
+        try {
+            $perPage = (int) $request->get('per_page', 10);
+            $search = $request->get('search', '');
+            $sortBy = $request->get('sort_by', 'created_at');
+            $sortOrder = $request->get('sort_order', 'desc');
+            $status = $request->get('status', '');
+            $category = $request->get('category', '');
+            
+            $query = Content::where('type', 'service');
+
+            // Search
+            if (!empty($search)) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('title_id', 'ILIKE', "%{$search}%")
+                      ->orWhere('title_en', 'ILIKE', "%{$search}%")
+                      ->orWhere('excerpt_id', 'ILIKE', "%{$search}%")
+                      ->orWhere('excerpt_en', 'ILIKE', "%{$search}%")
+                      ->orWhere('category', 'ILIKE', "%{$search}%");
+                });
+            }
+
+            // Filter by status
+            if (!empty($status)) {
+                $query->where('status', $status);
+            }
+
+            // Filter by category
+            if (!empty($category)) {
+                $query->where('category', $category);
+            }
+
+            // Sort
+            $query->orderBy($sortBy, $sortOrder);
+
+            $services = $query->paginate($perPage);
+
+            // Transform data
+            $services->getCollection()->transform(function ($service) {
+                return [
+                    'id' => $service->id,
+                    'title_id' => $service->title_id,
+                    'title_en' => $service->title_en,
+                    'excerpt_id' => $service->excerpt_id,
+                    'excerpt_en' => $service->excerpt_en,
+                    'category' => $service->category,
+                    'featured_image' => $service->featured_image,
+                    'is_published' => $service->is_published,
+                    'is_featured' => $service->is_featured,
+                    'status' => $service->status,
+                    'sort_order' => $service->sort_order,
+                    'view_count' => $service->view_count,
+                    'created_at' => $service->created_at?->format('Y-m-d H:i:s'),
+                    'updated_at' => $service->updated_at?->format('Y-m-d H:i:s'),
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Services data retrieved successfully',
+                'data' => $services->items(),
+                'meta' => [
+                    'current_page' => $services->currentPage(),
+                    'last_page' => $services->lastPage(),
+                    'per_page' => $services->perPage(),
+                    'total' => $services->total(),
+                    'from' => $services->firstItem(),
+                    'to' => $services->lastItem(),
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve services data',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Get service categories and filter options
+     */
+    public function getFilterOptions(): JsonResponse
+    {
+        try {
+            $categories = Content::where('type', 'service')
+                ->distinct()
+                ->pluck('category')
+                ->filter()
+                ->sort()
+                ->values();
+
+            $statuses = Content::where('type', 'service')
+                ->distinct()
+                ->pluck('status')
+                ->filter()
+                ->sort()
+                ->values();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'categories' => $categories,
+                    'statuses' => $statuses,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve filter options',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Store a new service
+     */
+    public function store(Request $request): JsonResponse
+    {
+        $request->validate([
+            'title_id' => 'required|string|max:255',
+            'title_en' => 'nullable|string|max:255',
+            'excerpt_id' => 'required|string|max:1000',
+            'excerpt_en' => 'nullable|string|max:1000',
+            'content_id' => 'required|string',
+            'content_en' => 'nullable|string',
+            'category' => 'required|string|max:100',
+            'featured_image' => 'nullable|string',
+            'gallery' => 'nullable|array',
+            'tags' => 'nullable|array',
+            'sort_order' => 'nullable|integer|min:0',
+            'is_published' => 'boolean',
+            'is_featured' => 'boolean',
+            'status' => 'required|in:draft,review,published,archived',
+            'meta_title_id' => 'nullable|string|max:255',
+            'meta_title_en' => 'nullable|string|max:255',
+            'meta_description_id' => 'nullable|string|max:255',
+            'meta_description_en' => 'nullable|string|max:255',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $service = Content::create([
+                'type' => 'service',
+                'category' => $request->category,
+                'title_id' => $request->title_id,
+                'title_en' => $request->title_en,
+                'excerpt_id' => $request->excerpt_id,
+                'excerpt_en' => $request->excerpt_en,
+                'content_id' => $request->content_id,
+                'content_en' => $request->content_en,
+                'featured_image' => $request->featured_image,
+                'gallery' => $request->gallery ? json_encode($request->gallery) : null,
+                'tags' => $request->tags ? json_encode($request->tags) : null,
+                'sort_order' => $request->sort_order ?? 0,
+                'is_published' => $request->boolean('is_published', false),
+                'is_featured' => $request->boolean('is_featured', false),
+                'status' => $request->status,
+                'published_at' => $request->boolean('is_published') ? now() : null,
+                'meta_title_id' => $request->meta_title_id,
+                'meta_title_en' => $request->meta_title_en,
+                'meta_description_id' => $request->meta_description_id,
+                'meta_description_en' => $request->meta_description_en,
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Service created successfully',
+                'data' => $service
+            ], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create service',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Show specific service
+     */
+    public function show(Content $service): JsonResponse
+    {
+        try {
+            if ($service->type !== 'service') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Service not found',
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Service retrieved successfully',
+                'data' => $service
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve service',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Update service
+     */
+    public function update(Request $request, Content $service): JsonResponse
+    {
+        if ($service->type !== 'service') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Service not found',
+            ], 404);
+        }
+
+        $request->validate([
+            'title_id' => 'required|string|max:255',
+            'title_en' => 'nullable|string|max:255',
+            'excerpt_id' => 'required|string|max:1000',
+            'excerpt_en' => 'nullable|string|max:1000',
+            'content_id' => 'required|string',
+            'content_en' => 'nullable|string',
+            'category' => 'required|string|max:100',
+            'featured_image' => 'nullable|string',
+            'gallery' => 'nullable|array',
+            'tags' => 'nullable|array',
+            'sort_order' => 'nullable|integer|min:0',
+            'is_published' => 'boolean',
+            'is_featured' => 'boolean',
+            'status' => 'required|in:draft,review,published,archived',
+            'meta_title_id' => 'nullable|string|max:255',
+            'meta_title_en' => 'nullable|string|max:255',
+            'meta_description_id' => 'nullable|string|max:255',
+            'meta_description_en' => 'nullable|string|max:255',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $wasPublished = $service->is_published;
+            $willBePublished = $request->boolean('is_published', false);
+
+            $service->update([
+                'category' => $request->category,
+                'title_id' => $request->title_id,
+                'title_en' => $request->title_en,
+                'excerpt_id' => $request->excerpt_id,
+                'excerpt_en' => $request->excerpt_en,
+                'content_id' => $request->content_id,
+                'content_en' => $request->content_en,
+                'featured_image' => $request->featured_image,
+                'gallery' => $request->gallery ? json_encode($request->gallery) : null,
+                'tags' => $request->tags ? json_encode($request->tags) : null,
+                'sort_order' => $request->sort_order ?? $service->sort_order,
+                'is_published' => $willBePublished,
+                'is_featured' => $request->boolean('is_featured', $service->is_featured),
+                'status' => $request->status,
+                'published_at' => $willBePublished && !$wasPublished ? now() : $service->published_at,
+                'meta_title_id' => $request->meta_title_id,
+                'meta_title_en' => $request->meta_title_en,
+                'meta_description_id' => $request->meta_description_id,
+                'meta_description_en' => $request->meta_description_en,
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Service updated successfully',
+                'data' => $service->fresh()
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update service',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete service
+     */
+    public function destroy(Content $service): JsonResponse
+    {
+        if ($service->type !== 'service') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Service not found',
+            ], 404);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // Delete featured image if exists
+            if ($service->featured_image && Storage::exists($service->featured_image)) {
+                Storage::delete($service->featured_image);
+            }
+
+            // Delete gallery images if exist
+            if ($service->gallery) {
+                $gallery = is_string($service->gallery) ? json_decode($service->gallery, true) : $service->gallery;
+                if (is_array($gallery)) {
+                    foreach ($gallery as $image) {
+                        if (Storage::exists($image)) {
+                            Storage::delete($image);
+                        }
+                    }
+                }
+            }
+
+            $service->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Service deleted successfully'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete service',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Handle bulk actions
+     */
+    public function bulkAction(Request $request): JsonResponse
+    {
+        $request->validate([
+            'action' => 'required|in:publish,unpublish,feature,unfeature,delete,archive',
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'exists:contents,id'
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $services = Content::where('type', 'service')
+                ->whereIn('id', $request->ids)
+                ->get();
+
+            if ($services->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No services found with the provided IDs',
+                ], 404);
+            }
+
+            $affectedCount = 0;
+
+            foreach ($services as $service) {
+                switch ($request->action) {
+                    case 'publish':
+                        $service->update([
+                            'is_published' => true,
+                            'status' => 'published',
+                            'published_at' => $service->published_at ?? now()
+                        ]);
+                        $affectedCount++;
+                        break;
+                        
+                    case 'unpublish':
+                        $service->update([
+                            'is_published' => false,
+                            'status' => 'draft'
+                        ]);
+                        $affectedCount++;
+                        break;
+                        
+                    case 'feature':
+                        $service->update(['is_featured' => true]);
+                        $affectedCount++;
+                        break;
+                        
+                    case 'unfeature':
+                        $service->update(['is_featured' => false]);
+                        $affectedCount++;
+                        break;
+                        
+                    case 'archive':
+                        $service->update([
+                            'status' => 'archived',
+                            'is_published' => false
+                        ]);
+                        $affectedCount++;
+                        break;
+                        
+                    case 'delete':
+                        // Delete associated files
+                        if ($service->featured_image && Storage::exists($service->featured_image)) {
+                            Storage::delete($service->featured_image);
+                        }
+                        
+                        if ($service->gallery) {
+                            $gallery = is_string($service->gallery) ? json_decode($service->gallery, true) : $service->gallery;
+                            if (is_array($gallery)) {
+                                foreach ($gallery as $image) {
+                                    if (Storage::exists($image)) {
+                                        Storage::delete($image);
+                                    }
+                                }
+                            }
+                        }
+                        
+                        $service->delete();
+                        $affectedCount++;
+                        break;
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Bulk action '{$request->action}' completed successfully",
+                'data' => [
+                    'affected_count' => $affectedCount,
+                    'action' => $request->action
+                ]
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to perform bulk action',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Get service statistics
+     */
+    public function getStats(): JsonResponse
+    {
+        try {
+            $stats = [
+                'total' => Content::where('type', 'service')->count(),
+                'published' => Content::where('type', 'service')->where('is_published', true)->count(),
+                'draft' => Content::where('type', 'service')->where('status', 'draft')->count(),
+                'featured' => Content::where('type', 'service')->where('is_featured', true)->count(),
+            ];
+
+            return response()->json([
+                'success' => true,
+                'data' => $stats
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve statistics',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+}

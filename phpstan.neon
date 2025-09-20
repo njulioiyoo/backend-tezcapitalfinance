@@ -1,0 +1,31 @@
+includes:
+    - ./vendor/larastan/larastan/extension.neon
+    - ./vendor/tomasvotruba/unused-public/config/extension.neon
+    # - ./vendor/phpstan/phpstan-strict-rules/rules.neon
+
+parameters:
+    level: 4
+    paths:
+        - app
+    checkUninitializedProperties: true
+    ignoreErrors:
+        # Carbon dates in models can return string|null
+        - '#Cannot call method format\(\) on string#'
+        - '#Cannot call method diffForHumans\(\) on string#'
+        # Audit package relations
+        - "#Relation 'user' is not found in OwenIt\\\\Auditing\\\\Models\\\\Audit model#"
+        # Higher order collection proxy properties
+        - '#Access to an undefined property.*HigherOrderCollectionProxy.*#'
+        # Custom model methods
+        - '#Call to an undefined method.*::toMenuArray\(\)#'
+        # All undefined property access (Laravel models with dynamic properties)
+        - '#Access to an undefined property.*#'
+        # Ignore unused Controller methods (called by routes) - but KEEP unused variables
+        - '#Public method "App\\Http\\Controllers.*" is never used#'
+        # Ignore unused Model constants
+        - '#Public constant "App\\Models.*" is never used#'
+        # Ignore unused Middleware methods
+        - '#Public method "App\\Http\\Middleware.*" is never used#'
+    tmpDir: bootstrap/cache
+    checkOctaneCompatibility: true
+    checkModelProperties: true
