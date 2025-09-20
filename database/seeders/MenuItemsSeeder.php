@@ -12,133 +12,193 @@ class MenuItemsSeeder extends Seeder
      */
     public function run(): void
     {
+        // Clear existing menu items to prevent duplicates
+        \App\Models\MenuItem::truncate();
+
         $menuItems = [
             // Dashboard
             [
+                'id' => 1,
                 'title' => 'Dashboard',
                 'href' => '/dashboard',
                 'icon' => 'LayoutGrid',
                 'position' => 1,
                 'parent_id' => null,
+                'badge' => null,
+                'disabled' => false,
+                'is_separator' => false,
                 'is_active' => true,
             ],
 
-            // Content Management
+            // Content Parent
             [
-                'title' => 'Content Management',
+                'id' => 2,
+                'title' => 'Content',
                 'href' => null,
                 'icon' => 'FileText',
-                'position' => 2,
-                'parent_id' => null,
-                'is_active' => true,
-            ],
-
-            // System Management
-            [
-                'title' => 'System Management',
-                'href' => null,
-                'icon' => 'Settings',
                 'position' => 3,
                 'parent_id' => null,
+                'badge' => null,
+                'disabled' => false,
+                'is_separator' => false,
                 'is_active' => true,
             ],
-        ];
 
-        // Insert parent menu items first
-        foreach ($menuItems as $item) {
-            \App\Models\MenuItem::create($item);
-        }
-
-        // Get parent IDs
-        $contentParent = \App\Models\MenuItem::where('title', 'Content Management')->first();
-        $systemParent = \App\Models\MenuItem::where('title', 'System Management')->first();
-
-        // Content sub-menus
-        $contentMenus = [
+            // System Parent
             [
+                'id' => 3,
+                'title' => 'System',
+                'href' => null,
+                'icon' => 'Settings',
+                'position' => 5,
+                'parent_id' => null,
+                'badge' => null,
+                'disabled' => false,
+                'is_separator' => false,
+                'is_active' => true,
+            ],
+
+            // Content sub-menus
+            [
+                'id' => 4,
                 'title' => 'About',
                 'href' => '/content/about',
                 'icon' => 'FileText',
                 'position' => 1,
-                'parent_id' => $contentParent->id,
+                'parent_id' => 2,
+                'badge' => null,
+                'disabled' => false,
+                'is_separator' => false,
                 'is_active' => true,
             ],
             [
+                'id' => 5,
                 'title' => 'News & Events',
-                'href' => '/system/news-events',
+                'href' => '/content/news-events',
                 'icon' => 'Calendar',
                 'position' => 2,
-                'parent_id' => $contentParent->id,
+                'parent_id' => 2,
+                'badge' => null,
+                'disabled' => false,
+                'is_separator' => false,
                 'is_active' => true,
             ],
             [
+                'id' => 6,
                 'title' => 'Services',
                 'href' => '/content/services',
                 'icon' => 'Briefcase',
                 'position' => 3,
-                'parent_id' => $contentParent->id,
+                'parent_id' => 2,
+                'badge' => null,
+                'disabled' => false,
+                'is_separator' => false,
                 'is_active' => true,
             ],
             [
+                'id' => 7,
                 'title' => 'Partners',
                 'href' => '/content/partners',
                 'icon' => 'Users',
                 'position' => 4,
-                'parent_id' => $contentParent->id,
+                'parent_id' => 2,
+                'badge' => null,
+                'disabled' => false,
+                'is_separator' => false,
                 'is_active' => true,
             ],
-        ];
 
-        // System sub-menus
-        $systemMenus = [
+            // System sub-menus
             [
+                'id' => 8,
                 'title' => 'Users',
                 'href' => '/system/users',
                 'icon' => 'Users',
                 'position' => 1,
-                'parent_id' => $systemParent->id,
+                'parent_id' => 3,
+                'badge' => null,
+                'disabled' => false,
+                'is_separator' => false,
                 'is_active' => true,
             ],
             [
+                'id' => 9,
                 'title' => 'Roles & Permissions',
                 'href' => '/system/roles',
                 'icon' => 'Shield',
                 'position' => 2,
-                'parent_id' => $systemParent->id,
+                'parent_id' => 3,
+                'badge' => null,
+                'disabled' => false,
+                'is_separator' => false,
                 'is_active' => true,
             ],
             [
+                'id' => 10,
                 'title' => 'Configurations',
                 'href' => '/system/configurations',
                 'icon' => 'Settings',
                 'position' => 3,
-                'parent_id' => $systemParent->id,
+                'parent_id' => 3,
+                'badge' => null,
+                'disabled' => false,
+                'is_separator' => false,
                 'is_active' => true,
             ],
             [
+                'id' => 11,
                 'title' => 'Menu Manager',
                 'href' => '/system/menu',
                 'icon' => 'Menu',
                 'position' => 4,
-                'parent_id' => $systemParent->id,
+                'parent_id' => 3,
+                'badge' => null,
+                'disabled' => false,
+                'is_separator' => false,
                 'is_active' => true,
             ],
             [
+                'id' => 12,
                 'title' => 'Audit Log',
                 'href' => '/system/audit-log',
                 'icon' => 'Activity',
                 'position' => 5,
-                'parent_id' => $systemParent->id,
+                'parent_id' => 3,
+                'badge' => null,
+                'disabled' => false,
+                'is_separator' => false,
+                'is_active' => true,
+            ],
+
+            // Separators
+            [
+                'id' => 13,
+                'title' => '',
+                'href' => null,
+                'icon' => null,
+                'position' => 2,
+                'parent_id' => null,
+                'badge' => null,
+                'disabled' => false,
+                'is_separator' => true,
+                'is_active' => true,
+            ],
+            [
+                'id' => 14,
+                'title' => '',
+                'href' => null,
+                'icon' => null,
+                'position' => 4,
+                'parent_id' => null,
+                'badge' => null,
+                'disabled' => false,
+                'is_separator' => true,
                 'is_active' => true,
             ],
         ];
 
-        // Insert sub-menus
-        foreach ($contentMenus as $item) {
-            \App\Models\MenuItem::create($item);
-        }
-
-        foreach ($systemMenus as $item) {
+        // Insert all menu items
+        foreach ($menuItems as $item) {
             \App\Models\MenuItem::create($item);
         }
     }
