@@ -92,6 +92,10 @@ class ConfigurationController extends Controller
                     $filteredData['banners'] = $data['banners'];
                 }
                 
+                if (isset($data['language'])) {
+                    $filteredData['language'] = $data['language'];
+                }
+                
                 $data = $filteredData;
             }
                 

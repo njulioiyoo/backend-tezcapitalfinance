@@ -308,7 +308,7 @@ export function useNavigation() {
     const addMenuItem = async (item: Omit<NavItem, 'id'>) => {
         try {
             const payload = {
-                title: item.title,
+                title: item.is_separator ? '' : item.title,
                 href: item.href,
                 icon: item.icon ? getIconName(item.icon) : null,
                 position: item.position,
@@ -318,13 +318,14 @@ export function useNavigation() {
                 is_separator: item.is_separator || false,
             };
 
+            const csrfToken = await getCsrfToken();
             const response = await fetch('/api/system/menu/items', {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',
                     'Content-Type': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': getCsrfToken(),
+                    'X-CSRF-TOKEN': csrfToken,
                 },
                 body: JSON.stringify(payload),
                 credentials: 'same-origin',
@@ -348,7 +349,7 @@ export function useNavigation() {
     const updateMenuItem = async (id: string, updates: Partial<NavItem>) => {
         try {
             const payload = {
-                title: updates.title,
+                title: updates.is_separator ? '' : updates.title,
                 href: updates.href,
                 icon: updates.icon ? getIconName(updates.icon) : null,
                 position: updates.position,
@@ -359,13 +360,14 @@ export function useNavigation() {
                 is_active: true,
             };
 
+            const csrfToken = await getCsrfToken();
             const response = await fetch(`/api/system/menu/items/${id}`, {
                 method: 'PUT',
                 headers: {
                     'Accept': 'application/json',
                     'Content-Type': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': getCsrfToken(),
+                    'X-CSRF-TOKEN': csrfToken,
                 },
                 body: JSON.stringify(payload),
                 credentials: 'same-origin',
@@ -384,10 +386,14 @@ export function useNavigation() {
     };
 
     // Helper function to get CSRF token
-    const getCsrfToken = () => {
+    const getCsrfToken = async (): Promise<string> => {
+        // First try to get from meta tag
         const tokenFromMeta = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-        if (tokenFromMeta) return tokenFromMeta;
+        if (tokenFromMeta) {
+            return tokenFromMeta;
+        }
         
+        // Fallback to cookie if meta tag doesn't exist
         const tokenFromCookie = document.cookie
             .split('; ')
             .find(row => row.startsWith('XSRF-TOKEN='))
@@ -397,21 +403,36 @@ export function useNavigation() {
             try {
                 return decodeURIComponent(tokenFromCookie);
             } catch (e) {
-                // Failed to decode CSRF token from cookie
+                console.warn('Failed to decode CSRF token from cookie:', e);
             }
         }
+        
+        // Last resort: fetch from API
+        try {
+            const response = await fetch('/api/v1/csrf-token');
+            if (response.ok) {
+                const data = await response.json();
+                return data.csrf_token;
+            }
+        } catch (e) {
+            console.warn('Failed to fetch CSRF token from API:', e);
+        }
+        
+        // If no token found, log warning
+        console.warn('CSRF token not found. Make sure meta tag, cookie, or API endpoint is available.');
         return '';
     };
 
     // Remove menu item
     const removeMenuItem = async (id: string) => {
         try {
+            const csrfToken = await getCsrfToken();
             const response = await fetch(`/api/system/menu/items/${id}`, {
                 method: 'DELETE',
                 headers: {
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': getCsrfToken(),
+                    'X-CSRF-TOKEN': csrfToken,
                 },
                 credentials: 'same-origin',
             });
@@ -431,13 +452,14 @@ export function useNavigation() {
     // Reorder menu items
     const reorderMenuItems = async (items: { id: string; position: number }[]) => {
         try {
+            const csrfToken = await getCsrfToken();
             const response = await fetch('/api/system/menu/items/reorder', {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',
                     'Content-Type': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': getCsrfToken(),
+                    'X-CSRF-TOKEN': csrfToken,
                 },
                 body: JSON.stringify({ items }),
                 credentials: 'same-origin',

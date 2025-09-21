@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Auditable as AuditableTrait;
 use OwenIt\Auditing\Contracts\Auditable;
+use Illuminate\Support\Str;
 use Carbon\Carbon;
 
 class Content extends Model implements Auditable
@@ -16,6 +17,7 @@ class Content extends Model implements Auditable
     protected $fillable = [
         'type',
         'category',
+        'slug',
         'title_id',
         'title_en',
         'excerpt_id',
@@ -67,6 +69,26 @@ class Content extends Model implements Auditable
             'share_count' => 'integer',
             'sort_order' => 'integer',
         ];
+    }
+
+    /**
+     * Boot the model
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($content) {
+            if (empty($content->slug)) {
+                $content->slug = $content->generateSlug($content->title_id ?: $content->title_en);
+            }
+        });
+
+        static::updating(function ($content) {
+            if ($content->isDirty(['title_id', 'title_en']) && empty($content->slug)) {
+                $content->slug = $content->generateSlug($content->title_id ?: $content->title_en);
+            }
+        });
     }
 
     protected $dates = [
@@ -479,5 +501,74 @@ class Content extends Model implements Auditable
             ->limit($limit)
             ->get()
             ->toArray();
+    }
+
+    /**
+     * Generate unique slug from title
+     */
+    public function generateSlug($title)
+    {
+        if (empty($title)) {
+            $title = 'content-' . time();
+        }
+
+        $slug = Str::slug($title);
+        $originalSlug = $slug;
+        $counter = 1;
+
+        while (static::where('slug', $slug)->where('id', '!=', $this->id ?? 0)->exists()) {
+            $slug = $originalSlug . '-' . $counter;
+            $counter++;
+        }
+
+        return $slug;
+    }
+
+    /**
+     * Get content by slug
+     */
+    public static function findBySlug($slug)
+    {
+        return static::where('slug', $slug)->first();
+    }
+
+    /**
+     * Get published content by slug
+     */
+    public static function findPublishedBySlug($slug)
+    {
+        return static::where('slug', $slug)->published()->first();
+    }
+
+    /**
+     * Scope to find by slug
+     */
+    public function scopeBySlug($query, $slug)
+    {
+        return $query->where('slug', $slug);
+    }
+
+    /**
+     * Get the route key for the model
+     */
+    public function getRouteKeyName()
+    {
+        return 'slug';
+    }
+
+    /**
+     * Get full URL for frontend
+     */
+    public function getFrontendUrlAttribute()
+    {
+        $baseUrl = config('app.frontend_url', 'https://tezcapital.com');
+        
+        return match($this->type) {
+            'news' => $baseUrl . '/news/' . $this->slug,
+            'event' => $baseUrl . '/events/' . $this->slug,
+            'service' => $baseUrl . '/services/' . $this->slug,
+            'partner' => $baseUrl . '/partners/' . $this->slug,
+            default => $baseUrl . '/' . $this->type . '/' . $this->slug,
+        };
     }
 }

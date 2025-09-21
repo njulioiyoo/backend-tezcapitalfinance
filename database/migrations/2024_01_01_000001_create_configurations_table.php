@@ -15,14 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('key')->unique();
             $table->json('value')->nullable();
-            $table->enum('type', [
-                'string', 'text', 'integer', 'boolean', 
-                'json', 'file', 'email', 'url'
-            ])->default('string');
-            $table->enum('group', [
-                'general', 'branding', 'homepage', 'credit',
-                'maintenance', 'contact', 'language', 'about', 'banners'
-            ])->default('general');
+            $table->string('type')->default('string');
+            $table->string('group')->default('general');
             $table->text('description')->nullable();
             $table->boolean('is_public')->default(false);
             $table->timestamps();

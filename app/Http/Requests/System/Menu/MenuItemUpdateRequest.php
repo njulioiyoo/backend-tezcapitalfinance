@@ -17,7 +17,7 @@ class MenuItemUpdateRequest extends FormRequest
         $menuItemId = $this->route('menuItem');
 
         return [
-            'title' => 'required|string|max:255',
+            'title' => 'nullable|string|max:255',
             'href' => 'nullable|string|max:255',
             'icon' => 'nullable|string|max:255',
             'position' => 'required|integer|min:0',
@@ -31,6 +31,15 @@ class MenuItemUpdateRequest extends FormRequest
             'is_separator' => 'boolean',
             'is_active' => 'boolean',
         ];
+    }
+
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+            if (!$this->is_separator && empty($this->title)) {
+                $validator->errors()->add('title', 'Menu title is required.');
+            }
+        });
     }
 
     public function messages(): array

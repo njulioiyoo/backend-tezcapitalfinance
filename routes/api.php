@@ -41,8 +41,10 @@ Route::prefix('v1')->group(function () {
     Route::get('about/{section}', [AboutController::class, 'getSection'])->name('api.about.section');
     
     Route::get('news', [ContentController::class, 'newsApi'])->name('api.news.index');
+    Route::get('news/{slug}', [ContentController::class, 'showNews'])->name('api.news.show');
     Route::get('services', [ApiServiceController::class, 'index'])->name('api.services.index');
     Route::get('services/{id}', [ApiServiceController::class, 'show'])->name('api.services.show');
+    Route::get('services/slug/{slug}', [ApiServiceController::class, 'showBySlug'])->name('api.services.show-by-slug');
     Route::get('csrf-token', function () {
         return response()->json(['csrf_token' => csrf_token()]);
     })->name('api.csrf-token');
@@ -50,7 +52,6 @@ Route::prefix('v1')->group(function () {
     Route::prefix('configurations')->name('api.configurations.')->group(function () {
         Route::get('/', [ApiConfigurationController::class, 'index'])->name('index');
         Route::get('/key/{key}', [ApiConfigurationController::class, 'show'])->name('show');
-        Route::get('/banners', [ApiConfigurationController::class, 'banners'])->name('banners');
     });
 });
 

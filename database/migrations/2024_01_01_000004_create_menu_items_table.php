@@ -17,15 +17,15 @@ return new class extends Migration
             $table->string('href')->nullable();
             $table->string('icon')->nullable();
             $table->integer('position')->default(0);
-            $table->unsignedBigInteger('parent_id')->nullable();
+            $table->foreignId('parent_id')->nullable()->constrained('menu_items')->onDelete('cascade');
             $table->string('badge')->nullable();
             $table->boolean('disabled')->default(false);
             $table->boolean('is_separator')->default(false);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
-
-            $table->foreign('parent_id')->references('id')->on('menu_items')->onDelete('cascade');
-            $table->index(['position', 'parent_id']);
+            
+            $table->index(['parent_id', 'position']);
+            $table->index(['is_active']);
         });
     }
 

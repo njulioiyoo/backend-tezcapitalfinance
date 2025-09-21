@@ -426,6 +426,89 @@ class ContentController extends Controller
     }
 
     /**
+     * API endpoint for frontend (single news detail by slug)
+     */
+    public function showNews(Request $request, $slug): JsonResponse
+    {
+        try {
+            $startTime = microtime(true);
+            
+            // Validate language parameter
+            $language = $request->get('lang', 'id');
+            $validLanguages = ['id', 'en'];
+            if (!in_array($language, $validLanguages)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid language parameter. Supported languages: ' . implode(', ', $validLanguages),
+                    'data' => [
+                        'supported_languages' => $validLanguages
+                    ]
+                ], 400);
+            }
+            
+            $bilingualEnabled = Configuration::get('bilingual_enabled', false);
+            
+            $news = Content::where('type', 'news')
+                ->where('is_published', true)
+                ->where('status', 'published')
+                ->where('slug', $slug)
+                ->firstOrFail();
+
+            // Transform the data to include full image URLs
+            $news->featured_image_url = $news->featured_image ? asset('storage/' . $news->featured_image) : null;
+            
+            // Parse gallery images if they exist
+            if ($news->gallery) {
+                try {
+                    $galleryImages = json_decode($news->gallery, true);
+                    if (is_array($galleryImages)) {
+                        $news->gallery_urls = array_map(function($image) {
+                            return asset('storage/' . $image);
+                        }, $galleryImages);
+                    }
+                } catch (\Exception $e) {
+                    $news->gallery_urls = [];
+                }
+            } else {
+                $news->gallery_urls = [];
+            }
+            
+            // Parse tags if they exist
+            if ($news->tags) {
+                try {
+                    $news->tags_array = json_decode($news->tags, true) ?: [];
+                } catch (\Exception $e) {
+                    $news->tags_array = [];
+                }
+            } else {
+                $news->tags_array = [];
+            }
+
+            $endTime = microtime(true);
+            $responseTime = round(($endTime - $startTime) * 1000, 2);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'News detail retrieved successfully',
+                'data' => $news,
+                'categories' => Content::getNewsCategories(),
+                'meta' => [
+                    'language' => $language,
+                    'bilingual_enabled' => $bilingualEnabled,
+                    'generated_at' => now()->toISOString(),
+                    'api_version' => 'v1'
+                ],
+                'response_time_ms' => $responseTime
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'News not found or failed to retrieve news detail: ' . $e->getMessage(),
+            ], 404);
+        }
+    }
+
+    /**
      * Update event statuses based on current date
      */
     public function updateEventStatuses(): JsonResponse

@@ -126,4 +126,87 @@ class ServiceController extends Controller
             ], 404);
         }
     }
+
+    /**
+     * API endpoint for frontend (single service detail by slug)
+     */
+    public function showBySlug(Request $request, $slug): JsonResponse
+    {
+        try {
+            $startTime = microtime(true);
+            
+            // Validate language parameter
+            $language = $request->get('lang', 'id');
+            $validLanguages = ['id', 'en'];
+            if (!in_array($language, $validLanguages)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid language parameter. Supported languages: ' . implode(', ', $validLanguages),
+                    'data' => [
+                        'supported_languages' => $validLanguages
+                    ]
+                ], 400);
+            }
+            
+            $bilingualEnabled = \App\Models\Configuration::get('bilingual_enabled', false);
+            
+            $service = Content::where('type', 'service')
+                ->where('is_published', true)
+                ->where('status', 'published')
+                ->where('slug', $slug)
+                ->firstOrFail();
+
+            // Transform the data to include full image URLs
+            $service->featured_image_url = $service->featured_image ? asset('storage/' . $service->featured_image) : null;
+            
+            // Parse gallery images if they exist
+            if ($service->gallery) {
+                try {
+                    $galleryImages = json_decode($service->gallery, true);
+                    if (is_array($galleryImages)) {
+                        $service->gallery_urls = array_map(function($image) {
+                            return asset('storage/' . $image);
+                        }, $galleryImages);
+                    }
+                } catch (\Exception $e) {
+                    $service->gallery_urls = [];
+                }
+            } else {
+                $service->gallery_urls = [];
+            }
+            
+            // Parse tags if they exist
+            if ($service->tags) {
+                try {
+                    $service->tags_array = json_decode($service->tags, true) ?: [];
+                } catch (\Exception $e) {
+                    $service->tags_array = [];
+                }
+            } else {
+                $service->tags_array = [];
+            }
+
+            $endTime = microtime(true);
+            $responseTime = round(($endTime - $startTime) * 1000, 2);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Service detail retrieved successfully',
+                'data' => $service,
+                'categories' => Content::getServiceCategories(),
+                'meta' => [
+                    'language' => $language,
+                    'bilingual_enabled' => $bilingualEnabled,
+                    'generated_at' => now()->toISOString(),
+                    'api_version' => 'v1'
+                ],
+                'response_time_ms' => $responseTime
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Service not found or failed to retrieve service detail: ' . $e->getMessage(),
+            ], 404);
+        }
+    }
 }
