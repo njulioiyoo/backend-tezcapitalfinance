@@ -68,7 +68,7 @@ class ConfigurationController extends Controller
                 
                 if (isset($data['general'])) {
                     $generalFiltered = [];
-                    $allowedGeneralKeys = ['app_name', 'app_description'];
+                    $allowedGeneralKeys = ['app_name', 'app_description', 'apply_now_link'];
                     foreach ($allowedGeneralKeys as $key) {
                         if (isset($data['general'][$key])) {
                             $generalFiltered[$key] = $data['general'][$key];

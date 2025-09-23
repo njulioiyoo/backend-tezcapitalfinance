@@ -4,9 +4,47 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use OwenIt\Auditing\Auditable as AuditableTrait;
+use OwenIt\Auditing\Contracts\Auditable;
 
-class Complaint extends Model
+class Complaint extends Model implements Auditable
 {
+    use AuditableTrait;
+
+    /**
+     * Attributes to audit
+     */
+    protected $auditInclude = [
+        'name',
+        'email',
+        'phone',
+        'subject',
+        'message',
+        'status',
+        'admin_response',
+        'responded_at',
+        'responded_by',
+        'ip_address',
+        'user_agent',
+    ];
+
+    /**
+     * Exclude sensitive data from audit
+     */
+    protected $auditExclude = [];
+
+    /**
+     * Generate audit tags for better categorization
+     */
+    public function generateTags(): array
+    {
+        return [
+            'complaint',
+            'public_submission',
+            $this->status
+        ];
+    }
+
     protected $fillable = [
         'name',
         'email',

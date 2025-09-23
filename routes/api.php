@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\Api\AboutController;
+use App\Http\Controllers\Api\ComplaintController;
 use App\Http\Controllers\Api\ConfigurationController as ApiConfigurationController;
 use App\Http\Controllers\Api\HomepageController;
+use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\ServiceController as ApiServiceController;
 use App\Http\Controllers\ContentController;
 use App\Http\Controllers\Content\Services\ServiceController;
@@ -40,6 +42,11 @@ Route::prefix('v1')->group(function () {
     Route::get('about', [AboutController::class, 'index'])->name('api.about.index');
     Route::get('about/{section}', [AboutController::class, 'getSection'])->name('api.about.section');
     
+    // Complaints API - Public endpoint for submitting complaints
+    Route::post('complaints', [ComplaintController::class, 'store'])
+        ->middleware(['throttle:complaints'])
+        ->name('api.complaints.store');
+    
     Route::get('news', [ContentController::class, 'newsApi'])->name('api.news.index');
     Route::get('news/{slug}', [ContentController::class, 'showNews'])->name('api.news.show');
     Route::get('services', [ApiServiceController::class, 'index'])->name('api.services.index');
@@ -52,6 +59,15 @@ Route::prefix('v1')->group(function () {
     Route::prefix('configurations')->name('api.configurations.')->group(function () {
         Route::get('/', [ApiConfigurationController::class, 'index'])->name('index');
         Route::get('/key/{key}', [ApiConfigurationController::class, 'show'])->name('show');
+    });
+    
+    // Reports API
+    Route::prefix('reports')->name('api.reports.')->group(function () {
+        Route::get('/', [ReportController::class, 'index'])->name('index');
+        Route::get('financial', [ReportController::class, 'financial'])->name('financial');
+        Route::get('annual', [ReportController::class, 'annual'])->name('annual');
+        Route::get('{id}', [ReportController::class, 'show'])->name('show');
+        Route::get('{id}/download', [ReportController::class, 'download'])->name('download');
     });
 });
 

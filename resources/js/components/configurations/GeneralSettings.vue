@@ -34,6 +34,7 @@ const form = reactive({
     app_name: '',
     app_description: '',
     app_timezone: 'Asia/Jakarta',
+    apply_now_link: '',
 });
 
 const timezones = [
@@ -49,6 +50,7 @@ watch(() => props.configurations, (newConfigs) => {
         form.app_name = newConfigs.app_name?.value || '';
         form.app_description = newConfigs.app_description?.value || '';
         form.app_timezone = newConfigs.app_timezone?.value || 'Asia/Jakarta';
+        form.apply_now_link = newConfigs.apply_now_link?.value || '';
     }
 }, { immediate: true, deep: true });
 
@@ -67,6 +69,10 @@ const saveSettings = () => {
 
     if (props.configurations.app_timezone?.value !== form.app_timezone) {
         changes.push({ key: 'app_timezone', value: form.app_timezone, type: 'string' });
+    }
+
+    if (props.configurations.apply_now_link?.value !== form.apply_now_link) {
+        changes.push({ key: 'apply_now_link', value: form.apply_now_link, type: 'url' });
     }
 
     // Changes detected
@@ -132,6 +138,20 @@ const saveSettings = () => {
                     </Select>
                     <p class="text-sm text-muted-foreground">
                         Default timezone for the application
+                    </p>
+                </div>
+
+                <div class="space-y-2">
+                    <Label for="apply_now_link">Apply Now Link</Label>
+                    <Input
+                        id="apply_now_link"
+                        v-model="form.apply_now_link"
+                        type="url"
+                        placeholder="https://example.com/apply"
+                        :disabled="isLoading"
+                    />
+                    <p class="text-sm text-muted-foreground">
+                        URL for the "Apply Now" button on the frontend
                     </p>
                 </div>
             </div>

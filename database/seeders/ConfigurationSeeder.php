@@ -46,6 +46,14 @@ class ConfigurationSeeder extends Seeder
                 'description' => 'Main company phone',
                 'is_public' => true,
             ],
+            [
+                'key' => 'apply_now_link',
+                'value' => 'https://docs.google.com/forms/d/e/1FAIpQLSdknDsyg8EluPjeYKWQhl14TGnpN6_hXGdGyTyk8bnalvxGGw/viewform',
+                'type' => Configuration::TYPE_URL,
+                'group' => Configuration::GROUP_GENERAL,
+                'description' => 'Apply Now button link URL',
+                'is_public' => true,
+            ],
 
             // Branding Settings
             [
@@ -156,6 +164,14 @@ class ConfigurationSeeder extends Seeder
                 'type' => Configuration::TYPE_TEXT,
                 'group' => Configuration::GROUP_MAINTENANCE,
                 'description' => 'Maintenance mode message',
+                'is_public' => true,
+            ],
+            [
+                'key' => 'maintenance_end_time',
+                'value' => '',
+                'type' => Configuration::TYPE_STRING,
+                'group' => Configuration::GROUP_MAINTENANCE,
+                'description' => 'Estimated maintenance end time',
                 'is_public' => true,
             ],
 
