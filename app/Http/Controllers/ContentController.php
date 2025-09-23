@@ -304,6 +304,9 @@ class ContentController extends Controller
             } elseif ($type === 'event') {
                 // Return events only
                 $query = Content::events()->published();
+            } elseif ($type === 'announcement') {
+                // Return announcements only
+                $query = Content::where('type', 'announcement')->published();
             } else {
                 // Return news only (default)
                 $query = Content::news()->published();

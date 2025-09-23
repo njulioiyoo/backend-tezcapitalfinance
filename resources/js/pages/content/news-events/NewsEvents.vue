@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
-import { ref, reactive, computed } from 'vue';
+import { ref, reactive, computed, watch } from 'vue';
 import { type BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -115,6 +115,8 @@ const currentCategories = computed(() => {
 });
 
 const isEvent = computed(() => form.type === 'event');
+const isAnnouncement = computed(() => form.type === 'announcement');
+const categoryRequired = computed(() => !isAnnouncement.value);
 
 const openCreateDialog = () => {
     resetForm();
@@ -328,19 +330,23 @@ const handleDelete = async () => {
     confirmDialog.value.loading = true;
     
     try {
-        const response = await fetch(`/api/system/news-events/${confirmDialog.value.itemId}`, {
-            method: 'DELETE',
+        const formData = new FormData();
+        formData.append('_method', 'DELETE');
+        
+        const response = await fetch(`/system/news-events/${confirmDialog.value.itemId}`, {
+            method: 'POST',
             headers: {
                 'Accept': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest',
                 'X-CSRF-TOKEN': getCsrfToken(),
             },
             credentials: 'include',
+            body: formData,
         });
         
         const data = await response.json();
         
-        if (response.ok) {
+        if (response.ok && data.success) {
             toast({
                 title: 'Success',
                 description: data.message,
@@ -406,6 +412,13 @@ const clearFilters = () => {
     Object.assign(filters, { search: '', type: '', category: '', status: '' });
     router.visit('/system/news-events');
 };
+
+// Watch for type changes and clear category if announcement
+watch(() => form.type, (newType) => {
+    if (newType === 'announcement') {
+        form.category = '';
+    }
+});
 </script>
 
 <template>
@@ -450,9 +463,9 @@ const clearFilters = () => {
                                         </Select>
                                     </div>
                                     <div class="space-y-2">
-                                        <Label for="category">Category *</Label>
-                                        <Select v-model="form.category">
-                                            <option value="">Select category</option>
+                                        <Label for="category">Category {{ categoryRequired ? '*' : '' }}</Label>
+                                        <Select v-model="form.category" :disabled="isAnnouncement">
+                                            <option value="">{{ isAnnouncement ? 'Not applicable for announcements' : 'Select category' }}</option>
                                             <option v-for="(label, value) in currentCategories" :key="value" :value="value">
                                                 {{ label }}
                                             </option>

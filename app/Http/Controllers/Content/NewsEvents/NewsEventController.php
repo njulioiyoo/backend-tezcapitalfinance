@@ -29,28 +29,10 @@ class NewsEventController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'type' => 'required|in:news,event,article,announcement',
-            'category' => 'required|string|max:255',
-            'title_id' => 'required|string|max:255',
-            'title_en' => 'nullable|string|max:255',
-            'excerpt_id' => 'required|string|max:500',
-            'excerpt_en' => 'nullable|string|max:500',
-            'content_id' => 'required|string',
-            'content_en' => 'nullable|string',
-            'featured_image' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:5120', // 5MB
-            'author' => 'required|string|max:255',
-            'location_id' => 'nullable|string|max:255',
-            'location_en' => 'nullable|string|max:255',
-            'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
-            'organizer' => 'nullable|string|max:255',
-            'price' => 'nullable|numeric|min:0',
-            'max_participants' => 'nullable|integer|min:1',
-            'is_published' => 'nullable|in:0,1',
-            'is_featured' => 'nullable|in:0,1',
-            'status' => 'required|in:draft,published,archived,cancelled',
-        ]);
+        // Get validation rules based on type
+        $rules = $this->getValidationRules($request->input('type'));
+        
+        $validated = $request->validate($rules);
 
         // Handle file upload
         if ($request->hasFile('featured_image')) {
@@ -90,28 +72,10 @@ class NewsEventController extends Controller
 
     public function update(Request $request, Content $content)
     {
-        $validated = $request->validate([
-            'type' => 'required|in:news,event,article,announcement',
-            'category' => 'required|string|max:255',
-            'title_id' => 'required|string|max:255',
-            'title_en' => 'nullable|string|max:255',
-            'excerpt_id' => 'required|string|max:500',
-            'excerpt_en' => 'nullable|string|max:500',
-            'content_id' => 'required|string',
-            'content_en' => 'nullable|string',
-            'featured_image' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:5120', // 5MB
-            'author' => 'required|string|max:255',
-            'location_id' => 'nullable|string|max:255',
-            'location_en' => 'nullable|string|max:255',
-            'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
-            'organizer' => 'nullable|string|max:255',
-            'price' => 'nullable|numeric|min:0',
-            'max_participants' => 'nullable|integer|min:1',
-            'is_published' => 'nullable|in:0,1',
-            'is_featured' => 'nullable|in:0,1',
-            'status' => 'required|in:draft,published,archived,cancelled',
-        ]);
+        // Get validation rules based on type
+        $rules = $this->getValidationRules($request->input('type'));
+        
+        $validated = $request->validate($rules);
 
         // Handle file upload
         if ($request->hasFile('featured_image')) {
@@ -147,14 +111,34 @@ class NewsEventController extends Controller
             ->with('message', ucfirst($content->type) . ' updated successfully');
     }
 
-    public function destroy(Content $content): JsonResponse
+    public function destroy($content): JsonResponse
     {
-        $type = $content->type;
-        $content->delete();
+        try {
+            $content = Content::whereIn('type', ['news', 'event', 'article', 'announcement'])->findOrFail($content);
+            
+            // Delete featured image if exists
+            if ($content->featured_image && \Storage::disk('public')->exists($content->featured_image)) {
+                \Storage::disk('public')->delete($content->featured_image);
+            }
+            
+            $type = $content->type;
+            $content->delete();
 
-        return response()->json([
-            'message' => ucfirst($type) . ' deleted successfully',
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => ucfirst($type) . ' deleted successfully',
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'News or event not found',
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete content: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function bulkAction(Request $request): JsonResponse
@@ -194,10 +178,10 @@ class NewsEventController extends Controller
         ]);
     }
 
-    private function getNewsEventsData(Request $request = null)
+    private function getNewsEventsData(?Request $request = null)
     {
         $query = Content::query()
-            ->whereIn('type', ['news', 'event']);
+            ->whereIn('type', ['news', 'event', 'article', 'announcement']);
 
         if ($request) {
             if ($request->filled('search')) {
@@ -260,5 +244,45 @@ class NewsEventController extends Controller
             'news' => Content::getNewsCategories(),
             'event' => Content::getEventCategories(),
         ];
+    }
+
+    /**
+     * Get validation rules based on content type
+     */
+    private function getValidationRules(?string $type): array
+    {
+        // Base validation rules
+        $rules = [
+            'type' => 'required|in:news,event,article,announcement',
+            'title_id' => 'required|string|max:255',
+            'title_en' => 'nullable|string|max:255',
+            'excerpt_id' => 'required|string|max:500',
+            'excerpt_en' => 'nullable|string|max:500',
+            'content_id' => 'required|string',
+            'content_en' => 'nullable|string',
+            'featured_image' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:5120', // 5MB
+            'author' => 'required|string|max:255',
+            'location_id' => 'nullable|string|max:255',
+            'location_en' => 'nullable|string|max:255',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'organizer' => 'nullable|string|max:255',
+            'price' => 'nullable|numeric|min:0',
+            'max_participants' => 'nullable|integer|min:1',
+            'is_published' => 'nullable|in:0,1',
+            'is_featured' => 'nullable|in:0,1',
+            'status' => 'required|in:draft,published,archived,cancelled',
+        ];
+
+        // Category validation based on type
+        if ($type === 'announcement') {
+            // Category is optional for announcements
+            $rules['category'] = 'nullable|string|max:255';
+        } else {
+            // Category is required for other types
+            $rules['category'] = 'required|string|max:255';
+        }
+
+        return $rules;
     }
 }

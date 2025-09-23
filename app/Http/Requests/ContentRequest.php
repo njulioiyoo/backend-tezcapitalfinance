@@ -60,6 +60,7 @@ class ContentRequest extends FormRequest
     private function getCategoryRule(string $type): array
     {
         return match($type) {
+            'announcement' => ['nullable'], // Announcements don't need category constraints
             'event' => ['nullable', Rule::in(array_keys(Content::getEventCategories()))],
             'partner' => ['nullable', Rule::in(array_keys(Content::getPartnerCategories()))],
             'service' => ['nullable', Rule::in(array_keys(Content::getServiceCategories()))],

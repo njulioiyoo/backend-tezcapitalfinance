@@ -66,7 +66,8 @@ class ReportController extends Controller
                 'quarter' => 'nullable|integer|min:1|max:4',
                 'search' => 'nullable|string|max:255',
                 'page' => 'nullable|integer|min:1',
-                'limit' => 'nullable|integer|min:1|max:100'
+                'limit' => 'nullable|integer|min:1|max:100',
+                'lang' => 'nullable|string|in:id,en'
             ]);
 
             $page = $request->get('page', 1);
@@ -76,6 +77,7 @@ class ReportController extends Controller
             $year = $request->get('year');
             $month = $request->get('month');
             $quarter = $request->get('quarter');
+            $lang = $request->get('lang', 'id');
 
             $query = Report::where('type', 'laporan-keuangan')
                 ->where('is_published', true);
@@ -111,14 +113,18 @@ class ReportController extends Controller
             // Group by period for frontend tabs
             $groupedReports = [
                 'all-category' => [
-                    'title' => 'Semua Kategori',
+                    'title' => $lang === 'en' ? 'All Categories' : 'Semua Kategori',
+                    'title_id' => 'Semua Kategori',
+                    'title_en' => 'All Categories',
                     'value' => 'all-category',
-                    'subKeuangan' => $allReports->take($limit)->map(function ($report) {
+                    'subKeuangan' => $allReports->take($limit)->map(function ($report) use ($lang) {
                         return [
                             'id' => $report->id,
                             'year' => (string) $report->year,
                             'month' => $report->month ?? $report->quarter ?? '',
-                            'desc' => $report->title_id,
+                            'desc' => $lang === 'en' ? ($report->title_en ?: $report->title_id) : $report->title_id,
+                            'desc_id' => $report->title_id,
+                            'desc_en' => $report->title_en ?: $report->title_id,
                             'file_url' => $report->file_path ? asset('storage/' . $report->file_path) : null,
                             'file_size' => $this->formatFileSize($this->getActualFileSize($report)),
                             'created_at' => $report->created_at
@@ -126,14 +132,18 @@ class ReportController extends Controller
                     })->values()
                 ],
                 'bulanan' => [
-                    'title' => 'Laporan Keuangan Bulanan',
+                    'title' => $lang === 'en' ? 'Monthly Financial Reports' : 'Laporan Keuangan Bulanan',
+                    'title_id' => 'Laporan Keuangan Bulanan',
+                    'title_en' => 'Monthly Financial Reports',
                     'value' => 'bulanan',
-                    'subKeuangan' => $allReports->where('period', 'monthly')->take($limit)->map(function ($report) {
+                    'subKeuangan' => $allReports->where('period', 'monthly')->take($limit)->map(function ($report) use ($lang) {
                         return [
                             'id' => $report->id,
                             'year' => (string) $report->year,
                             'month' => $report->month ?? '',
-                            'desc' => $report->title_id,
+                            'desc' => $lang === 'en' ? ($report->title_en ?: $report->title_id) : $report->title_id,
+                            'desc_id' => $report->title_id,
+                            'desc_en' => $report->title_en ?: $report->title_id,
                             'file_url' => $report->file_path ? asset('storage/' . $report->file_path) : null,
                             'file_size' => $this->formatFileSize($this->getActualFileSize($report)),
                             'created_at' => $report->created_at
@@ -141,14 +151,18 @@ class ReportController extends Controller
                     })->values()
                 ],
                 'triwulan' => [
-                    'title' => 'Laporan Keuangan Triwulan',
+                    'title' => $lang === 'en' ? 'Quarterly Financial Reports' : 'Laporan Keuangan Triwulan',
+                    'title_id' => 'Laporan Keuangan Triwulan',
+                    'title_en' => 'Quarterly Financial Reports',
                     'value' => 'triwulan',
-                    'subKeuangan' => $allReports->where('period', 'quarterly')->take($limit)->map(function ($report) {
+                    'subKeuangan' => $allReports->where('period', 'quarterly')->take($limit)->map(function ($report) use ($lang) {
                         return [
                             'id' => $report->id,
                             'year' => (string) $report->year,
                             'month' => $report->quarter ?? '',
-                            'desc' => $report->title_id,
+                            'desc' => $lang === 'en' ? ($report->title_en ?: $report->title_id) : $report->title_id,
+                            'desc_id' => $report->title_id,
+                            'desc_en' => $report->title_en ?: $report->title_id,
                             'file_url' => $report->file_path ? asset('storage/' . $report->file_path) : null,
                             'file_size' => $this->formatFileSize($this->getActualFileSize($report)),
                             'created_at' => $report->created_at
@@ -198,13 +212,15 @@ class ReportController extends Controller
                 'year' => 'nullable|integer|min:2000',
                 'search' => 'nullable|string|max:255',
                 'page' => 'nullable|integer|min:1',
-                'limit' => 'nullable|integer|min:1|max:100'
+                'limit' => 'nullable|integer|min:1|max:100',
+                'lang' => 'nullable|string|in:id,en'
             ]);
 
             $page = $request->get('page', 1);
             $limit = $request->get('limit', 20);
             $search = $request->get('search');
             $year = $request->get('year');
+            $lang = $request->get('lang', 'id');
 
             $query = Report::where('type', 'laporan-tahunan')
                 ->where('is_published', true);
@@ -229,11 +245,13 @@ class ReportController extends Controller
                 ->offset(($page - 1) * $limit)
                 ->limit($limit)
                 ->get()
-                ->map(function ($report) {
+                ->map(function ($report) use ($lang) {
                     return [
                         'id' => $report->id,
                         'year' => (string) $report->year,
-                        'desc' => $report->title_id,
+                        'desc' => $lang === 'en' ? ($report->title_en ?: $report->title_id) : $report->title_id,
+                        'desc_id' => $report->title_id,
+                        'desc_en' => $report->title_en ?: $report->title_id,
                         'link' => $report->file_path ? asset('storage/' . $report->file_path) : null,
                         'file_size' => $this->formatFileSize($this->getActualFileSize($report)),
                         'created_at' => $report->created_at
