@@ -4,13 +4,86 @@ namespace App\Http\Controllers\Content\Services;
 
 use App\Http\Controllers\Controller;
 use App\Models\Content;
+use App\Models\Configuration;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class ServiceController extends Controller
 {
+    /**
+     * Display the services index page
+     */
+    public function index(Request $request): Response
+    {
+        // Get services data similar to getData but return for Inertia
+        $perPage = (int) $request->get('per_page', 10);
+        $search = $request->get('search', '');
+        $sortBy = $request->get('sort_by', 'created_at');
+        $sortOrder = $request->get('sort_order', 'desc');
+        $status = $request->get('status', '');
+        $category = $request->get('category', '');
+        
+        $query = Content::where('type', 'service');
+
+        // Search
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('title_id', 'ILIKE', "%{$search}%")
+                  ->orWhere('title_en', 'ILIKE', "%{$search}%")
+                  ->orWhere('excerpt_id', 'ILIKE', "%{$search}%")
+                  ->orWhere('excerpt_en', 'ILIKE', "%{$search}%")
+                  ->orWhere('category', 'ILIKE', "%{$search}%");
+            });
+        }
+
+        // Filter by status
+        if (!empty($status)) {
+            $query->where('status', $status);
+        }
+
+        // Filter by category
+        if (!empty($category)) {
+            $query->where('category', $category);
+        }
+
+        // Sort
+        $query->orderBy($sortBy, $sortOrder);
+
+        $services = $query->paginate($perPage)->withQueryString();
+
+        // Get categories and statuses for filters
+        $categories = Content::where('type', 'service')
+            ->distinct()
+            ->pluck('category')
+            ->filter()
+            ->sort()
+            ->mapWithKeys(function ($category) {
+                return [$category => $category];
+            })
+            ->toArray();
+
+        $statuses = [
+            'draft' => 'Draft',
+            'review' => 'Review', 
+            'published' => 'Published',
+            'archived' => 'Archived'
+        ];
+
+        return Inertia::render('content/services/Services', [
+            'contents' => $services,
+            'type' => 'service',
+            'types' => ['service' => 'Service'],
+            'categories' => $categories,
+            'statuses' => $statuses,
+            'filters' => $request->only(['search', 'category', 'status']),
+            'bilingualEnabled' => Configuration::get('bilingual_enabled', false),
+        ]);
+    }
+
     /**
      * Get paginated services data for DataTable
      */
@@ -133,7 +206,7 @@ class ServiceController extends Controller
     /**
      * Store a new service
      */
-    public function store(Request $request): JsonResponse
+    public function store(Request $request)
     {
         $request->validate([
             'title_id' => 'required|string|max:255',
@@ -143,7 +216,7 @@ class ServiceController extends Controller
             'content_id' => 'required|string',
             'content_en' => 'nullable|string',
             'category' => 'required|string|max:100',
-            'featured_image' => 'nullable|string',
+            'featured_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             'gallery' => 'nullable|array',
             'tags' => 'nullable|array',
             'sort_order' => 'nullable|integer|min:0',
@@ -159,7 +232,7 @@ class ServiceController extends Controller
         try {
             DB::beginTransaction();
 
-            $service = Content::create([
+            $data = [
                 'type' => 'service',
                 'category' => $request->category,
                 'title_id' => $request->title_id,
@@ -168,7 +241,6 @@ class ServiceController extends Controller
                 'excerpt_en' => $request->excerpt_en,
                 'content_id' => $request->content_id,
                 'content_en' => $request->content_en,
-                'featured_image' => $request->featured_image,
                 'gallery' => $request->gallery ? json_encode($request->gallery) : null,
                 'tags' => $request->tags ? json_encode($request->tags) : null,
                 'sort_order' => $request->sort_order ?? 0,
@@ -180,37 +252,55 @@ class ServiceController extends Controller
                 'meta_title_en' => $request->meta_title_en,
                 'meta_description_id' => $request->meta_description_id,
                 'meta_description_en' => $request->meta_description_en,
-            ]);
+            ];
+
+            // Handle featured image upload
+            if ($request->hasFile('featured_image')) {
+                $file = $request->file('featured_image');
+                $path = $file->store('content/services', 'public');
+                $data['featured_image'] = $path;
+            }
+
+            $service = Content::create($data);
 
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Service created successfully',
-                'data' => $service
-            ], 201);
+            // Return Inertia response for web routes, JSON for API routes
+            if ($request->wantsJson() || $request->expectsJson() ) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Service created successfully',
+                    'data' => $service
+                ], 201);
+            }
+
+            return redirect()->route('content.services.index')
+                ->with('success', 'Service created successfully');
+
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to create service',
-                'error' => $e->getMessage(),
-            ], 500);
+            
+            if ($request->wantsJson() || $request->expectsJson() ) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to create service',
+                    'error' => $e->getMessage(),
+                ], 500);
+            }
+
+            return redirect()->back()
+                ->withErrors(['error' => 'Failed to create service: ' . $e->getMessage()])
+                ->withInput();
         }
     }
 
     /**
      * Show specific service
      */
-    public function show(Content $service): JsonResponse
+    public function show($id): JsonResponse
     {
         try {
-            if ($service->type !== 'service') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Service not found',
-                ], 404);
-            }
+            $service = Content::where('type', 'service')->findOrFail($id);
 
             return response()->json([
                 'success' => true,
@@ -229,14 +319,9 @@ class ServiceController extends Controller
     /**
      * Update service
      */
-    public function update(Request $request, Content $service): JsonResponse
+    public function update(Request $request, $id)
     {
-        if ($service->type !== 'service') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Service not found',
-            ], 404);
-        }
+        $service = Content::where('type', 'service')->findOrFail($id);
 
         $request->validate([
             'title_id' => 'required|string|max:255',
@@ -246,7 +331,7 @@ class ServiceController extends Controller
             'content_id' => 'required|string',
             'content_en' => 'nullable|string',
             'category' => 'required|string|max:100',
-            'featured_image' => 'nullable|string',
+            'featured_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             'gallery' => 'nullable|array',
             'tags' => 'nullable|array',
             'sort_order' => 'nullable|integer|min:0',
@@ -265,7 +350,7 @@ class ServiceController extends Controller
             $wasPublished = $service->is_published;
             $willBePublished = $request->boolean('is_published', false);
 
-            $service->update([
+            $updateData = [
                 'category' => $request->category,
                 'title_id' => $request->title_id,
                 'title_en' => $request->title_en,
@@ -273,7 +358,6 @@ class ServiceController extends Controller
                 'excerpt_en' => $request->excerpt_en,
                 'content_id' => $request->content_id,
                 'content_en' => $request->content_en,
-                'featured_image' => $request->featured_image,
                 'gallery' => $request->gallery ? json_encode($request->gallery) : null,
                 'tags' => $request->tags ? json_encode($request->tags) : null,
                 'sort_order' => $request->sort_order ?? $service->sort_order,
@@ -285,36 +369,59 @@ class ServiceController extends Controller
                 'meta_title_en' => $request->meta_title_en,
                 'meta_description_id' => $request->meta_description_id,
                 'meta_description_en' => $request->meta_description_en,
-            ]);
+            ];
+
+            // Handle featured image upload
+            if ($request->hasFile('featured_image')) {
+                // Delete old image if exists
+                if ($service->featured_image && Storage::disk('public')->exists($service->featured_image)) {
+                    Storage::disk('public')->delete($service->featured_image);
+                }
+                
+                $file = $request->file('featured_image');
+                $path = $file->store('content/services', 'public');
+                $updateData['featured_image'] = $path;
+            }
+
+            $service->update($updateData);
 
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Service updated successfully',
-                'data' => $service->fresh()
-            ]);
+            // Return Inertia response for web routes, JSON for API routes
+            if ($request->wantsJson() || $request->expectsJson() ) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Service updated successfully',
+                    'data' => $service->fresh()
+                ]);
+            }
+
+            return redirect()->route('content.services.index')
+                ->with('success', 'Service updated successfully');
+
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to update service',
-                'error' => $e->getMessage(),
-            ], 500);
+            
+            if ($request->wantsJson() || $request->expectsJson() ) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to update service',
+                    'error' => $e->getMessage(),
+                ], 500);
+            }
+
+            return redirect()->back()
+                ->withErrors(['error' => 'Failed to update service: ' . $e->getMessage()])
+                ->withInput();
         }
     }
 
     /**
      * Delete service
      */
-    public function destroy(Content $service): JsonResponse
+    public function destroy(Request $request, $id)
     {
-        if ($service->type !== 'service') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Service not found',
-            ], 404);
-        }
+        $service = Content::where('type', 'service')->findOrFail($id);
 
         try {
             DB::beginTransaction();
@@ -340,17 +447,30 @@ class ServiceController extends Controller
 
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Service deleted successfully'
-            ]);
+            // Return Inertia response for web routes, JSON for API routes
+            if ($request->wantsJson() || $request->expectsJson() ) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Service deleted successfully'
+                ]);
+            }
+
+            return redirect()->route('content.services.index')
+                ->with('success', 'Service deleted successfully');
+
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to delete service',
-                'error' => $e->getMessage(),
-            ], 500);
+            
+            if ($request->wantsJson() || $request->expectsJson() ) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to delete service',
+                    'error' => $e->getMessage(),
+                ], 500);
+            }
+
+            return redirect()->back()
+                ->withErrors(['error' => 'Failed to delete service: ' . $e->getMessage()]);
         }
     }
 

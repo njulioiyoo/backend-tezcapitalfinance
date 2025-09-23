@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ref, reactive, computed, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted, nextTick, getCurrentInstance, watch } from 'vue';
 import { route } from 'ziggy-js';
 import { type BreadcrumbItem } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -92,6 +92,11 @@ const form = reactive({
 // Featured image preview
 const featuredImagePreview = ref<string | null>(null);
 
+// Watch for preview changes
+watch(featuredImagePreview, (newValue, oldValue) => {
+    console.log('Featured image preview changed:', { oldValue, newValue });
+}, { immediate: true });
+
 // Computed
 const breadcrumbItems = computed<BreadcrumbItem[]>(() => [
     { label: 'Content', href: '#', current: false },
@@ -129,6 +134,10 @@ const openCreateModal = () => {
 
 const openEditModal = (service: Service) => {
     currentService.value = service;
+    
+    // Clear any previous preview
+    featuredImagePreview.value = null;
+    
     Object.assign(form, {
         title_id: service.title_id || '',
         title_en: service.title_en || '',
@@ -147,21 +156,82 @@ const openEditModal = (service: Service) => {
         meta_description_id: service.meta_description_id || '',
         meta_description_en: service.meta_description_en || ''
     });
+    
+    console.log('Edit modal opened for service:', service.title_id);
+    console.log('Current service image:', service.featured_image);
+    console.log('Preview cleared:', featuredImagePreview.value);
+    
     showEditModal.value = true;
 };
 
 const handleImageUpload = (event: Event) => {
     const input = event.target as HTMLInputElement;
+    console.log('Image upload triggered', input.files);
+    console.log('Number of files:', input.files?.length);
+    
     if (input.files && input.files[0]) {
         const file = input.files[0];
+        console.log('Selected file:', file.name, file.size, file.type);
+        
         form.featured_image = file;
         
         // Create preview
         const reader = new FileReader();
         reader.onload = (e) => {
-            featuredImagePreview.value = e.target?.result as string;
+            const result = e.target?.result as string;
+            console.log('FileReader loaded, result length:', result?.length);
+            featuredImagePreview.value = result;
+            console.log('Preview updated:', !!featuredImagePreview.value);
         };
+        reader.onerror = (e) => {
+            console.error('FileReader error:', e);
+        };
+        console.log('Starting FileReader...');
         reader.readAsDataURL(file);
+    } else {
+        console.log('No file selected');
+    }
+    
+    // Reset input value to allow same file to be selected again
+    input.value = '';
+};
+
+// Template refs for file inputs
+const fileInputEdit = ref<HTMLInputElement>();
+const fileInputCreate = ref<HTMLInputElement>();
+
+const triggerImageUpload = () => {
+    console.log('Button clicked - triggering file input');
+    console.log('Current preview value:', featuredImagePreview.value);
+    console.log('fileInputEdit.value:', fileInputEdit.value);
+    console.log('typeof fileInputEdit.value:', typeof fileInputEdit.value);
+    
+    if (fileInputEdit.value) {
+        console.log('Calling click() on file input');
+        console.log('File input current value:', fileInputEdit.value.value);
+        console.log('File input files:', fileInputEdit.value.files);
+        
+        // Clear the input first to ensure change event fires
+        fileInputEdit.value.value = '';
+        
+        try {
+            fileInputEdit.value.click();
+            console.log('Click method called successfully');
+        } catch (error) {
+            console.error('Error calling click():', error);
+        }
+    } else {
+        console.error('File input ref not found');
+        console.error('Available refs:', Object.keys(getCurrentInstance()?.refs || {}));
+    }
+};
+
+const triggerImageUploadCreate = () => {
+    console.log('Create button clicked - triggering file input');
+    if (fileInputCreate.value) {
+        fileInputCreate.value.click();
+    } else {
+        console.error('Create file input ref not found');
     }
 };
 
@@ -266,22 +336,20 @@ const submitForm = async () => {
                 
                 router.post(route('content.services.update', currentService.value.id), formData, {
                     onSuccess: (page) => {
+                        console.log('Update success response:', page);
                         toast({
                             title: 'Success',
                             description: 'Service updated successfully',
                             variant: 'success'
                         });
                         
-                        // Refresh data to show updated image
-                        setTimeout(() => {
-                            router.visit(window.location.href, {
-                                preserveScroll: true,
-                                only: ['contents']
-                            });
-                        }, 200);
-                        
                         showEditModal.value = false;
                         resetForm();
+                        
+                        // Refresh data to show changes
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 500);
                     },
                     onError: (errors) => {
                         //('Update errors:', errors);
@@ -300,6 +368,7 @@ const submitForm = async () => {
                 // Use regular JSON for non-file data
                 router.put(route('content.services.update', currentService.value.id), cleanFormData, {
                     onSuccess: (page) => {
+                        console.log('Update success response (no file):', page);
                         toast({
                             title: 'Success',
                             description: 'Service updated successfully',
@@ -307,13 +376,11 @@ const submitForm = async () => {
                         });
                         showEditModal.value = false;
                         resetForm();
+                        
                         // Refresh data to show changes
                         setTimeout(() => {
-                            router.visit(window.location.href, {
-                                preserveScroll: true,
-                                only: ['contents']
-                            });
-                        }, 200);
+                            window.location.reload();
+                        }, 500);
                     },
                     onError: (errors) => {
                         //('Update errors:', errors);
@@ -347,6 +414,7 @@ const submitForm = async () => {
                 
                 router.post(route('content.services.store'), formData, {
                     onSuccess: (page) => {
+                        console.log('Create success response:', page);
                         toast({
                             title: 'Success',
                             description: 'Service created successfully',
@@ -354,13 +422,11 @@ const submitForm = async () => {
                         });
                         showCreateModal.value = false;
                         resetForm();
-                        // Refresh data to show changes
+                        
+                        // Refresh data to show new service
                         setTimeout(() => {
-                            router.visit(window.location.href, {
-                                preserveScroll: true,
-                                only: ['contents']
-                            });
-                        }, 200);
+                            window.location.reload();
+                        }, 500);
                     },
                     onError: (errors) => {
                         //('Create errors:', errors);
@@ -379,6 +445,7 @@ const submitForm = async () => {
                 // Use regular JSON for non-file data
                 router.post(route('content.services.store'), cleanFormData, {
                     onSuccess: (page) => {
+                        console.log('Create success response (no file):', page);
                         toast({
                             title: 'Success',
                             description: 'Service created successfully',
@@ -386,13 +453,11 @@ const submitForm = async () => {
                         });
                         showCreateModal.value = false;
                         resetForm();
-                        // Refresh data to show changes
+                        
+                        // Refresh data to show new service
                         setTimeout(() => {
-                            router.visit(window.location.href, {
-                                preserveScroll: true,
-                                only: ['contents']
-                            });
-                        }, 200);
+                            window.location.reload();
+                        }, 500);
                     },
                     onError: (errors) => {
                         //('Create errors:', errors);
@@ -440,6 +505,9 @@ const deleteService = async () => {
                 });
                 showDeleteConfirm.value = false;
                 currentService.value = null;
+                
+                // Refresh data to show changes
+                router.reload({ only: ['contents'] });
             },
             onError: (errors) => {
                 //('Delete errors:', errors);
@@ -780,16 +848,16 @@ const clearFilters = () => {
                             <!-- Custom Upload Button -->
                             <div class="flex items-center gap-4">
                                 <input
+                                    ref="fileInputCreate"
                                     type="file"
                                     accept="image/*"
                                     @change="handleImageUpload"
                                     class="hidden"
-                                    id="featured-image-create"
                                 />
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    @click="() => document.getElementById('featured-image-create')?.click()"
+                                    @click="triggerImageUploadCreate"
                                     class="gap-2"
                                 >
                                     <Upload class="h-4 w-4" />
@@ -963,17 +1031,18 @@ const clearFilters = () => {
                             <!-- Custom Upload Button -->
                             <div class="flex items-center gap-4">
                                 <input
+                                    ref="fileInputEdit"
                                     type="file"
                                     accept="image/*"
                                     @change="handleImageUpload"
                                     class="hidden"
-                                    id="featured-image-edit"
                                 />
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    @click="() => document.getElementById('featured-image-edit')?.click()"
+                                    @click="triggerImageUpload"
                                     class="gap-2"
+                                    data-testid="replace-image-button"
                                 >
                                     <Upload class="h-4 w-4" />
                                     {{ form.featured_image ? 'Change Image' : (currentService?.featured_image ? 'Replace Image' : 'Choose Image') }}

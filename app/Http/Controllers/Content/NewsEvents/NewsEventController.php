@@ -196,7 +196,8 @@ class NewsEventController extends Controller
 
     private function getNewsEventsData(Request $request = null)
     {
-        $query = Content::query();
+        $query = Content::query()
+            ->whereIn('type', ['news', 'event']);
 
         if ($request) {
             if ($request->filled('search')) {

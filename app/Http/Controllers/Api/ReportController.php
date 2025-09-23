@@ -120,7 +120,7 @@ class ReportController extends Controller
                             'month' => $report->month ?? $report->quarter ?? '',
                             'desc' => $report->title_id,
                             'file_url' => $report->file_path ? asset('storage/' . $report->file_path) : null,
-                            'file_size' => $this->formatFileSize($report->file_size ?? 0),
+                            'file_size' => $this->formatFileSize($this->getActualFileSize($report)),
                             'created_at' => $report->created_at
                         ];
                     })->values()
@@ -135,7 +135,7 @@ class ReportController extends Controller
                             'month' => $report->month ?? '',
                             'desc' => $report->title_id,
                             'file_url' => $report->file_path ? asset('storage/' . $report->file_path) : null,
-                            'file_size' => $this->formatFileSize($report->file_size ?? 0),
+                            'file_size' => $this->formatFileSize($this->getActualFileSize($report)),
                             'created_at' => $report->created_at
                         ];
                     })->values()
@@ -150,7 +150,7 @@ class ReportController extends Controller
                             'month' => $report->quarter ?? '',
                             'desc' => $report->title_id,
                             'file_url' => $report->file_path ? asset('storage/' . $report->file_path) : null,
-                            'file_size' => $this->formatFileSize($report->file_size ?? 0),
+                            'file_size' => $this->formatFileSize($this->getActualFileSize($report)),
                             'created_at' => $report->created_at
                         ];
                     })->values()
@@ -235,7 +235,7 @@ class ReportController extends Controller
                         'year' => (string) $report->year,
                         'desc' => $report->title_id,
                         'link' => $report->file_path ? asset('storage/' . $report->file_path) : null,
-                        'file_size' => $this->formatFileSize($report->file_size ?? 0),
+                        'file_size' => $this->formatFileSize($this->getActualFileSize($report)),
                         'created_at' => $report->created_at
                     ];
                 });
@@ -293,7 +293,7 @@ class ReportController extends Controller
                     'month' => $report->month,
                     'quarter' => $report->quarter,
                     'file_url' => $report->file_path ? asset('storage/' . $report->file_path) : null,
-                    'file_size' => $this->formatFileSize($report->file_size ?? 0),
+                    'file_size' => $this->formatFileSize($this->getActualFileSize($report)),
                     'created_at' => $report->created_at
                 ],
                 'response_time_ms' => $responseTime
@@ -358,11 +358,35 @@ class ReportController extends Controller
     }
 
     /**
+     * Get actual file size from storage
+     */
+    private function getActualFileSize($report)
+    {
+        if (!$report->file_path) {
+            return null;
+        }
+        
+        try {
+            $filePath = storage_path('app/public/' . $report->file_path);
+            if (file_exists($filePath)) {
+                return filesize($filePath);
+            }
+        } catch (\Exception $e) {
+            \Log::warning('Could not get file size for report: ' . $report->id, [
+                'file_path' => $report->file_path,
+                'error' => $e->getMessage()
+            ]);
+        }
+        
+        return null;
+    }
+
+    /**
      * Format file size in human readable format
      */
     private function formatFileSize($bytes)
     {
-        if ($bytes === 0) return '0 B';
+        if ($bytes === null || $bytes === 0) return null;
         
         $units = ['B', 'KB', 'MB', 'GB'];
         $factor = floor(log($bytes, 1024));

@@ -4,6 +4,7 @@ use App\Http\Controllers\ContentController;
 use App\Http\Controllers\Content\NewsEvents\NewsEventController;
 use App\Http\Controllers\Content\NewsEvents\DashboardController;
 use App\Http\Controllers\Content\AboutController;
+use App\Http\Controllers\Content\Services\ServiceController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('content')->name('content.')->middleware(['auth', 'verified'])->group(function () {
@@ -35,12 +36,13 @@ Route::prefix('content')->name('content.')->middleware(['auth', 'verified'])->gr
     
     // Services sub-routes  
     Route::prefix('services')->name('services.')->middleware('permission:services.view')->group(function () {
-        Route::get('/', [ContentController::class, 'index'])->defaults('type', 'service')->name('index');
-        Route::post('/', [ContentController::class, 'store'])->middleware('permission:services.create')->name('store');
-        Route::get('/{content}', [ContentController::class, 'show'])->name('show');
-        Route::put('/{content}', [ContentController::class, 'update'])->middleware('permission:services.edit')->name('update');
-        Route::delete('/{content}', [ContentController::class, 'destroy'])->middleware('permission:services.delete')->name('destroy');
-        Route::post('/bulk-action', [ContentController::class, 'bulkAction'])->middleware('permission:services.delete')->name('bulk-action');
+        Route::get('/', [ServiceController::class, 'index'])->name('index');
+        Route::post('/', [ServiceController::class, 'store'])->middleware('permission:services.create')->name('store');
+        Route::get('/data', [ServiceController::class, 'getData'])->name('data');
+        Route::get('/{service}', [ServiceController::class, 'show'])->name('show');
+        Route::put('/{service}', [ServiceController::class, 'update'])->middleware('permission:services.edit')->name('update');
+        Route::delete('/{service}', [ServiceController::class, 'destroy'])->middleware('permission:services.delete')->name('destroy');
+        Route::post('/bulk-action', [ServiceController::class, 'bulkAction'])->middleware('permission:services.delete')->name('bulk-action');
     });
 });
 

@@ -49,22 +49,44 @@ class Report extends Model
     }
 
     /**
+     * Get actual file size from storage
+     */
+    public function getActualFileSize()
+    {
+        if (!$this->file_path) {
+            return null;
+        }
+        
+        try {
+            $filePath = storage_path('app/public/' . $this->file_path);
+            if (file_exists($filePath)) {
+                return filesize($filePath);
+            }
+        } catch (\Exception $e) {
+            \Log::warning('Could not get file size for report: ' . $this->id, [
+                'file_path' => $this->file_path,
+                'error' => $e->getMessage()
+            ]);
+        }
+        
+        return null;
+    }
+
+    /**
      * Get human readable file size
      */
     public function getFormattedFileSizeAttribute()
     {
-        if (!$this->file_size) {
+        $bytes = $this->getActualFileSize();
+        
+        if ($bytes === null || $bytes === 0) {
             return null;
         }
 
-        $bytes = $this->file_size;
         $units = ['B', 'KB', 'MB', 'GB'];
+        $factor = floor(log($bytes, 1024));
         
-        for ($i = 0; $bytes > 1024 && $i < count($units) - 1; $i++) {
-            $bytes /= 1024;
-        }
-        
-        return round($bytes, 2) . ' ' . $units[$i];
+        return round($bytes / pow(1024, $factor), 2) . ' ' . $units[$factor];
     }
 
     /**
