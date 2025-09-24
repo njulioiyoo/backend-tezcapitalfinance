@@ -258,7 +258,7 @@ class ConfigurationController extends Controller
                     'title' => $service->title_id,
                     'excerpt' => $service->excerpt_id,
                     'content' => $service->content_id,
-                    'featured_image' => $service->featured_image ? 'http://cms.tez-capital.web.local/storage/' . $service->featured_image : null,
+                    'featured_image_url' => $service->featured_image ? config('app.url') . '/storage/' . $service->featured_image : null,
                     'category' => $service->category,
                     'is_featured' => $service->is_featured,
                     'sort_order' => $service->sort_order,

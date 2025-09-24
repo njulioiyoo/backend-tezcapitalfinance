@@ -112,6 +112,14 @@ class ReportController extends Controller
 
     public function store(Request $request)
     {
+        // Check if upload failed due to PHP limits
+        if (empty($_FILES) && empty($_POST) && $_SERVER['CONTENT_LENGTH'] > 0) {
+            $displayMaxSize = ini_get('post_max_size') ?: '2MB';
+            return back()->withErrors([
+                'file' => "File terlalu besar. Maksimal ukuran yang diizinkan server adalah {$displayMaxSize}. Silakan kompres file atau hubungi administrator."
+            ]);
+        }
+
         $validated = $request->validate([
             'type' => 'required|in:laporan-keuangan,laporan-tahunan,laporan-pengaduan',
             'title_id' => 'required|string|max:255',
@@ -122,8 +130,12 @@ class ReportController extends Controller
             'period' => 'required|in:monthly,quarterly,yearly',
             'month' => 'nullable|integer|min:1|max:12',
             'quarter' => 'nullable|integer|min:1|max:4',
-            'file' => 'nullable|file|mimes:pdf|max:10240', // Max 10MB
+            'file' => 'required|file|mimes:pdf|max:10240', // Required for create, Max 10MB
             'is_published' => 'boolean',
+        ], [
+            'file.required' => 'File PDF wajib diupload.',
+            'file.mimes' => 'File harus berformat PDF.',
+            'file.max' => 'File terlalu besar. Maksimal 10MB.',
         ]);
 
         // Validate period-specific fields
@@ -158,6 +170,14 @@ class ReportController extends Controller
 
     public function update(Request $request, Report $report)
     {
+        // Check if upload failed due to PHP limits (only if trying to upload)
+        if ($request->hasFile('file') && empty($_FILES) && empty($_POST) && $_SERVER['CONTENT_LENGTH'] > 0) {
+            $displayMaxSize = ini_get('post_max_size') ?: '2MB';
+            return back()->withErrors([
+                'file' => "File terlalu besar. Maksimal ukuran yang diizinkan server adalah {$displayMaxSize}. Silakan kompres file atau hubungi administrator."
+            ]);
+        }
+
         $validated = $request->validate([
             'type' => 'required|in:laporan-keuangan,laporan-tahunan,laporan-pengaduan',
             'title_id' => 'required|string|max:255',
@@ -170,6 +190,9 @@ class ReportController extends Controller
             'quarter' => 'nullable|integer|min:1|max:4',
             'file' => 'nullable|file|mimes:pdf|max:10240', // Max 10MB
             'is_published' => 'boolean',
+        ], [
+            'file.mimes' => 'File harus berformat PDF.',
+            'file.max' => 'File terlalu besar. Maksimal 10MB.',
         ]);
 
         // Validate period-specific fields

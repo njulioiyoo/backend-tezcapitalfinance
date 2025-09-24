@@ -122,6 +122,14 @@ const handleFileUpload = (event: Event) => {
     const target = event.target as HTMLInputElement;
     const file = target.files?.[0];
     if (file) {
+        // Check file size (10MB = 10 * 1024 * 1024 bytes)
+        const maxSize = 10 * 1024 * 1024;
+        if (file.size > maxSize) {
+            alert('File terlalu besar! Maksimal 10MB. File Anda: ' + (file.size / 1024 / 1024).toFixed(2) + 'MB');
+            // Clear the input
+            target.value = '';
+            return;
+        }
         form.file = file;
     }
 };
@@ -320,23 +328,46 @@ const formatDate = (dateString: string) => {
 
                                 <!-- File Upload -->
                                 <div class="space-y-2">
-                                    <Label for="file">File PDF</Label>
-                                    <div class="space-y-2">
-                                        <Input 
-                                            ref="fileInput"
-                                            type="file" 
-                                            accept=".pdf"
-                                            @change="handleFileUpload"
-                                            :class="form.errors.file ? 'border-destructive' : ''"
-                                        />
-                                        <div v-if="form.file" class="flex items-center gap-2 text-sm text-muted-foreground">
-                                            <FileText class="w-4 h-4" />
-                                            <span>{{ form.file.name }}</span>
-                                            <Button type="button" variant="ghost" size="sm" @click="removeFile">
+                                    <Label for="file">File PDF {{ !editingReport ? '*' : '' }}</Label>
+                                    <div class="space-y-3">
+                                        <div class="relative">
+                                            <Input 
+                                                ref="fileInput"
+                                                id="file"
+                                                type="file" 
+                                                accept=".pdf"
+                                                @change="handleFileUpload"
+                                                :class="form.errors.file ? 'border-destructive' : ''"
+                                                class="file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/80 file:cursor-pointer"
+                                            />
+                                        </div>
+                                        
+                                        <!-- File info display -->
+                                        <div v-if="form.file" class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-md border">
+                                            <FileText class="w-5 h-5 text-green-600" />
+                                            <div class="flex-1">
+                                                <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ form.file.name }}</p>
+                                                <p class="text-xs text-gray-500">{{ (form.file.size / 1024 / 1024).toFixed(2) }} MB</p>
+                                            </div>
+                                            <Button type="button" variant="ghost" size="sm" @click="removeFile" class="h-8 w-8 p-0 text-gray-500 hover:text-red-600">
                                                 <X class="w-4 h-4" />
                                             </Button>
                                         </div>
+                                        
+                                        <!-- Current file info for edit mode -->
+                                        <div v-else-if="editingReport && editingReport.file_name" class="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200">
+                                            <FileText class="w-5 h-5 text-blue-600" />
+                                            <div class="flex-1">
+                                                <p class="text-sm font-medium text-blue-900 dark:text-blue-100">{{ editingReport.file_name }}</p>
+                                                <p class="text-xs text-blue-600">{{ editingReport.formatted_file_size }}</p>
+                                            </div>
+                                        </div>
                                     </div>
+                                    <p class="text-xs text-muted-foreground">
+                                        <strong>Upload file PDF maksimal 10MB</strong> {{ !editingReport ? '(Wajib)' : '(Opsional - biarkan kosong jika tidak ingin mengubah file)' }}
+                                        <br>
+                                        <span class="text-green-600">✅ Server mendukung upload file sampai 10MB.</span>
+                                    </p>
                                     <span v-if="form.errors.file" class="text-sm text-destructive">{{ form.errors.file }}</span>
                                 </div>
 

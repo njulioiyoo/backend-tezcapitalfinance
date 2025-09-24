@@ -187,7 +187,7 @@ class HomepageController extends Controller
                     'content' => $bilingualEnabled && $language === 'en' 
                         ? ($service->content_en ?? $service->content_id) 
                         : $service->content_id,
-                    'featured_image' => $service->featured_image ? 'http://cms.tez-capital.web.local/storage/' . $service->featured_image : null,
+                    'featured_image' => $service->featured_image ? config('app.url') . '/storage/' . $service->featured_image : null,
                     'category' => $service->category,
                     'is_featured' => $service->is_featured,
                     'sort_order' => $service->sort_order,
@@ -224,7 +224,7 @@ class HomepageController extends Controller
                     'description' => $bilingualEnabled && $language === 'en' 
                         ? ($partner->excerpt_en ?? $partner->excerpt_id) 
                         : $partner->excerpt_id,
-                    'logo' => $partner->featured_image ? 'http://cms.tez-capital.web.local/storage/' . $partner->featured_image : null,
+                    'logo' => $partner->featured_image ? config('app.url') . '/storage/' . $partner->featured_image : null,
                     'website' => $partner->source_url,
                     'category' => $partner->category,
                     'is_featured' => $partner->is_featured,
@@ -262,7 +262,7 @@ class HomepageController extends Controller
                     'content' => $bilingualEnabled && $language === 'en' 
                         ? ($article->content_en ?? $article->content_id) 
                         : $article->content_id,
-                    'featured_image' => $article->featured_image ? 'http://cms.tez-capital.web.local/storage/' . $article->featured_image : null,
+                    'featured_image' => $article->featured_image ? config('app.url') . '/storage/' . $article->featured_image : null,
                     'category' => $article->category,
                     'author' => $article->author,
                     'published_at' => $article->published_at?->toISOString(),
