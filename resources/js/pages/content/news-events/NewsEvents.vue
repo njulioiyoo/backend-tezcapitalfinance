@@ -236,83 +236,97 @@ const handleSubmit = async () => {
             ? `/system/news-events/${editingItem.value.id}`
             : '/system/news-events';
 
-        // Prepare form data for Inertia
-        const submitData = {
-            type: form.type,
-            category: form.category,
-            title_id: form.title_id,
-            title_en: form.title_en,
-            excerpt_id: form.excerpt_id,
-            excerpt_en: form.excerpt_en,
-            content_id: form.content_id,
-            content_en: form.content_en,
-            author: form.author,
-            location_id: form.location_id,
-            location_en: form.location_en,
-            start_date: form.start_date,
-            end_date: form.end_date,
-            organizer: form.organizer,
-            price: form.price,
-            max_participants: form.max_participants,
-            is_published: form.status === 'published',
-            is_featured: form.is_featured,
-            status: form.status,
-        };
-
+        // Create FormData for proper file upload
+        const formData = new FormData();
+        
+        // Add all form fields
+        formData.append('type', form.type);
+        formData.append('category', form.category);
+        formData.append('title_id', form.title_id);
+        formData.append('title_en', form.title_en);
+        formData.append('excerpt_id', form.excerpt_id);
+        formData.append('excerpt_en', form.excerpt_en);
+        formData.append('content_id', form.content_id);
+        formData.append('content_en', form.content_en);
+        formData.append('author', form.author);
+        formData.append('location_id', form.location_id);
+        formData.append('location_en', form.location_en);
+        formData.append('start_date', form.start_date);
+        formData.append('end_date', form.end_date);
+        formData.append('organizer', form.organizer);
+        formData.append('price', form.price || '');
+        formData.append('max_participants', form.max_participants || '');
+        formData.append('is_published', form.status === 'published' ? '1' : '0');
+        formData.append('is_featured', form.is_featured ? '1' : '0');
+        formData.append('status', form.status);
+        
+        // Add CSRF token
+        formData.append('_token', getCsrfToken());
+        
+        // Add method override for PUT requests
+        if (editingItem.value) {
+            formData.append('_method', 'PUT');
+        }
+        
         // Add file if exists
         if (form.featured_image_file) {
-            submitData.featured_image = form.featured_image_file;
+            formData.append('featured_image', form.featured_image_file);
         }
 
-        // Use router.visit with manual redirect to avoid Inertia response format issue
-        const method = editingItem.value ? 'put' : 'post';
-        
-        router.visit(url, {
-            method: method,
-            data: submitData,
-            onSuccess: () => {
-                toast({
-                    title: 'Success',
-                    description: editingItem.value ? 'Content updated successfully' : 'Content created successfully',
-                    variant: 'success'
-                });
-                dialogOpen.value = false;
-                // Redirect back to list page
-                router.visit('/system/news-events');
+        // Use native fetch for proper file upload
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
             },
-            onError: (errors) => {
-                let errorMessage = 'An error occurred';
-                
-                if (typeof errors === 'string') {
-                    errorMessage = errors;
-                } else if (errors && typeof errors === 'object') {
-                    const errorMessages = [];
-                    for (const [field, messages] of Object.entries(errors)) {
-                        if (Array.isArray(messages)) {
-                            errorMessages.push(...messages);
-                        } else {
-                            errorMessages.push(messages);
-                        }
-                    }
-                    errorMessage = errorMessages.join(', ');
-                }
-                
-                toast({
-                    title: 'Error',
-                    description: errorMessage,
-                    variant: 'error'
-                });
-            },
-            onFinish: () => {
-                form.loading = false;
-            }
+            credentials: 'include',
+            body: formData,
         });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            toast({
+                title: 'Success',
+                description: editingItem.value ? 'Content updated successfully' : 'Content created successfully',
+                variant: 'success'
+            });
+            dialogOpen.value = false;
+            // Reload the page to show updated data
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            let errorMessage = 'An error occurred';
+            
+            if (data.errors) {
+                const errorMessages = [];
+                for (const [field, messages] of Object.entries(data.errors)) {
+                    if (Array.isArray(messages)) {
+                        errorMessages.push(...messages);
+                    } else {
+                        errorMessages.push(messages);
+                    }
+                }
+                errorMessage = errorMessages.join(', ');
+            } else if (data.message) {
+                errorMessage = data.message;
+            }
+            
+            toast({
+                title: 'Error',
+                description: errorMessage,
+                variant: 'error'
+            });
+        }
     } catch (error) {
         toast({
             title: 'Error',
             description: 'An error occurred while saving',
             variant: 'error'
         });
+    } finally {
         form.loading = false;
     }
 };

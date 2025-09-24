@@ -376,6 +376,7 @@ class ContentController extends Controller
 
             $message = match($type) {
                 'event' => 'Events data retrieved successfully',
+                'announcement' => 'Announcements data retrieved successfully',
                 'all' => 'News and events data retrieved successfully',
                 default => 'News data retrieved successfully'
             };
@@ -451,7 +452,7 @@ class ContentController extends Controller
             
             $bilingualEnabled = Configuration::get('bilingual_enabled', false);
             
-            $news = Content::where('type', 'news')
+            $news = Content::whereIn('type', ['news', 'announcement'])
                 ->where('is_published', true)
                 ->where('status', 'published')
                 ->where('slug', $slug)
@@ -492,7 +493,7 @@ class ContentController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'News detail retrieved successfully',
+                'message' => 'Content detail retrieved successfully',
                 'data' => $news,
                 'categories' => Content::getNewsCategories(),
                 'meta' => [
@@ -506,7 +507,7 @@ class ContentController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'News not found or failed to retrieve news detail: ' . $e->getMessage(),
+                'message' => 'Content not found or failed to retrieve content detail: ' . $e->getMessage(),
             ], 404);
         }
     }

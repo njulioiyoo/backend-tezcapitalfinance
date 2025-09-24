@@ -72,8 +72,14 @@ Route::middleware(['auth', 'verified'])->prefix('system')->name('system.')->grou
     Route::prefix('news-events')->name('news-events.')->middleware('permission:news-events.view')->group(function () {
         Route::get('/', [\App\Http\Controllers\Content\NewsEvents\NewsEventController::class, 'index'])->name('index');
         Route::post('/', [\App\Http\Controllers\Content\NewsEvents\NewsEventController::class, 'store'])->middleware('permission:news-events.create')->name('store');
+        Route::get('/{content}', [\App\Http\Controllers\Content\NewsEvents\NewsEventController::class, 'show'])->name('show');
         Route::put('/{content}', [\App\Http\Controllers\Content\NewsEvents\NewsEventController::class, 'update'])->middleware('permission:news-events.edit')->name('update');
+        Route::any('/{content}/test', function($content) {
+            file_put_contents('/tmp/test_route.log', date('Y-m-d H:i:s') . " - TEST ROUTE HIT - Content: " . $content . "\n", FILE_APPEND);
+            return response()->json(['message' => 'Test route works', 'content_id' => $content]);
+        })->name('test');
         Route::delete('/{content}', [\App\Http\Controllers\Content\NewsEvents\NewsEventController::class, 'destroy'])->middleware('permission:news-events.delete')->name('destroy');
+        Route::post('/bulk-action', [\App\Http\Controllers\Content\NewsEvents\NewsEventController::class, 'bulkAction'])->middleware('permission:news-events.delete')->name('bulk-action');
     });
 
 });

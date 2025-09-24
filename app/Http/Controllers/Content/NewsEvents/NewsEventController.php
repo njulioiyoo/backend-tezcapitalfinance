@@ -4,13 +4,17 @@ namespace App\Http\Controllers\Content\NewsEvents;
 
 use App\Http\Controllers\Controller;
 use App\Models\Content;
+use App\Traits\ContentHelpers;
+use App\Http\Requests\ContentRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class NewsEventController extends Controller
 {
+    use ContentHelpers;
     public function index(Request $request): Response
     {
         return Inertia::render('content/news-events/NewsEvents', [
@@ -27,33 +31,31 @@ class NewsEventController extends Controller
         return response()->json($this->getNewsEventsData($request));
     }
 
-    public function store(Request $request)
+    public function store(ContentRequest $request)
     {
-        // Get validation rules based on type
-        $rules = $this->getValidationRules($request->input('type'));
-        
-        $validated = $request->validate($rules);
+        $type = $request->input('type', 'news');
+        $requestData = $this->convertBooleanFormData($request);
+        $request->merge($requestData);
+        $validated = $request->validated();
 
         // Handle file upload
         if ($request->hasFile('featured_image')) {
-            $file = $request->file('featured_image');
-            $path = $file->store('content/news', 'public');
-            $validated['featured_image'] = $path;
+            if ($imagePath = $this->handleFileUpload($request, $type)) {
+                $validated['featured_image'] = $imagePath;
+            }
         }
 
-        // Convert boolean values
-        $validated['is_published'] = $validated['is_published'] === '1';
-        $validated['is_featured'] = $validated['is_featured'] === '1';
-
-        if ($validated['is_published'] && !isset($validated['published_at'])) {
+        // Set published_at if publishing
+        if ($validated['is_published'] && $validated['status'] === 'published' && !isset($validated['published_at'])) {
             $validated['published_at'] = now();
         }
 
         $content = Content::create($validated);
 
-        // Return Inertia response for web routes, JSON for API routes
+        // Return appropriate response based on request type
         if (request()->wantsJson() || request()->expectsJson()) {
             return response()->json([
+                'success' => true,
                 'message' => ucfirst($content->type) . ' created successfully',
                 'data' => $content,
             ]);
@@ -63,52 +65,60 @@ class NewsEventController extends Controller
             ->with('message', ucfirst($content->type) . ' created successfully');
     }
 
-    public function show(Content $content): JsonResponse
+    public function show($content): JsonResponse
     {
+        // Find content by ID since route model binding uses slug
+        $content = Content::whereIn('type', ['news', 'event', 'article', 'announcement'])->findOrFail($content);
+        
+        // Add featured_image_url for frontend
+        $content->featured_image_url = $content->featured_image ? asset('storage/' . $content->featured_image) : null;
+        
         return response()->json([
             'data' => $content,
         ]);
     }
 
-    public function update(Request $request, Content $content)
+    public function update(ContentRequest $request, $content)
     {
-        // Get validation rules based on type
-        $rules = $this->getValidationRules($request->input('type'));
+        // Find content by ID since route model binding uses slug
+        $content = Content::whereIn('type', ['news', 'event', 'article', 'announcement'])->findOrFail($content);
         
-        $validated = $request->validate($rules);
+        $type = $content->type;
+        $requestData = $this->convertBooleanFormData($request);
+        $request->merge($requestData);
+        $validated = $request->validated();
 
-        // Handle file upload
         if ($request->hasFile('featured_image')) {
-            // Delete old image if exists
-            if ($content->featured_image && \Storage::disk('public')->exists($content->featured_image)) {
-                \Storage::disk('public')->delete($content->featured_image);
+            if ($content->featured_image) {
+                Storage::disk('public')->delete($content->featured_image);
             }
-            
-            $file = $request->file('featured_image');
-            $path = $file->store('content/news', 'public');
-            $validated['featured_image'] = $path;
+            if ($imagePath = $this->handleFileUpload($request, $type)) {
+                $validated['featured_image'] = $imagePath;
+            }
         }
 
-        // Convert boolean values
-        $validated['is_published'] = $validated['is_published'] === '1';
-        $validated['is_featured'] = $validated['is_featured'] === '1';
-
-        if ($validated['is_published'] && !$content->published_at) {
+        // Set published_at if publishing for the first time
+        if ($validated['is_published'] && $validated['status'] === 'published' && !$content->published_at) {
             $validated['published_at'] = now();
         }
 
         $content->update($validated);
 
-        // Return Inertia response for web routes, JSON for API routes
+        // Update event status if it's an event
+        if ($content->isEvent()) {
+            $content->updateEventStatus();
+        }
+
+        // Return appropriate response based on request type
         if (request()->wantsJson() || request()->expectsJson()) {
             return response()->json([
+                'success' => true,
                 'message' => ucfirst($content->type) . ' updated successfully',
-                'data' => $content->fresh(),
+                'data' => $content,
             ]);
         }
 
-        return redirect()->route('system.news-events.index')
-            ->with('message', ucfirst($content->type) . ' updated successfully');
+        return back()->with('success', ucfirst($content->type) . ' updated successfully');
     }
 
     public function destroy($content): JsonResponse
@@ -246,43 +256,4 @@ class NewsEventController extends Controller
         ];
     }
 
-    /**
-     * Get validation rules based on content type
-     */
-    private function getValidationRules(?string $type): array
-    {
-        // Base validation rules
-        $rules = [
-            'type' => 'required|in:news,event,article,announcement',
-            'title_id' => 'required|string|max:255',
-            'title_en' => 'nullable|string|max:255',
-            'excerpt_id' => 'required|string|max:500',
-            'excerpt_en' => 'nullable|string|max:500',
-            'content_id' => 'required|string',
-            'content_en' => 'nullable|string',
-            'featured_image' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:5120', // 5MB
-            'author' => 'required|string|max:255',
-            'location_id' => 'nullable|string|max:255',
-            'location_en' => 'nullable|string|max:255',
-            'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
-            'organizer' => 'nullable|string|max:255',
-            'price' => 'nullable|numeric|min:0',
-            'max_participants' => 'nullable|integer|min:1',
-            'is_published' => 'nullable|in:0,1',
-            'is_featured' => 'nullable|in:0,1',
-            'status' => 'required|in:draft,published,archived,cancelled',
-        ];
-
-        // Category validation based on type
-        if ($type === 'announcement') {
-            // Category is optional for announcements
-            $rules['category'] = 'nullable|string|max:255';
-        } else {
-            // Category is required for other types
-            $rules['category'] = 'required|string|max:255';
-        }
-
-        return $rules;
-    }
 }
