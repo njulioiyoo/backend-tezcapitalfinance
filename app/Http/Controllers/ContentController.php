@@ -86,8 +86,10 @@ class ContentController extends Controller
         }
 
         // Set published_at if publishing
-        if ($validated['is_published'] && $validated['status'] === 'published' && !isset($validated['published_at'])) {
-            $validated['published_at'] = now();
+        if ($validated['is_published'] && $validated['status'] === 'published') {
+            if (!isset($validated['published_at']) || empty($validated['published_at'])) {
+                $validated['published_at'] = now();
+            }
         }
 
         $content = Content::create($validated);
@@ -161,9 +163,14 @@ class ContentController extends Controller
             }
         }
 
-        // Set published_at if publishing for the first time
-        if ($validated['is_published'] && $validated['status'] === 'published' && !$content->published_at) {
-            $validated['published_at'] = now();
+        // Set published_at if publishing
+        if ($validated['is_published'] && $validated['status'] === 'published') {
+            if (!isset($validated['published_at']) || empty($validated['published_at'])) {
+                // Only set current time if no published_at was provided and content doesn't have one
+                if (!$content->published_at) {
+                    $validated['published_at'] = now();
+                }
+            }
         }
 
         $content->update($validated);

@@ -101,6 +101,7 @@ const form = reactive({
     max_participants: null,
     is_featured: false,
     status: 'draft',
+    published_at: '',
     loading: false
 });
 
@@ -147,6 +148,7 @@ const openEditDialog = (item: NewsEvent) => {
     form.end_date = item.end_date ? item.end_date.substring(0, 16) : '';
     form.is_featured = item.is_featured;
     form.status = item.status;
+    form.published_at = item.published_at ? item.published_at.substring(0, 16) : '';
     
     dialogOpen.value = true;
 };
@@ -172,6 +174,7 @@ const resetForm = () => {
     form.max_participants = null;
     form.is_featured = false;
     form.status = 'draft';
+    form.published_at = '';
     form.loading = false;
 };
 
@@ -257,6 +260,7 @@ const handleSubmit = async () => {
         formData.append('is_published', form.status === 'published' ? '1' : '0');
         formData.append('is_featured', form.is_featured ? '1' : '0');
         formData.append('status', form.status);
+        formData.append('published_at', form.published_at || '');
         
         // Add CSRF token
         formData.append('_token', getCsrfToken());
@@ -679,21 +683,56 @@ watch(() => form.type, (newType) => {
                                 </div>
 
                                 <!-- Status & Publishing -->
-                                <div class="grid grid-cols-2 gap-4 border-t pt-4">
-                                    <div class="space-y-2">
-                                        <Label for="status">Status *</Label>
-                                        <Select v-model="form.status">
-                                            <option value="">Select status</option>
-                                            <option v-for="(label, value) in statuses" :key="value" :value="value">
-                                                {{ label }}
-                                            </option>
-                                        </Select>
+                                <div class="border-t pt-4 space-y-4">
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div class="space-y-2">
+                                            <Label for="status">Status *</Label>
+                                            <Select v-model="form.status">
+                                                <option value="">Select status</option>
+                                                <option v-for="(label, value) in statuses" :key="value" :value="value">
+                                                    {{ label }}
+                                                </option>
+                                            </Select>
+                                        </div>
+                                        <div class="flex items-center space-x-4 pt-6">
+                                            <label class="flex items-center space-x-2">
+                                                <input v-model="form.is_featured" type="checkbox" />
+                                                <span>Featured</span>
+                                            </label>
+                                        </div>
                                     </div>
-                                    <div class="flex items-center space-x-4 pt-6">
-                                        <label class="flex items-center space-x-2">
-                                            <input v-model="form.is_featured" type="checkbox" />
-                                            <span>Featured</span>
-                                        </label>
+                                    
+                                    <!-- Published At Field (only show when status is published) -->
+                                    <div v-if="form.status === 'published'" class="space-y-3 p-4 border rounded-lg bg-blue-50/50 border-blue-200">
+                                        <div class="flex items-center gap-2">
+                                            <Calendar class="h-5 w-5 text-blue-600" />
+                                            <Label for="published_at" class="text-base font-medium text-blue-900">
+                                                Jadwal Publikasi
+                                            </Label>
+                                        </div>
+                                        <div class="relative">
+                                            <Input
+                                                id="published_at"
+                                                v-model="form.published_at"
+                                                type="datetime-local"
+                                                class="pl-10 border-blue-300 focus:border-blue-500 focus:ring-blue-500"
+                                                placeholder="YYYY-MM-DD HH:mm"
+                                            />
+                                            <Calendar class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-blue-500" />
+                                        </div>
+                                        <div class="bg-amber-50 border border-amber-200 rounded-md p-3">
+                                            <div class="flex items-start gap-2">
+                                                <FileText class="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                                                <div class="text-sm text-amber-800">
+                                                    <p class="font-medium mb-1">Tips Penjadwalan:</p>
+                                                    <ul class="space-y-1 text-xs">
+                                                        <li>• Kosongkan untuk menggunakan waktu saat ini</li>
+                                                        <li>• Set tanggal lampau untuk backdate artikel</li>
+                                                        <li>• Set tanggal masa depan untuk penjadwalan otomatis</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
