@@ -86,6 +86,17 @@ class NewsEventController extends Controller
         // Find content by ID since route model binding uses slug
         $content = Content::whereIn('type', ['news', 'event', 'article', 'announcement'])->findOrFail($content);
         
+        // Debug logging - temporary
+        \Log::info('=== NEWS EVENT UPDATE DEBUG ===', [
+            'content_id' => $content->id,
+            'request_excerpt_en' => $request->get('excerpt_en'),
+            'request_content_id' => $request->get('content_id'),
+            'request_content_en' => $request->get('content_en'),
+            'before_update_excerpt_en' => $content->excerpt_en,
+            'before_update_content_id' => $content->content_id,
+            'before_update_content_en' => $content->content_en,
+        ]);
+        
         $type = $content->type;
         $requestData = $this->convertBooleanFormData($request);
         $request->merge($requestData);
@@ -109,6 +120,20 @@ class NewsEventController extends Controller
         unset($validated['slug']);
 
         $content->update($validated);
+        
+        // Debug logging after update
+        $content->refresh();
+        \Log::info('=== AFTER NEWS EVENT UPDATE ===', [
+            'content_id' => $content->id,
+            'after_update_excerpt_en' => $content->excerpt_en,
+            'after_update_content_id' => $content->content_id,
+            'after_update_content_en' => $content->content_en,
+            'validated_data' => [
+                'excerpt_en' => $validated['excerpt_en'] ?? 'NOT_IN_VALIDATED',
+                'content_id' => $validated['content_id'] ?? 'NOT_IN_VALIDATED',
+                'content_en' => $validated['content_en'] ?? 'NOT_IN_VALIDATED',
+            ]
+        ]);
 
         // Update event status if it's an event
         if ($content->isEvent()) {
@@ -236,6 +261,9 @@ class NewsEventController extends Controller
                 'title_id' => $content->title_id,
                 'title_en' => $content->title_en,
                 'excerpt_id' => $content->excerpt_id,
+                'excerpt_en' => $content->excerpt_en,
+                'content_id' => $content->content_id,
+                'content_en' => $content->content_en,
                 'featured_image' => $content->featured_image,
                 'author' => $content->author,
                 'is_published' => $content->is_published,
@@ -245,7 +273,10 @@ class NewsEventController extends Controller
                 'start_date' => $content->start_date?->format('Y-m-d H:i'),
                 'end_date' => $content->end_date?->format('Y-m-d H:i'),
                 'location_id' => $content->location_id,
+                'location_en' => $content->location_en,
                 'organizer' => $content->organizer,
+                'price' => $content->price,
+                'max_participants' => $content->max_participants,
                 'view_count' => $content->view_count,
                 'created_at' => $content->created_at->format('Y-m-d H:i'),
             ];

@@ -24,6 +24,9 @@ interface NewsEvent {
     title_id: string;
     title_en?: string;
     excerpt_id: string;
+    excerpt_en?: string;
+    content_id?: string;
+    content_en?: string;
     featured_image?: string;
     author: string;
     is_published: boolean;
@@ -33,7 +36,10 @@ interface NewsEvent {
     start_date?: string;
     end_date?: string;
     location_id?: string;
+    location_en?: string;
     organizer?: string;
+    price?: number;
+    max_participants?: number;
     view_count: number;
     created_at: string;
 }
@@ -134,21 +140,45 @@ const openEditDialog = (item: NewsEvent) => {
     resetForm();
     editingItem.value = item;
     
+    // Debug: Check what data we're receiving from the backend
+    console.log('Edit dialog opened with item:', {
+        id: item.id,
+        title_id: item.title_id,
+        excerpt_id: item.excerpt_id,
+        excerpt_en: item.excerpt_en,
+        content_id: item.content_id,
+        content_en: item.content_en
+    });
+    
     form.type = item.type;
     form.category = item.category;
     form.title_id = item.title_id;
     form.title_en = item.title_en || '';
     form.excerpt_id = item.excerpt_id;
+    form.excerpt_en = item.excerpt_en || '';
+    form.content_id = item.content_id || '';
+    form.content_en = item.content_en || '';
     form.featured_image = item.featured_image || null;
     form.featured_image_file = null;
     form.author = item.author;
     form.location_id = item.location_id || '';
+    form.location_en = item.location_en || '';
     form.organizer = item.organizer || '';
     form.start_date = item.start_date ? item.start_date.substring(0, 16) : '';
     form.end_date = item.end_date ? item.end_date.substring(0, 16) : '';
+    form.price = item.price || null;
+    form.max_participants = item.max_participants || null;
     form.is_featured = item.is_featured;
     form.status = item.status;
     form.published_at = item.published_at ? item.published_at.substring(0, 16) : '';
+    
+    // Debug: Check form values after assignment
+    console.log('Form values after assignment:', {
+        excerpt_id: form.excerpt_id,
+        excerpt_en: form.excerpt_en,
+        content_id: form.content_id,
+        content_en: form.content_en
+    });
     
     dialogOpen.value = true;
 };
@@ -232,6 +262,14 @@ const clearFeaturedImage = () => {
 const handleSubmit = async () => {
     form.loading = true;
     
+    // Debug logging - temporary
+    console.log('Form data before submit:', {
+        excerpt_id: form.excerpt_id,
+        excerpt_en: form.excerpt_en,
+        content_id: form.content_id,
+        content_en: form.content_en,
+    });
+    
     try {
         const url = editingItem.value 
             ? `/system/news-events/${editingItem.value.id}`
@@ -249,6 +287,14 @@ const handleSubmit = async () => {
         formData.append('excerpt_en', form.excerpt_en);
         formData.append('content_id', form.content_id);
         formData.append('content_en', form.content_en);
+        
+        // Debug FormData contents
+        console.log('FormData values:', {
+            excerpt_id: formData.get('excerpt_id'),
+            excerpt_en: formData.get('excerpt_en'),
+            content_id: formData.get('content_id'),
+            content_en: formData.get('content_en'),
+        });
         formData.append('author', form.author);
         formData.append('location_id', form.location_id);
         formData.append('location_en', form.location_en);

@@ -71,6 +71,7 @@ const fileInput = ref<HTMLInputElement>();
 
 // Form handling
 const form = useForm({
+    _method: 'POST',
     type: props.currentType,
     title_id: '',
     title_en: '',
@@ -93,6 +94,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 const openAddDialog = () => {
     editingReport.value = null;
     form.reset();
+    form._method = 'POST';
     form.type = props.currentType;
     form.year = new Date().getFullYear();
     form.period = 'yearly';
@@ -103,6 +105,7 @@ const openEditDialog = (report: Report) => {
     editingReport.value = report;
     form.clearErrors();
     Object.assign(form, {
+        _method: 'PUT',
         type: report.type,
         title_id: report.title_id,
         title_en: report.title_en || '',
@@ -142,25 +145,26 @@ const removeFile = () => {
 };
 
 const saveReport = () => {
-    const submitForm = () => {
-        if (editingReport.value) {
-            form.put(route('reports.update', editingReport.value.id), {
-                onSuccess: () => {
-                    isDialogOpen.value = false;
-                    form.reset();
-                }
-            });
-        } else {
-            form.post(route('reports.store'), {
-                onSuccess: () => {
-                    isDialogOpen.value = false;
-                    form.reset();
-                }
-            });
-        }
-    };
-    
-    submitForm();
+    if (editingReport.value) {
+        // For updates, use POST with _method override to properly handle file uploads
+        form._method = 'PUT';
+        form.post(route('reports.update', editingReport.value.id), {
+            forceFormData: true,
+            onSuccess: () => {
+                isDialogOpen.value = false;
+                form.reset();
+            }
+        });
+    } else {
+        // For creating new reports
+        form._method = 'POST';
+        form.post(route('reports.store'), {
+            onSuccess: () => {
+                isDialogOpen.value = false;
+                form.reset();
+            }
+        });
+    }
 };
 
 const deleteReport = (report: Report) => {
