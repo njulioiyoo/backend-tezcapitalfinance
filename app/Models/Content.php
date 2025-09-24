@@ -79,13 +79,13 @@ class Content extends Model implements Auditable
         parent::boot();
 
         static::creating(function ($content) {
-            if (empty($content->slug)) {
-                $content->slug = $content->generateSlug($content->title_id ?: $content->title_en);
-            }
+            // Always generate slug when creating, even if one is provided
+            $content->slug = $content->generateSlug($content->title_id ?: $content->title_en);
         });
 
         static::updating(function ($content) {
-            if ($content->isDirty(['title_id', 'title_en']) && empty($content->slug)) {
+            // Only regenerate slug if title changed and no manual slug is set
+            if ($content->isDirty(['title_id', 'title_en']) && !$content->isDirty('slug')) {
                 $content->slug = $content->generateSlug($content->title_id ?: $content->title_en);
             }
         });
@@ -513,9 +513,16 @@ class Content extends Model implements Auditable
         }
 
         $slug = Str::slug($title);
+        
+        // If slug is empty after processing, use fallback
+        if (empty($slug)) {
+            $slug = 'content-' . time();
+        }
+        
         $originalSlug = $slug;
         $counter = 1;
 
+        // Check for duplicates and increment counter until unique
         while (static::where('slug', $slug)->where('id', '!=', $this->id ?? 0)->exists()) {
             $slug = $originalSlug . '-' . $counter;
             $counter++;

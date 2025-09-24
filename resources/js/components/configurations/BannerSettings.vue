@@ -17,7 +17,6 @@
                             <Label>Title (Indonesian)</Label>
                             <Input 
                                 v-model="localConfigs.banner_about_title_id"
-                                @input="updateConfig('banner_about_title_id', $event.target.value)"
                                 placeholder="Tentang Kami"
                             />
                         </div>
@@ -25,7 +24,6 @@
                             <Label>Title (English)</Label>
                             <Input 
                                 v-model="localConfigs.banner_about_title_en"
-                                @input="updateConfig('banner_about_title_en', $event.target.value)"
                                 placeholder="About Us"
                             />
                         </div>
@@ -33,7 +31,6 @@
                             <Label>Description (Indonesian)</Label>
                             <Textarea 
                                 v-model="localConfigs.banner_about_description_id"
-                                @input="updateConfig('banner_about_description_id', $event.target.value)"
                                 placeholder="Pelajari lebih lanjut tentang TEZ Capital & Finance"
                             />
                         </div>
@@ -41,7 +38,6 @@
                             <Label>Description (English)</Label>
                             <Textarea 
                                 v-model="localConfigs.banner_about_description_en"
-                                @input="updateConfig('banner_about_description_en', $event.target.value)"
                                 placeholder="Learn more about TEZ Capital & Finance"
                             />
                         </div>
@@ -88,7 +84,7 @@
                             <Label>Title (Indonesian)</Label>
                             <Input 
                                 v-model="localConfigs.banner_services_title_id"
-                                @input="updateConfig('banner_services_title_id', $event.target.value)"
+                                
                                 placeholder="Layanan Kami"
                             />
                         </div>
@@ -96,7 +92,7 @@
                             <Label>Title (English)</Label>
                             <Input 
                                 v-model="localConfigs.banner_services_title_en"
-                                @input="updateConfig('banner_services_title_en', $event.target.value)"
+                                
                                 placeholder="Our Services"
                             />
                         </div>
@@ -104,7 +100,7 @@
                             <Label>Description (Indonesian)</Label>
                             <Textarea 
                                 v-model="localConfigs.banner_services_description_id"
-                                @input="updateConfig('banner_services_description_id', $event.target.value)"
+                                
                                 placeholder="Solusi pembiayaan terpercaya untuk kebutuhan Anda"
                             />
                         </div>
@@ -112,7 +108,7 @@
                             <Label>Description (English)</Label>
                             <Textarea 
                                 v-model="localConfigs.banner_services_description_en"
-                                @input="updateConfig('banner_services_description_en', $event.target.value)"
+                                
                                 placeholder="Trusted financing solutions for your needs"
                             />
                         </div>
@@ -159,7 +155,7 @@
                             <Label>Title (Indonesian)</Label>
                             <Input 
                                 v-model="localConfigs.banner_news_title_id"
-                                @input="updateConfig('banner_news_title_id', $event.target.value)"
+                                
                                 placeholder="Berita & Acara"
                             />
                         </div>
@@ -167,7 +163,7 @@
                             <Label>Title (English)</Label>
                             <Input 
                                 v-model="localConfigs.banner_news_title_en"
-                                @input="updateConfig('banner_news_title_en', $event.target.value)"
+                                
                                 placeholder="News & Events"
                             />
                         </div>
@@ -175,7 +171,7 @@
                             <Label>Description (Indonesian)</Label>
                             <Textarea 
                                 v-model="localConfigs.banner_news_description_id"
-                                @input="updateConfig('banner_news_description_id', $event.target.value)"
+                                
                                 placeholder="Temukan berita terbaru mengenai TEZ Capital di sini"
                             />
                         </div>
@@ -183,7 +179,7 @@
                             <Label>Description (English)</Label>
                             <Textarea 
                                 v-model="localConfigs.banner_news_description_en"
-                                @input="updateConfig('banner_news_description_en', $event.target.value)"
+                                
                                 placeholder="Find the latest news about TEZ Capital here"
                             />
                         </div>
@@ -230,7 +226,7 @@
                             <Label>Title (Indonesian)</Label>
                             <Input 
                                 v-model="localConfigs.banner_contact_title_id"
-                                @input="updateConfig('banner_contact_title_id', $event.target.value)"
+                                
                                 placeholder="Hubungi Kami"
                             />
                         </div>
@@ -238,7 +234,7 @@
                             <Label>Title (English)</Label>
                             <Input 
                                 v-model="localConfigs.banner_contact_title_en"
-                                @input="updateConfig('banner_contact_title_en', $event.target.value)"
+                                
                                 placeholder="Contact Us"
                             />
                         </div>
@@ -246,7 +242,7 @@
                             <Label>Description (Indonesian)</Label>
                             <Textarea 
                                 v-model="localConfigs.banner_contact_description_id"
-                                @input="updateConfig('banner_contact_description_id', $event.target.value)"
+                                
                                 placeholder="Siap membantu dengan layanan terbaik untuk Anda"
                             />
                         </div>
@@ -254,7 +250,7 @@
                             <Label>Description (English)</Label>
                             <Textarea 
                                 v-model="localConfigs.banner_contact_description_en"
-                                @input="updateConfig('banner_contact_description_en', $event.target.value)"
+                                
                                 placeholder="Ready to help with the best service for you"
                             />
                         </div>
@@ -301,7 +297,7 @@
                             <Label>Title (Indonesian)</Label>
                             <Input 
                                 v-model="localConfigs.banner_corporate_title_id"
-                                @input="updateConfig('banner_corporate_title_id', $event.target.value)"
+                                
                                 placeholder="Korporat"
                             />
                         </div>
@@ -309,7 +305,7 @@
                             <Label>Title (English)</Label>
                             <Input 
                                 v-model="localConfigs.banner_corporate_title_en"
-                                @input="updateConfig('banner_corporate_title_en', $event.target.value)"
+                                
                                 placeholder="Corporate"
                             />
                         </div>
@@ -317,7 +313,7 @@
                             <Label>Description (Indonesian)</Label>
                             <Textarea 
                                 v-model="localConfigs.banner_corporate_description_id"
-                                @input="updateConfig('banner_corporate_description_id', $event.target.value)"
+                                
                                 placeholder="Informasi korporat dan laporan keuangan terkini"
                             />
                         </div>
@@ -325,7 +321,7 @@
                             <Label>Description (English)</Label>
                             <Textarea 
                                 v-model="localConfigs.banner_corporate_description_en"
-                                @input="updateConfig('banner_corporate_description_en', $event.target.value)"
+                                
                                 placeholder="Corporate information and latest financial reports"
                             />
                         </div>
@@ -362,17 +358,30 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Save Button -->
+            <div class="flex justify-end pt-4">
+                <Button 
+                    @click="saveSettings"
+                    :disabled="!hasChanges() || isSaving || isLoading"
+                    class="min-w-[120px]"
+                >
+                    <Loader2 v-if="isSaving" class="w-4 h-4 mr-2 animate-spin" />
+                    <Save v-else class="w-4 h-4 mr-2" />
+                    {{ isSaving ? 'Saving...' : 'Save Changes' }}
+                </Button>
+            </div>
         </div>
     </div>
 </template>
 
 <script setup>
-import { ref, reactive, watch } from 'vue';
+import { ref, reactive, watch, computed } from 'vue';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Image, Upload } from 'lucide-vue-next';
+import { Image, Upload, Save, Loader2 } from 'lucide-vue-next';
 
 const props = defineProps({
     configurations: {
@@ -389,7 +398,7 @@ const props = defineProps({
     }
 });
 
-const emit = defineEmits(['save', 'update', 'bulk-save']);
+const emit = defineEmits(['save', 'update', 'bulkSave']);
 
 const localConfigs = reactive({
     banner_about_title_id: '',
@@ -425,6 +434,14 @@ const newsBannerPreview = ref('');
 const contactBannerPreview = ref('');
 const corporateBannerPreview = ref('');
 
+// Check if there are changes to save
+const hasChanges = () => {
+    return Object.keys(localConfigs).some(key => {
+        const originalValue = props.configurations[key]?.value || '';
+        return localConfigs[key] !== originalValue;
+    });
+};
+
 const getImageUrl = (path) => {
     if (!path) return '';
     if (path.startsWith('data:') || path.startsWith('http://') || path.startsWith('https://')) {
@@ -456,15 +473,41 @@ const handleImageUpload = (configKey, event) => {
     };
     reader.readAsDataURL(file);
 
-    const formData = new FormData();
-    formData.append('configurations[' + configKey + ']', file);
-    formData.append('group', 'banners');
+    // Immediately save the image file
+    const changes = [{
+        key: configKey,
+        value: file,
+        type: 'file'
+    }];
     
-    emit('bulk-save', formData);
+    emit('bulkSave', 'banners', changes);
 };
 
-const updateConfig = (key, value) => {
-    emit('update', { key, value, group: 'banners' });
+const saveSettings = () => {
+    const changes = [];
+
+    // Check for changes and collect them
+    Object.keys(localConfigs).forEach(key => {
+        const originalValue = props.configurations[key]?.value || '';
+        if (localConfigs[key] !== originalValue && !key.includes('_image')) {
+            // Determine the type based on key name
+            let type = 'string';
+            if (key.includes('description')) {
+                type = 'text';
+            }
+            
+            changes.push({
+                key: key,
+                value: localConfigs[key],
+                type: type
+            });
+        }
+    });
+
+    // Only save if there are changes
+    if (changes.length > 0) {
+        emit('bulkSave', 'banners', changes);
+    }
 };
 
 watch(() => props.configurations, (newConfigs) => {

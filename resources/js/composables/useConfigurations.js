@@ -1,13 +1,16 @@
 import { ref, nextTick } from 'vue';
 import { toast } from '@/components/ui/toast';
+import { useCsrfToken } from '@/composables/useCsrfToken';
 
 export function useConfigurations() {
     const configurations = ref({});
     const isLoading = ref(false);
     const isSaving = ref(false);
+    
+    const { getCsrfToken } = useCsrfToken();
 
-    // Helper function to get CSRF token
-    const getCsrfToken = () => {
+    // Legacy helper function for backward compatibility
+    const getLegacyCsrfToken = () => {
         // Try meta tag first (most reliable for Laravel)
         const tokenFromMeta = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
         if (tokenFromMeta) {
@@ -164,11 +167,40 @@ export function useConfigurations() {
         }
     };
 
+    const saveBulkFormData = async (formData) => {
+        const csrfToken = getCsrfToken();
+        if (!csrfToken) {
+            throw new Error('CSRF token not found. Please refresh the page and try again.');
+        }
+
+        const response = await fetch(`/api/system/configurations/bulk-update`, {
+            method: 'POST',
+            body: formData,
+            credentials: 'include',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': csrfToken,
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+            
+            if (response.status === 419 || (errorData.message && errorData.message.includes('CSRF'))) {
+                throw new Error('Session expired or CSRF token mismatch. Please refresh the page and try again.');
+            }
+            
+            throw new Error(errorData.message || 'Failed to save configuration');
+        }
+        
+        return await response.json();
+    };
+
     const saveBulkConfigurations = async (group, changes) => {
         isSaving.value = true;
         try {
             // Check if any file uploads are involved
-            const hasFileUploads = changes.some(change => 
+            const hasFileUploads = Array.isArray(changes) && changes.some(change => 
                 change.type === 'file' && change.value instanceof File
             );
 

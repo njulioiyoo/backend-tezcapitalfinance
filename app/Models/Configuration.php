@@ -46,6 +46,8 @@ class Configuration extends Model implements Auditable
 
     const GROUP_BANNERS = 'banners';
 
+    const GROUP_OJK = 'ojk';
+
     const TYPE_STRING = 'string';
 
     const TYPE_TEXT = 'text';
@@ -99,7 +101,25 @@ class Configuration extends Model implements Auditable
             case self::TYPE_INTEGER:
                 return (int) $this->value;
             case self::TYPE_JSON:
-                return is_string($this->value) ? json_decode($this->value, true) : $this->value;
+                $decoded = is_string($this->value) ? json_decode($this->value, true) : $this->value;
+                
+                // Special handling for OJK images - convert relative paths to full URLs
+                if ($this->key === 'ojk_images' && is_array($decoded)) {
+                    return array_map(function($image) {
+                        if (isset($image['url'])) {
+                            // If URL doesn't start with http or /, it's a relative path in storage
+                            if (!str_starts_with($image['url'], 'http') && !str_starts_with($image['url'], '/')) {
+                                $image['url'] = Storage::disk('public')->url($image['url']);
+                            } elseif (str_starts_with($image['url'], '/storage/')) {
+                                // Already has /storage/ prefix, ensure it's a full URL
+                                $image['url'] = url($image['url']);
+                            }
+                        }
+                        return $image;
+                    }, $decoded);
+                }
+                
+                return $decoded;
             case self::TYPE_FILE:
                 return $this->value ? Storage::disk('public')->url($this->value) : null;
             default:

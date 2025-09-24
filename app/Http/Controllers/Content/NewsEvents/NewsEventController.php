@@ -50,6 +50,9 @@ class NewsEventController extends Controller
             $validated['published_at'] = now();
         }
 
+        // Remove slug from validated data to ensure unique generation
+        unset($validated['slug']);
+
         $content = Content::create($validated);
 
         // Return appropriate response based on request type
@@ -101,6 +104,9 @@ class NewsEventController extends Controller
         if ($validated['is_published'] && $validated['status'] === 'published' && !$content->published_at) {
             $validated['published_at'] = now();
         }
+
+        // Remove slug from validated data to let model handle it
+        unset($validated['slug']);
 
         $content->update($validated);
 

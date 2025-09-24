@@ -3,6 +3,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
 import { ref, reactive, computed, watch } from 'vue';
 import { type BreadcrumbItem } from '@/types';
+import { useCsrfToken } from '@/composables/useCsrfToken';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -174,10 +175,7 @@ const resetForm = () => {
     form.loading = false;
 };
 
-const getCsrfToken = () => {
-    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-    return token || '';
-};
+const { getCsrfToken } = useCsrfToken();
 
 const handleFileUpload = (event: Event) => {
     const target = event.target as HTMLInputElement;

@@ -37,6 +37,7 @@ class ConfigurationController extends Controller
             Configuration::GROUP_CREDIT,
             Configuration::GROUP_ABOUT,
             Configuration::GROUP_BANNERS,
+            Configuration::GROUP_OJK,
         ];
 
         $configurations = Configuration::whereIn('group', $relevantGroups)
@@ -220,6 +221,7 @@ class ConfigurationController extends Controller
         // First, handle file uploads to get their paths
         $iconPaths = [];
         $regularFilePaths = [];
+        $ojkImagePaths = [];
         
         \Log::info('🔧 Processing file uploads', ['fileFields' => count($fileFields)]);
         
@@ -231,18 +233,36 @@ class ConfigurationController extends Controller
                 $path = $file->store('configurations', 'public');
                 
                 if (isset($fileField['metadata'])) {
-                    // This is an icon for array items
                     $metadata = $fileField['metadata'];
-                    $iconPaths[$metadata['arrayKey']][$metadata['arrayIndex']][$metadata['arrayField']] = $path;
                     
-                    \Log::info('🖼️ Icon uploaded for array', [
-                        'arrayKey' => $metadata['arrayKey'],
-                        'index' => $metadata['arrayIndex'],
-                        'field' => $metadata['arrayField'],
-                        'path' => $path,
-                        'fileSize' => $file->getSize(),
-                        'fileName' => $file->getClientOriginalName()
-                    ]);
+                    // Special handling for OJK images
+                    if ($metadata['originalKey'] === 'ojk_images') {
+                        $ojkImagePaths[$metadata['index']] = [
+                            'url' => '/storage/' . $path,
+                            'alt' => $metadata['alt'],
+                            'index' => $metadata['index']
+                        ];
+                        
+                        \Log::info('🖼️ OJK image uploaded', [
+                            'index' => $metadata['index'],
+                            'path' => $path,
+                            'alt' => $metadata['alt'],
+                            'fileSize' => $file->getSize(),
+                            'fileName' => $file->getClientOriginalName()
+                        ]);
+                    } else {
+                        // This is an icon for array items
+                        $iconPaths[$metadata['arrayKey']][$metadata['arrayIndex']][$metadata['arrayField']] = $path;
+                        
+                        \Log::info('🖼️ Icon uploaded for array', [
+                            'arrayKey' => $metadata['arrayKey'],
+                            'index' => $metadata['arrayIndex'],
+                            'field' => $metadata['arrayField'],
+                            'path' => $path,
+                            'fileSize' => $file->getSize(),
+                            'fileName' => $file->getClientOriginalName()
+                        ]);
+                    }
                 } else {
                     // Regular file upload
                     $regularFilePaths[$fileField['key']] = $path;
@@ -253,19 +273,19 @@ class ConfigurationController extends Controller
                         'fileSize' => $file->getSize(),
                         'fileName' => $file->getClientOriginalName()
                     ]);
+                    
+                    // Store the file configuration
+                    $results[] = Configuration::updateOrCreate(
+                        ['key' => $fileField['key']],
+                        [
+                            'value' => $path,
+                            'type' => $fileField['type'],
+                            'group' => $fileField['group'],
+                            'description' => $fileField['description'] ?? null,
+                            'is_public' => $fileField['is_public'] ?? false,
+                        ]
+                    );
                 }
-                
-                // Store the file configuration
-                $results[] = Configuration::updateOrCreate(
-                    ['key' => $fileField['key']],
-                    [
-                        'value' => $path,
-                        'type' => $fileField['type'],
-                        'group' => $fileField['group'],
-                        'description' => $fileField['description'] ?? null,
-                        'is_public' => $fileField['is_public'] ?? false,
-                    ]
-                );
             } else {
                 \Log::warning('🚨 File not found in request', ['fieldName' => $fieldName]);
             }
@@ -273,6 +293,7 @@ class ConfigurationController extends Controller
         
         \Log::info('🖼️ Total icon paths collected', ['iconPaths' => $iconPaths]);
         \Log::info('📁 Total regular file paths collected', ['regularFilePaths' => $regularFilePaths]);
+        \Log::info('🏛️ Total OJK image paths collected', ['ojkImagePaths' => $ojkImagePaths]);
 
         foreach ($configurations as $configData) {
             \Log::info('Processing config', ['configData' => $configData]);
@@ -291,6 +312,21 @@ class ConfigurationController extends Controller
                 $decoded = json_decode($value, true);
                 if (json_last_error() === JSON_ERROR_NONE) {
                     $value = $decoded;
+                }
+            }
+            
+            // Special handling for OJK images
+            if ($configData['key'] === 'ojk_images' && !empty($ojkImagePaths)) {
+                if (is_array($value)) {
+                    // Merge uploaded OJK images with existing structure
+                    foreach ($ojkImagePaths as $index => $imageData) {
+                        $value[$index] = $imageData;
+                    }
+                    \Log::info('Updated OJK images array', [
+                        'key' => $configData['key'],
+                        'updatedImages' => count($ojkImagePaths),
+                        'finalValue' => $value
+                    ]);
                 }
             }
             

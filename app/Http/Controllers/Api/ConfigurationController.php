@@ -96,6 +96,10 @@ class ConfigurationController extends Controller
                     $filteredData['language'] = $data['language'];
                 }
                 
+                if (isset($data['ojk'])) {
+                    $filteredData['ojk'] = $data['ojk'];
+                }
+                
                 $data = $filteredData;
             }
                 
@@ -225,6 +229,11 @@ class ConfigurationController extends Controller
     public function banners(): JsonResponse
     {
         return $this->getByGroup(Configuration::GROUP_BANNERS);
+    }
+
+    public function ojk(): JsonResponse
+    {
+        return $this->getByGroup(Configuration::GROUP_OJK);
     }
 
     /**

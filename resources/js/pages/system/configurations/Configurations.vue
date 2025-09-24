@@ -26,6 +26,7 @@ import MaintenanceSettings from '@/components/configurations/MaintenanceSettings
 import ContactSettings from '@/components/configurations/ContactSettings.vue';
 import LanguageSettings from '@/components/configurations/LanguageSettings.vue';
 import BannerSettings from '@/components/configurations/BannerSettings.vue';
+import OjkSettings from '@/components/configurations/OjkSettings.vue';
 import { useConfigurations } from '@/composables/useConfigurations.js';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -51,6 +52,7 @@ const {
 onMounted(() => {
     loadConfigurations();
 });
+
 
 // Debug configurations
 watch(configurations, (newConfigs) => {
@@ -91,7 +93,7 @@ watch(configurations, (newConfigs) => {
                 <Card>
                     <CardContent>
                         <Tabs v-model:modelValue="activeTab" class="w-full">
-                            <TabsList class="grid w-full grid-cols-8">
+                            <TabsList class="grid w-full grid-cols-9">
                                 <TabsTrigger value="general" class="flex items-center gap-2">
                                     <Settings class="w-4 h-4" />
                                     General
@@ -123,6 +125,10 @@ watch(configurations, (newConfigs) => {
                                 <TabsTrigger value="banners" class="flex items-center gap-2">
                                     <Image class="w-4 h-4" />
                                     Banners
+                                </TabsTrigger>
+                                <TabsTrigger value="ojk" class="flex items-center gap-2">
+                                    <Image class="w-4 h-4" />
+                                    OJK
                                 </TabsTrigger>
                             </TabsList>
 
@@ -207,6 +213,17 @@ watch(configurations, (newConfigs) => {
                                 <TabsContent value="banners" class="space-y-4">
                                     <BannerSettings 
                                         :configurations="configurations.banners || {}"
+                                        :is-loading="isLoading"
+                                        :is-saving="isSaving"
+                                        @save="saveConfiguration"
+                                        @update="updateConfiguration"
+                                        @bulkSave="saveBulkConfigurations"
+                                    />
+                                </TabsContent>
+
+                                <TabsContent value="ojk" class="space-y-4">
+                                    <OjkSettings 
+                                        :configurations="configurations.ojk || {}"
                                         :is-loading="isLoading"
                                         :is-saving="isSaving"
                                         @save="saveConfiguration"
