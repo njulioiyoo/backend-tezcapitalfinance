@@ -106,13 +106,17 @@ class ReportController extends Controller
                 $query->where('quarter', $quarter);
             }
 
-            // Get all reports for grouping with proper sorting by year desc then created_at desc
+            // Get total count for pagination
+            $total = $query->count();
+
+            // Get paginated reports for grouping with proper sorting by year desc then created_at desc
             $allReports = $query->orderBy('year', 'desc')
                 ->orderBy('month', 'desc')
                 ->orderBy('quarter', 'desc')
                 ->orderBy('created_at', 'desc')
+                ->offset(($page - 1) * $limit)
+                ->limit($limit)
                 ->get();
-            $total = $allReports->count();
 
             // Group by period for frontend tabs
             $groupedReports = [
@@ -121,7 +125,7 @@ class ReportController extends Controller
                     'title_id' => 'Semua Kategori',
                     'title_en' => 'All Categories',
                     'value' => 'all-category',
-                    'subKeuangan' => $allReports->take($limit)->map(function ($report) use ($lang) {
+                    'subKeuangan' => $allReports->map(function ($report) use ($lang) {
                         return [
                             'id' => $report->id,
                             'year' => (string) $report->year,
@@ -140,11 +144,9 @@ class ReportController extends Controller
                     'title_id' => 'Laporan Keuangan Bulanan',
                     'title_en' => 'Monthly Financial Reports',
                     'value' => 'bulanan',
-                    'subKeuangan' => $allReports->where('period', 'monthly')
-                        ->sortByDesc('year')
-                        ->sortByDesc('month')
-                        ->sortByDesc('created_at')
-                        ->take($limit)->map(function ($report) use ($lang) {
+                    'subKeuangan' => $allReports->filter(function ($report) {
+                        return $report->period === 'monthly';
+                    })->map(function ($report) use ($lang) {
                         return [
                             'id' => $report->id,
                             'year' => (string) $report->year,
@@ -163,11 +165,9 @@ class ReportController extends Controller
                     'title_id' => 'Laporan Keuangan Triwulan',
                     'title_en' => 'Quarterly Financial Reports',
                     'value' => 'triwulan',
-                    'subKeuangan' => $allReports->where('period', 'quarterly')
-                        ->sortByDesc('year')
-                        ->sortByDesc('quarter')
-                        ->sortByDesc('created_at')
-                        ->take($limit)->map(function ($report) use ($lang) {
+                    'subKeuangan' => $allReports->filter(function ($report) {
+                        return $report->period === 'quarterly';
+                    })->map(function ($report) use ($lang) {
                         return [
                             'id' => $report->id,
                             'year' => (string) $report->year,
@@ -190,10 +190,10 @@ class ReportController extends Controller
                 'message' => 'Financial reports data retrieved successfully',
                 'data' => $groupedReports,
                 'pagination' => [
-                    'current_page' => $page,
-                    'per_page' => $limit,
-                    'total' => $total,
-                    'last_page' => ceil($total / $limit),
+                    'current_page' => (int) $page,
+                    'per_page' => (int) $limit,
+                    'total' => (int) $total,
+                    'last_page' => (int) ceil($total / $limit),
                     'has_more' => $page < ceil($total / $limit)
                 ],
                 'response_time_ms' => $responseTime
@@ -278,10 +278,10 @@ class ReportController extends Controller
                 'message' => 'Annual reports data retrieved successfully',
                 'data' => $reports,
                 'pagination' => [
-                    'current_page' => $page,
-                    'per_page' => $limit,
-                    'total' => $total,
-                    'last_page' => ceil($total / $limit),
+                    'current_page' => (int) $page,
+                    'per_page' => (int) $limit,
+                    'total' => (int) $total,
+                    'last_page' => (int) ceil($total / $limit),
                     'has_more' => $page < ceil($total / $limit)
                 ],
                 'response_time_ms' => $responseTime

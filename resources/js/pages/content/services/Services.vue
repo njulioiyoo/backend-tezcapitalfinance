@@ -712,8 +712,8 @@ const clearFilters = () => {
                         <div class="flex items-start justify-between">
                             <div class="space-y-1 flex-1">
                                 <div class="flex items-center gap-2">
-                                    <Badge :variant="service.is_featured ? 'default' : 'secondary'">
-                                        {{ service.category || 'Uncategorized' }}
+                                    <Badge v-if="service.category" :variant="service.is_featured ? 'default' : 'secondary'">
+                                        {{ service.category }}
                                     </Badge>
                                     <Badge v-if="service.is_featured" variant="outline" class="text-yellow-600 border-yellow-600">
                                         Featured
@@ -848,18 +848,8 @@ const clearFilters = () => {
                         </div>
                     </div>
 
-                    <!-- Category and Status -->
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="space-y-2">
-                            <Label for="category">Category</Label>
-                            <Select v-model="form.category">
-                                <option value="">Select category</option>
-                                <option v-for="(label, value) in categories" :key="value" :value="value">
-                                    {{ label }}
-                                </option>
-                            </Select>
-                        </div>
-                        
+                    <!-- Status -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="space-y-2">
                             <Label for="status">Status</Label>
                             <Select v-model="form.status">
@@ -1167,17 +1157,7 @@ const clearFilters = () => {
                     </div>
 
                     <!-- Category and Status -->
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="space-y-2">
-                            <Label for="edit_category">Category</Label>
-                            <Select v-model="form.category">
-                                <option value="">Select category</option>
-                                <option v-for="(label, value) in categories" :key="value" :value="value">
-                                    {{ label }}
-                                </option>
-                            </Select>
-                        </div>
-                        
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="space-y-2">
                             <Label for="edit_status">Status</Label>
                             <Select v-model="form.status">
