@@ -108,6 +108,12 @@ class ServiceController extends Controller
             } else {
                 $service->tags_array = [];
             }
+            
+            // Process interest list - already array from model cast
+            $service->interest_list_array = $service->interest_list ?: [];
+            
+            // Process document list - already array from model cast
+            $service->document_list_array = $service->document_list ?: [];
 
             $endTime = microtime(true);
             $responseTime = round(($endTime - $startTime) * 1000, 2);
@@ -185,6 +191,12 @@ class ServiceController extends Controller
             } else {
                 $service->tags_array = [];
             }
+            
+            // Process interest list - already array from model cast
+            $service->interest_list_array = $service->interest_list ?: [];
+            
+            // Process document list - already array from model cast
+            $service->document_list_array = $service->document_list ?: [];
 
             $endTime = microtime(true);
             $responseTime = round(($endTime - $startTime) * 1000, 2);

@@ -29,6 +29,14 @@ interface Service {
     content_id: string;
     content_en: string;
     featured_image: string;
+    interest_list: string[];
+    document_list: string[];
+    interest_rate: number;
+    service_duration: string;
+    requirements_id: string;
+    requirements_en: string;
+    benefits_id: string;
+    benefits_en: string;
     status: string;
     is_published: boolean;
     is_featured: boolean;
@@ -79,6 +87,14 @@ const form = reactive({
     content_en: '',
     category: '',
     featured_image: null as File | null,
+    interest_list: [''] as string[],
+    document_list: [''] as string[],
+    interest_rate: 0,
+    service_duration: '',
+    requirements_id: '',
+    requirements_en: '',
+    benefits_id: '',
+    benefits_en: '',
     status: 'draft',
     is_published: false,
     is_featured: false,
@@ -114,6 +130,14 @@ const resetForm = () => {
         content_en: '',
         category: '',
         featured_image: null,
+        interest_list: [''],
+        document_list: [''],
+        interest_rate: 0,
+        service_duration: '',
+        requirements_id: '',
+        requirements_en: '',
+        benefits_id: '',
+        benefits_en: '',
         status: 'draft',
         is_published: false,
         is_featured: false,
@@ -147,6 +171,14 @@ const openEditModal = (service: Service) => {
         content_en: service.content_en || '',
         category: service.category || '',
         featured_image: null,
+        interest_list: service.interest_list && service.interest_list.length > 0 ? service.interest_list : [''],
+        document_list: service.document_list && service.document_list.length > 0 ? service.document_list : [''],
+        interest_rate: service.interest_rate || 0,
+        service_duration: service.service_duration || '',
+        requirements_id: service.requirements_id || '',
+        requirements_en: service.requirements_en || '',
+        benefits_id: service.benefits_id || '',
+        benefits_en: service.benefits_en || '',
         status: service.status || 'draft',
         is_published: service.is_published || false,
         is_featured: service.is_featured || false,
@@ -240,6 +272,31 @@ const removeImage = () => {
     featuredImagePreview.value = null;
 };
 
+// Helper functions for interest and document lists
+const addInterestItem = () => {
+    form.interest_list.push('');
+};
+
+const removeInterestItem = (index: number) => {
+    if (form.interest_list.length > 1) {
+        form.interest_list.splice(index, 1);
+    } else {
+        form.interest_list[0] = '';
+    }
+};
+
+const addDocumentItem = () => {
+    form.document_list.push('');
+};
+
+const removeDocumentItem = (index: number) => {
+    if (form.document_list.length > 1) {
+        form.document_list.splice(index, 1);
+    } else {
+        form.document_list[0] = '';
+    }
+};
+
 const getImageUrl = (path: string) => {
     if (!path) return null;
     if (path.startsWith('http')) return path;
@@ -301,6 +358,14 @@ const submitForm = async () => {
             content_id: form.content_id?.trim() || '',
             content_en: form.content_en?.trim() || '',
             category: form.category || '',
+            interest_list: form.interest_list.filter(item => item && item.trim()),
+            document_list: form.document_list.filter(item => item && item.trim()),
+            interest_rate: form.interest_rate || 0,
+            service_duration: form.service_duration?.trim() || '',
+            requirements_id: form.requirements_id?.trim() || '',
+            requirements_en: form.requirements_en?.trim() || '',
+            benefits_id: form.benefits_id?.trim() || '',
+            benefits_en: form.benefits_en?.trim() || '',
             status: form.status || 'draft',
             is_published: form.is_published ? '1' : '0',  // Convert boolean to string
             is_featured: form.is_featured ? '1' : '0',    // Convert boolean to string
@@ -326,7 +391,14 @@ const submitForm = async () => {
                 // Add all text fields explicitly
                 Object.keys(cleanFormData).forEach(key => {
                     if (key !== 'featured_image') {
-                        formData.append(key, cleanFormData[key]);
+                        if (Array.isArray(cleanFormData[key])) {
+                            // Handle arrays properly in FormData
+                            cleanFormData[key].forEach((item, index) => {
+                                formData.append(`${key}[${index}]`, item);
+                            });
+                        } else {
+                            formData.append(key, cleanFormData[key]);
+                        }
                     }
                 });
                 
@@ -405,7 +477,14 @@ const submitForm = async () => {
                 // Add all text fields explicitly
                 Object.keys(cleanFormData).forEach(key => {
                     if (key !== 'featured_image') {
-                        formData.append(key, cleanFormData[key]);
+                        if (Array.isArray(cleanFormData[key])) {
+                            // Handle arrays properly in FormData
+                            cleanFormData[key].forEach((item, index) => {
+                                formData.append(`${key}[${index}]`, item);
+                            });
+                        } else {
+                            formData.append(key, cleanFormData[key]);
+                        }
                     }
                 });
                 
@@ -493,24 +572,30 @@ const confirmDelete = (service: Service) => {
 const deleteService = async () => {
     if (!currentService.value || isSubmitting.value) return;
     
+    const serviceIdToDelete = currentService.value.id;
     isSubmitting.value = true;
     
     try {
-        router.delete(route('content.services.destroy', currentService.value.id), {
+        router.delete(route('content.services.destroy', serviceIdToDelete), {
             onSuccess: (page) => {
+                // Show success message
                 toast({
                     title: 'Success',
                     description: 'Service deleted successfully',
                     variant: 'success'
                 });
+                
+                // Close dialog and reset state
                 showDeleteConfirm.value = false;
                 currentService.value = null;
                 
-                // Refresh data to show changes
-                router.reload({ only: ['contents'] });
+                // Simple page refresh to show updated data
+                setTimeout(() => {
+                    window.location.reload();
+                }, 500);
             },
             onError: (errors) => {
-                //('Delete errors:', errors);
+                console.log('Delete errors:', errors);
                 const errorMessage = Object.values(errors).flat().join(', ') || 'Failed to delete service';
                 toast({
                     title: 'Error',
@@ -523,7 +608,7 @@ const deleteService = async () => {
             }
         });
     } catch (error) {
-        //('Error deleting service:', error);
+        console.log('Error deleting service:', error);
         toast({
             title: 'Error',
             description: 'An error occurred while deleting',
@@ -841,6 +926,141 @@ const clearFilters = () => {
                         </div>
                     </div>
 
+                    <!-- Service Details -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <Label for="interest_rate">Interest Rate (%)</Label>
+                            <Input
+                                id="interest_rate"
+                                v-model="form.interest_rate"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                max="100"
+                                placeholder="0.00"
+                            />
+                        </div>
+                        
+                        <div class="space-y-2">
+                            <Label for="service_duration">Service Duration</Label>
+                            <Input
+                                id="service_duration"
+                                v-model="form.service_duration"
+                                placeholder="e.g., 12 months, 2 years"
+                            />
+                        </div>
+                    </div>
+
+                    <!-- Interest List -->
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <Label>Interest List</Label>
+                            <Button type="button" size="sm" variant="outline" @click="addInterestItem">
+                                <Plus class="h-4 w-4 mr-2" />
+                                Add Item
+                            </Button>
+                        </div>
+                        <div class="space-y-2">
+                            <div v-for="(item, index) in form.interest_list" :key="`interest-${index}`" class="flex items-center gap-2">
+                                <Input
+                                    v-model="form.interest_list[index]"
+                                    :placeholder="`Interest item ${index + 1}`"
+                                    class="flex-1"
+                                />
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    @click="removeInterestItem(index)"
+                                    class="text-red-600 hover:text-red-700"
+                                >
+                                    <X class="h-4 w-4" />
+                                </Button>
+                            </div>
+                            <p v-if="form.interest_list.length === 0" class="text-sm text-muted-foreground">
+                                No interest items added yet.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Document List -->
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <Label>Required Documents</Label>
+                            <Button type="button" size="sm" variant="outline" @click="addDocumentItem">
+                                <Plus class="h-4 w-4 mr-2" />
+                                Add Document
+                            </Button>
+                        </div>
+                        <div class="space-y-2">
+                            <div v-for="(item, index) in form.document_list" :key="`document-${index}`" class="flex items-center gap-2">
+                                <Input
+                                    v-model="form.document_list[index]"
+                                    :placeholder="`Document ${index + 1}`"
+                                    class="flex-1"
+                                />
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    @click="removeDocumentItem(index)"
+                                    class="text-red-600 hover:text-red-700"
+                                >
+                                    <X class="h-4 w-4" />
+                                </Button>
+                            </div>
+                            <p v-if="form.document_list.length === 0" class="text-sm text-muted-foreground">
+                                No required documents added yet.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Requirements -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <Label for="requirements_id">Requirements (Indonesian)</Label>
+                            <Textarea
+                                id="requirements_id"
+                                v-model="form.requirements_id"
+                                placeholder="Service requirements in Indonesian"
+                                rows="4"
+                            />
+                        </div>
+                        
+                        <div v-if="bilingualEnabled" class="space-y-2">
+                            <Label for="requirements_en">Requirements (English)</Label>
+                            <Textarea
+                                id="requirements_en"
+                                v-model="form.requirements_en"
+                                placeholder="Service requirements in English"
+                                rows="4"
+                            />
+                        </div>
+                    </div>
+
+                    <!-- Benefits -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <Label for="benefits_id">Benefits (Indonesian)</Label>
+                            <Textarea
+                                id="benefits_id"
+                                v-model="form.benefits_id"
+                                placeholder="Service benefits in Indonesian"
+                                rows="4"
+                            />
+                        </div>
+                        
+                        <div v-if="bilingualEnabled" class="space-y-2">
+                            <Label for="benefits_en">Benefits (English)</Label>
+                            <Textarea
+                                id="benefits_en"
+                                v-model="form.benefits_en"
+                                placeholder="Service benefits in English"
+                                rows="4"
+                            />
+                        </div>
+                    </div>
+
                     <!-- Featured Image -->
                     <div class="space-y-2">
                         <Label>Featured Image</Label>
@@ -1020,6 +1240,141 @@ const clearFilters = () => {
                             <RichTextEditor
                                 v-model="form.content_en"
                                 placeholder="Detailed service content in English"
+                            />
+                        </div>
+                    </div>
+
+                    <!-- Service Details -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <Label for="edit_interest_rate">Interest Rate (%)</Label>
+                            <Input
+                                id="edit_interest_rate"
+                                v-model="form.interest_rate"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                max="100"
+                                placeholder="0.00"
+                            />
+                        </div>
+                        
+                        <div class="space-y-2">
+                            <Label for="edit_service_duration">Service Duration</Label>
+                            <Input
+                                id="edit_service_duration"
+                                v-model="form.service_duration"
+                                placeholder="e.g., 12 months, 2 years"
+                            />
+                        </div>
+                    </div>
+
+                    <!-- Interest List -->
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <Label>Interest List</Label>
+                            <Button type="button" size="sm" variant="outline" @click="addInterestItem">
+                                <Plus class="h-4 w-4 mr-2" />
+                                Add Item
+                            </Button>
+                        </div>
+                        <div class="space-y-2">
+                            <div v-for="(item, index) in form.interest_list" :key="`edit-interest-${index}`" class="flex items-center gap-2">
+                                <Input
+                                    v-model="form.interest_list[index]"
+                                    :placeholder="`Interest item ${index + 1}`"
+                                    class="flex-1"
+                                />
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    @click="removeInterestItem(index)"
+                                    class="text-red-600 hover:text-red-700"
+                                >
+                                    <X class="h-4 w-4" />
+                                </Button>
+                            </div>
+                            <p v-if="form.interest_list.length === 0" class="text-sm text-muted-foreground">
+                                No interest items added yet.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Document List -->
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <Label>Required Documents</Label>
+                            <Button type="button" size="sm" variant="outline" @click="addDocumentItem">
+                                <Plus class="h-4 w-4 mr-2" />
+                                Add Document
+                            </Button>
+                        </div>
+                        <div class="space-y-2">
+                            <div v-for="(item, index) in form.document_list" :key="`edit-document-${index}`" class="flex items-center gap-2">
+                                <Input
+                                    v-model="form.document_list[index]"
+                                    :placeholder="`Document ${index + 1}`"
+                                    class="flex-1"
+                                />
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    @click="removeDocumentItem(index)"
+                                    class="text-red-600 hover:text-red-700"
+                                >
+                                    <X class="h-4 w-4" />
+                                </Button>
+                            </div>
+                            <p v-if="form.document_list.length === 0" class="text-sm text-muted-foreground">
+                                No required documents added yet.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Requirements -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <Label for="edit_requirements_id">Requirements (Indonesian)</Label>
+                            <Textarea
+                                id="edit_requirements_id"
+                                v-model="form.requirements_id"
+                                placeholder="Service requirements in Indonesian"
+                                rows="4"
+                            />
+                        </div>
+                        
+                        <div v-if="bilingualEnabled" class="space-y-2">
+                            <Label for="edit_requirements_en">Requirements (English)</Label>
+                            <Textarea
+                                id="edit_requirements_en"
+                                v-model="form.requirements_en"
+                                placeholder="Service requirements in English"
+                                rows="4"
+                            />
+                        </div>
+                    </div>
+
+                    <!-- Benefits -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <Label for="edit_benefits_id">Benefits (Indonesian)</Label>
+                            <Textarea
+                                id="edit_benefits_id"
+                                v-model="form.benefits_id"
+                                placeholder="Service benefits in Indonesian"
+                                rows="4"
+                            />
+                        </div>
+                        
+                        <div v-if="bilingualEnabled" class="space-y-2">
+                            <Label for="edit_benefits_en">Benefits (English)</Label>
+                            <Textarea
+                                id="edit_benefits_en"
+                                v-model="form.benefits_en"
+                                placeholder="Service benefits in English"
+                                rows="4"
                             />
                         </div>
                     </div>

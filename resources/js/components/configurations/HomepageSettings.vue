@@ -120,7 +120,7 @@ const collapsedSections = ref({
     sixReasons: true,
     appProcess: true,
     faq: true,
-    banners: true,
+    banners: true,  // Keep same as others - CLOSED by default
     features: true,
 });
 
@@ -130,9 +130,50 @@ watch(() => props.configurations, (newConfigs) => {
         form.hero_title = newConfigs.homepage_hero_title?.value || '';
         form.hero_subtitle = newConfigs.homepage_hero_subtitle?.value || '';
         
+        // Banner slides - detailed debug
+        console.log('🔍 DEBUG - newConfigs.homepage_banners:', newConfigs.homepage_banners);
+        console.log('🔍 DEBUG - homepage_banners value:', newConfigs.homepage_banners?.value);
+        console.log('🔍 DEBUG - homepage_banners type:', typeof newConfigs.homepage_banners?.value);
+        
         try {
-            form.banners = JSON.parse(newConfigs.homepage_banners?.value || '[]');
-        } catch {
+            const bannerValue = newConfigs.homepage_banners?.value;
+            
+            if (bannerValue) {
+                if (typeof bannerValue === 'string') {
+                    console.log('🔍 Parsing string:', bannerValue);
+                    form.banners = JSON.parse(bannerValue);
+                } else if (Array.isArray(bannerValue)) {
+                    console.log('🔍 Using array directly:', bannerValue);
+                    form.banners = bannerValue;
+                } else {
+                    console.log('🔍 Unknown type, setting empty array');
+                    form.banners = [];
+                }
+            } else {
+                console.log('🔍 No banner value found');
+                form.banners = [];
+            }
+            
+            // Load banner images from individual configuration files
+            form.banners.forEach((banner, index) => {
+                const imageKey = `homepage_banner_${index + 1}_image`;
+                console.log('🔍 Looking for image key:', imageKey);
+                console.log('🔍 Found image config:', newConfigs[imageKey]);
+                if (newConfigs[imageKey]?.value) {
+                    banner.image = newConfigs[imageKey].value;
+                    console.log('🔍 Set banner image:', banner.image);
+                }
+            });
+            
+            console.log('✅ Final banners with images:', form.banners);
+            
+            // Auto-expand ONLY if there's data
+            if (form.banners.length > 0) {
+                console.log('✅ Auto-expanding banners section');
+                collapsedSections.value.banners = false;
+            }
+        } catch (error) {
+            console.error('❌ Error loading banners:', error);
             form.banners = [];
         }
         
@@ -430,6 +471,17 @@ const saveSettings = () => {
         changes.push({ key: 'homepage_faq_items', value: form.faq_items, type: 'json' });
     }
 
+    // Handle file uploads for Banner images
+    bannerFiles.value.forEach((file, index) => {
+        if (file) {
+            changes.push({
+                key: `homepage_banner_${index + 1}_image`,
+                value: file,
+                type: 'file'
+            });
+        }
+    });
+
     // Handle file uploads for Six Reasons icons
     sixReasonsIconFiles.value.forEach((file, index) => {
         if (file) {
@@ -459,6 +511,7 @@ const saveSettings = () => {
         emit('bulkSave', 'homepage', changes);
         
         // Clear file references after save to prevent conflicts
+        bannerFiles.value = [];
         appProcessIconFiles.value = [];
         sixReasonsIconFiles.value = [];
     } else {

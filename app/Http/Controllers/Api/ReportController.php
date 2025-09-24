@@ -106,8 +106,12 @@ class ReportController extends Controller
                 $query->where('quarter', $quarter);
             }
 
-            // Get all reports for grouping
-            $allReports = $query->latest()->get();
+            // Get all reports for grouping with proper sorting by year desc then created_at desc
+            $allReports = $query->orderBy('year', 'desc')
+                ->orderBy('month', 'desc')
+                ->orderBy('quarter', 'desc')
+                ->orderBy('created_at', 'desc')
+                ->get();
             $total = $allReports->count();
 
             // Group by period for frontend tabs
@@ -136,7 +140,11 @@ class ReportController extends Controller
                     'title_id' => 'Laporan Keuangan Bulanan',
                     'title_en' => 'Monthly Financial Reports',
                     'value' => 'bulanan',
-                    'subKeuangan' => $allReports->where('period', 'monthly')->take($limit)->map(function ($report) use ($lang) {
+                    'subKeuangan' => $allReports->where('period', 'monthly')
+                        ->sortByDesc('year')
+                        ->sortByDesc('month')
+                        ->sortByDesc('created_at')
+                        ->take($limit)->map(function ($report) use ($lang) {
                         return [
                             'id' => $report->id,
                             'year' => (string) $report->year,
@@ -155,7 +163,11 @@ class ReportController extends Controller
                     'title_id' => 'Laporan Keuangan Triwulan',
                     'title_en' => 'Quarterly Financial Reports',
                     'value' => 'triwulan',
-                    'subKeuangan' => $allReports->where('period', 'quarterly')->take($limit)->map(function ($report) use ($lang) {
+                    'subKeuangan' => $allReports->where('period', 'quarterly')
+                        ->sortByDesc('year')
+                        ->sortByDesc('quarter')
+                        ->sortByDesc('created_at')
+                        ->take($limit)->map(function ($report) use ($lang) {
                         return [
                             'id' => $report->id,
                             'year' => (string) $report->year,
@@ -240,8 +252,9 @@ class ReportController extends Controller
             // Get total count for pagination
             $total = $query->count();
 
-            // Apply pagination
-            $reports = $query->latest()
+            // Apply pagination with proper sorting by year desc then created_at desc
+            $reports = $query->orderBy('year', 'desc')
+                ->orderBy('created_at', 'desc')
                 ->offset(($page - 1) * $limit)
                 ->limit($limit)
                 ->get()

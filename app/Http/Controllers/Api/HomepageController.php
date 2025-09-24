@@ -22,6 +22,7 @@ class HomepageController extends Controller
 
             $data = [
                 'hero' => $this->getHeroData($language, $bilingualEnabled),
+                'banners' => $this->getBannerData($language, $bilingualEnabled),
                 'six_reasons' => $this->getSixReasonsData($language, $bilingualEnabled),
                 'application_process' => $this->getApplicationProcessData($language, $bilingualEnabled),
                 'services' => $this->getServicesData($language, $bilingualEnabled),
@@ -70,6 +71,48 @@ class HomepageController extends Controller
                 'text' => Configuration::get('homepage_hero_cta_secondary_text', 'Learn More'),
                 'url' => Configuration::get('homepage_hero_cta_secondary_url', '#about')
             ]
+        ];
+    }
+
+    /**
+     * Get banner slideshow data
+     */
+    private function getBannerData(string $language, bool $bilingualEnabled): array
+    {
+        $banners = Configuration::get('homepage_banners', []);
+        
+        if (!is_array($banners)) {
+            $banners = json_decode($banners, true) ?: [];
+        }
+
+        return [
+            'enabled' => !empty($banners),
+            'items' => collect($banners)->map(function ($banner, $index) {
+                // Get banner image from separate configuration (same pattern as frontend)
+                $imageKey = "homepage_banner_" . ($index + 1) . "_image";
+                $image = Configuration::get($imageKey, $banner['image'] ?? '');
+                
+                // Convert relative path to full URL
+                $imageUrl = '';
+                if ($image) {
+                    if (str_starts_with($image, 'http://') || str_starts_with($image, 'https://')) {
+                        $imageUrl = $image;
+                    } else {
+                        $imageUrl = config('app.url') . '/storage/' . $image;
+                    }
+                }
+                
+                return [
+                    'title' => $banner['title'] ?? '',
+                    'subtitle' => $banner['subtitle'] ?? '',
+                    'image' => $imageUrl,
+                    'link' => $banner['link'] ?? '',
+                    'order' => $index + 1
+                ];
+            })->filter(function ($banner) {
+                // Only include banners with images
+                return !empty($banner['image']);
+            })->values()->toArray()
         ];
     }
 
@@ -329,6 +372,7 @@ class HomepageController extends Controller
 
             $sectionData = match($section) {
                 'hero' => $this->getHeroData($language, $bilingualEnabled),
+                'banners' => $this->getBannerData($language, $bilingualEnabled),
                 'six-reasons' => $this->getSixReasonsData($language, $bilingualEnabled),
                 'application-process' => $this->getApplicationProcessData($language, $bilingualEnabled),
                 'services' => $this->getServicesData($language, $bilingualEnabled),
@@ -343,7 +387,7 @@ class HomepageController extends Controller
                     'success' => false,
                     'message' => "Section '{$section}' not found",
                     'data' => [
-                        'available_sections' => ['hero', 'six-reasons', 'application-process', 'services', 'partners', 'news', 'faq']
+                        'available_sections' => ['hero', 'banners', 'six-reasons', 'application-process', 'services', 'partners', 'news', 'faq']
                     ]
                 ], 404);
             }
