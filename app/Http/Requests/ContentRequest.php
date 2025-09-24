@@ -33,7 +33,7 @@ class ContentRequest extends FormRequest
             'source_url' => 'nullable|url',
             'is_published' => 'boolean',
             'is_featured' => 'boolean',
-            'published_at' => 'nullable|date',
+            'published_at' => 'nullable|date|before_or_equal:now',
             'status' => ['required', Rule::in(array_keys(Content::getStatuses()))],
             'sort_order' => 'integer|min:0',
             'gallery' => 'nullable|array',
@@ -52,6 +52,17 @@ class ContentRequest extends FormRequest
         $rules = array_merge($rules, $this->getFileUploadRules($type, $isUpdate));
 
         return $rules;
+    }
+
+    /**
+     * Get the error messages for the defined validation rules.
+     */
+    public function messages(): array
+    {
+        return [
+            'published_at.before_or_equal' => 'Tanggal publikasi tidak boleh lebih dari tanggal dan waktu saat ini.',
+            'published_at.date' => 'Format tanggal publikasi tidak valid.',
+        ];
     }
 
     /**

@@ -140,16 +140,6 @@ const openEditDialog = (item: NewsEvent) => {
     resetForm();
     editingItem.value = item;
     
-    // Debug: Check what data we're receiving from the backend
-    console.log('Edit dialog opened with item:', {
-        id: item.id,
-        title_id: item.title_id,
-        excerpt_id: item.excerpt_id,
-        excerpt_en: item.excerpt_en,
-        content_id: item.content_id,
-        content_en: item.content_en
-    });
-    
     form.type = item.type;
     form.category = item.category;
     form.title_id = item.title_id;
@@ -171,14 +161,6 @@ const openEditDialog = (item: NewsEvent) => {
     form.is_featured = item.is_featured;
     form.status = item.status;
     form.published_at = item.published_at ? item.published_at.substring(0, 16) : '';
-    
-    // Debug: Check form values after assignment
-    console.log('Form values after assignment:', {
-        excerpt_id: form.excerpt_id,
-        excerpt_en: form.excerpt_en,
-        content_id: form.content_id,
-        content_en: form.content_en
-    });
     
     dialogOpen.value = true;
 };
@@ -262,14 +244,6 @@ const clearFeaturedImage = () => {
 const handleSubmit = async () => {
     form.loading = true;
     
-    // Debug logging - temporary
-    console.log('Form data before submit:', {
-        excerpt_id: form.excerpt_id,
-        excerpt_en: form.excerpt_en,
-        content_id: form.content_id,
-        content_en: form.content_en,
-    });
-    
     try {
         const url = editingItem.value 
             ? `/system/news-events/${editingItem.value.id}`
@@ -287,14 +261,6 @@ const handleSubmit = async () => {
         formData.append('excerpt_en', form.excerpt_en);
         formData.append('content_id', form.content_id);
         formData.append('content_en', form.content_en);
-        
-        // Debug FormData contents
-        console.log('FormData values:', {
-            excerpt_id: formData.get('excerpt_id'),
-            excerpt_en: formData.get('excerpt_en'),
-            content_id: formData.get('content_id'),
-            content_en: formData.get('content_en'),
-        });
         formData.append('author', form.author);
         formData.append('location_id', form.location_id);
         formData.append('location_en', form.location_en);
@@ -473,6 +439,17 @@ const applyFilters = () => {
 const clearFilters = () => {
     Object.assign(filters, { search: '', type: '', category: '', status: '' });
     router.visit('/system/news-events');
+};
+
+// Get current datetime for max attribute
+const getCurrentDatetime = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
 
 // Watch for type changes and clear category if announcement
@@ -748,12 +725,12 @@ watch(() => form.type, (newType) => {
                                         </div>
                                     </div>
                                     
-                                    <!-- Published At Field (only show when status is published) -->
-                                    <div v-if="form.status === 'published'" class="space-y-3 p-4 border rounded-lg bg-blue-50/50 border-blue-200">
+                                    <!-- Published At Field (always show) -->
+                                    <div class="space-y-3 p-4 border rounded-lg bg-blue-50/50 border-blue-200">
                                         <div class="flex items-center gap-2">
                                             <Calendar class="h-5 w-5 text-blue-600" />
                                             <Label for="published_at" class="text-base font-medium text-blue-900">
-                                                Jadwal Publikasi
+                                                Tanggal Publikasi
                                             </Label>
                                         </div>
                                         <div class="relative">
@@ -763,6 +740,7 @@ watch(() => form.type, (newType) => {
                                                 type="datetime-local"
                                                 class="pl-10 border-blue-300 focus:border-blue-500 focus:ring-blue-500"
                                                 placeholder="YYYY-MM-DD HH:mm"
+                                                :max="getCurrentDatetime()"
                                             />
                                             <Calendar class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-blue-500" />
                                         </div>
@@ -770,11 +748,12 @@ watch(() => form.type, (newType) => {
                                             <div class="flex items-start gap-2">
                                                 <FileText class="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
                                                 <div class="text-sm text-amber-800">
-                                                    <p class="font-medium mb-1">Tips Penjadwalan:</p>
+                                                    <p class="font-medium mb-1">Aturan Tanggal Publikasi:</p>
                                                     <ul class="space-y-1 text-xs">
-                                                        <li>• Kosongkan untuk menggunakan waktu saat ini</li>
-                                                        <li>• Set tanggal lampau untuk backdate artikel</li>
-                                                        <li>• Set tanggal masa depan untuk penjadwalan otomatis</li>
+                                                        <li>• Kosongkan untuk menggunakan waktu saat ini saat publish</li>
+                                                        <li>• Dapat diisi tanggal lampau hingga tanggal sekarang</li>
+                                                        <li>• Tanggal masa depan tidak diperbolehkan</li>
+                                                        <li>• Hanya berlaku jika status "Published"</li>
                                                     </ul>
                                                 </div>
                                             </div>

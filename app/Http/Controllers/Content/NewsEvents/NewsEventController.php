@@ -86,16 +86,6 @@ class NewsEventController extends Controller
         // Find content by ID since route model binding uses slug
         $content = Content::whereIn('type', ['news', 'event', 'article', 'announcement'])->findOrFail($content);
         
-        // Debug logging - temporary
-        \Log::info('=== NEWS EVENT UPDATE DEBUG ===', [
-            'content_id' => $content->id,
-            'request_excerpt_en' => $request->get('excerpt_en'),
-            'request_content_id' => $request->get('content_id'),
-            'request_content_en' => $request->get('content_en'),
-            'before_update_excerpt_en' => $content->excerpt_en,
-            'before_update_content_id' => $content->content_id,
-            'before_update_content_en' => $content->content_en,
-        ]);
         
         $type = $content->type;
         $requestData = $this->convertBooleanFormData($request);
@@ -120,20 +110,6 @@ class NewsEventController extends Controller
         unset($validated['slug']);
 
         $content->update($validated);
-        
-        // Debug logging after update
-        $content->refresh();
-        \Log::info('=== AFTER NEWS EVENT UPDATE ===', [
-            'content_id' => $content->id,
-            'after_update_excerpt_en' => $content->excerpt_en,
-            'after_update_content_id' => $content->content_id,
-            'after_update_content_en' => $content->content_en,
-            'validated_data' => [
-                'excerpt_en' => $validated['excerpt_en'] ?? 'NOT_IN_VALIDATED',
-                'content_id' => $validated['content_id'] ?? 'NOT_IN_VALIDATED',
-                'content_en' => $validated['content_en'] ?? 'NOT_IN_VALIDATED',
-            ]
-        ]);
 
         // Update event status if it's an event
         if ($content->isEvent()) {
