@@ -144,16 +144,12 @@ class MotorController extends Controller
                 'tenor_months' => $tenorMonths
             ]);
             
-            // Calculate DP percentage
-            $dpPercent = ($dpAmount / $motor->price) * 100;
-            
-            // Find the closest installment plan
+            // Find exact matching installment plan by DP amount
             $installmentPlans = $motor->installment_plans;
             $bestMatch = null;
-            $closestDpDiff = PHP_FLOAT_MAX;
             
             \Log::info('Looking for matching installment plan:', [
-                'calculated_dp_percent' => $dpPercent,
+                'requested_dp_amount' => $dpAmount,
                 'available_plans' => collect($installmentPlans)->map(fn($p) => [
                     'dp_percent' => $p['dp_percent'],
                     'dp_amount' => $p['dp_amount'],
@@ -162,19 +158,17 @@ class MotorController extends Controller
             ]);
             
             foreach ($installmentPlans as $plan) {
-                $planDpPercent = $plan['dp_percent'];
-                $dpDiff = abs($planDpPercent - $dpPercent);
-                
-                if ($dpDiff < $closestDpDiff) {
-                    $closestDpDiff = $dpDiff;
+                // Match by exact DP amount instead of percentage
+                if ($plan['dp_amount'] == $dpAmount) {
                     $bestMatch = $plan;
+                    break;
                 }
             }
             
             \Log::info('Best matching plan found:', [
                 'best_match_dp_percent' => $bestMatch['dp_percent'] ?? null,
                 'best_match_dp_amount' => $bestMatch['dp_amount'] ?? null,
-                'dp_diff' => $closestDpDiff,
+                'match_found' => $bestMatch !== null,
                 'available_tenors' => array_keys($bestMatch['installments'] ?? [])
             ]);
             
@@ -219,7 +213,7 @@ class MotorController extends Controller
                     'calculation' => [
                         'motor_price' => $motor->price,
                         'dp_amount' => $dpAmount,
-                        'dp_percent' => round($dpPercent, 2),
+                        'dp_percent' => $bestMatch['dp_percent'],
                         'tenor_months' => $tenorMonths,
                         'monthly_installment' => $monthlyInstallment,
                         'total_installment' => $totalInstallment,
