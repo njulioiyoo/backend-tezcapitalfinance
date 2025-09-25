@@ -11,7 +11,7 @@ import {
     Settings, 
     Palette, 
     Home, 
-    CreditCard, 
+    // CreditCard, 
     Wrench, 
     Phone,
     Globe,
@@ -21,7 +21,7 @@ import {
 import GeneralSettings from '@/components/configurations/GeneralSettings.vue';
 import BrandingSettings from '@/components/configurations/BrandingSettings.vue';
 import HomepageSettings from '@/components/configurations/HomepageSettings.vue';
-import CreditSettings from '@/components/configurations/CreditSettings.vue';
+// import CreditSettings from '@/components/configurations/CreditSettings.vue';
 import MaintenanceSettings from '@/components/configurations/MaintenanceSettings.vue';
 import ContactSettings from '@/components/configurations/ContactSettings.vue';
 import LanguageSettings from '@/components/configurations/LanguageSettings.vue';
@@ -93,7 +93,7 @@ watch(configurations, (newConfigs) => {
                 <Card>
                     <CardContent>
                         <Tabs v-model:modelValue="activeTab" class="w-full">
-                            <TabsList class="grid w-full grid-cols-9">
+                            <TabsList class="grid w-full grid-cols-8">
                                 <TabsTrigger value="general" class="flex items-center gap-2">
                                     <Settings class="w-4 h-4" />
                                     General
@@ -106,10 +106,10 @@ watch(configurations, (newConfigs) => {
                                     <Home class="w-4 h-4" />
                                     Homepage
                                 </TabsTrigger>
-                                <TabsTrigger value="credit" class="flex items-center gap-2">
+                                <!-- <TabsTrigger value="credit" class="flex items-center gap-2">
                                     <CreditCard class="w-4 h-4" />
                                     Credit
-                                </TabsTrigger>
+                                </TabsTrigger> -->
                                 <TabsTrigger value="maintenance" class="flex items-center gap-2">
                                     <Wrench class="w-4 h-4" />
                                     Maintenance
@@ -166,7 +166,7 @@ watch(configurations, (newConfigs) => {
                                     />
                                 </TabsContent>
 
-                                <TabsContent value="credit" class="space-y-4">
+                                <!-- <TabsContent value="credit" class="space-y-4">
                                     <CreditSettings 
                                         :configurations="configurations.credit || {}"
                                         :is-loading="isLoading"
@@ -175,7 +175,7 @@ watch(configurations, (newConfigs) => {
                                         @update="updateConfiguration"
                                         @bulk-save="saveBulkConfigurations"
                                     />
-                                </TabsContent>
+                                </TabsContent> -->
 
                                 <TabsContent value="maintenance" class="space-y-4">
                                     <MaintenanceSettings 
