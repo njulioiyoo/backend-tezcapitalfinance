@@ -52,6 +52,17 @@ Route::prefix('v1')->group(function () {
     Route::get('services', [ApiServiceController::class, 'index'])->name('api.services.index');
     Route::get('services/{id}', [ApiServiceController::class, 'show'])->name('api.services.show');
     Route::get('services/slug/{slug}', [ApiServiceController::class, 'showBySlug'])->name('api.services.show-by-slug');
+    
+    // Motor Credit Simulation API
+    Route::prefix('motors')->name('api.motors.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\MotorController::class, 'index'])->name('index');
+        Route::get('/areas', [\App\Http\Controllers\Api\MotorController::class, 'getAreas'])->name('areas');
+        Route::get('/periods', [\App\Http\Controllers\Api\MotorController::class, 'getPeriods'])->name('periods');
+        Route::post('/calculate', [\App\Http\Controllers\Api\MotorController::class, 'calculateInstallment'])->name('calculate');
+        Route::get('/{motor_id}/installment-options', [\App\Http\Controllers\Api\MotorController::class, 'getInstallmentOptions'])->name('installment-options');
+        Route::get('/search', [\App\Http\Controllers\Api\MotorController::class, 'search'])->name('search');
+    });
+    
     Route::get('csrf-token', function () {
         return response()->json(['csrf_token' => csrf_token()]);
     })->name('api.csrf-token');

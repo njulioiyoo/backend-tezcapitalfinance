@@ -27,7 +27,6 @@ class HomepageController extends Controller
                 'application_process' => $this->getApplicationProcessData($language, $bilingualEnabled),
                 'services' => $this->getServicesData($language, $bilingualEnabled),
                 'partners' => $this->getPartnersData($language, $bilingualEnabled),
-                'news' => $this->getNewsData($language, $bilingualEnabled),
                 'faq' => $this->getFaqData($language, $bilingualEnabled),
                 'meta' => [
                     'language' => $language,
@@ -277,45 +276,6 @@ class HomepageController extends Controller
         ];
     }
 
-    /**
-     * Get latest news data (from Content model with type news)
-     */
-    private function getNewsData(string $language, bool $bilingualEnabled): array
-    {
-        $news = Content::where('type', 'news')
-            ->where('is_published', true)
-            ->where('status', 'published')
-            ->orderBy('is_featured', 'desc')
-            ->orderBy('published_at', 'desc')
-            ->limit(4)
-            ->get();
-
-        return [
-            'title' => Configuration::get('news_section_title', 'Latest News'),
-            'subtitle' => Configuration::get('news_section_subtitle', ''),
-            'items' => $news->map(function ($article) use ($language, $bilingualEnabled) {
-                return [
-                    'id' => $article->id,
-                    'title' => $bilingualEnabled && $language === 'en' 
-                        ? ($article->title_en ?? $article->title_id) 
-                        : $article->title_id,
-                    'excerpt' => $bilingualEnabled && $language === 'en' 
-                        ? ($article->excerpt_en ?? $article->excerpt_id) 
-                        : $article->excerpt_id,
-                    'content' => $bilingualEnabled && $language === 'en' 
-                        ? ($article->content_en ?? $article->content_id) 
-                        : $article->content_id,
-                    'featured_image' => $article->featured_image ? config('app.url') . '/storage/' . $article->featured_image : null,
-                    'category' => $article->category,
-                    'author' => $article->author,
-                    'published_at' => $article->published_at?->toISOString(),
-                    'published_at_human' => $article->published_at?->diffForHumans(),
-                    'is_featured' => $article->is_featured,
-                    'url' => url('/news/' . $article->id)
-                ];
-            })->toArray()
-        ];
-    }
 
     /**
      * Get FAQ section data
@@ -377,7 +337,6 @@ class HomepageController extends Controller
                 'application-process' => $this->getApplicationProcessData($language, $bilingualEnabled),
                 'services' => $this->getServicesData($language, $bilingualEnabled),
                 'partners' => $this->getPartnersData($language, $bilingualEnabled),
-                'news' => $this->getNewsData($language, $bilingualEnabled),
                 'faq' => $this->getFaqData($language, $bilingualEnabled),
                 default => null
             };
