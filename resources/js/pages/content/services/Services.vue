@@ -33,13 +33,10 @@ interface Service {
     document_list: string[];
     interest_rate: number;
     service_duration: string;
-    requirements_id: string;
-    requirements_en: string;
-    benefits_id: string;
-    benefits_en: string;
     status: string;
     is_published: boolean;
     is_featured: boolean;
+    show_credit_simulation: boolean;
     sort_order: number;
     view_count: number;
     created_at: string;
@@ -88,16 +85,13 @@ const form = reactive({
     category: '',
     featured_image: null as File | null,
     interest_list: [''] as string[],
-    document_list: [''] as string[],
+    document_list: [{ key: '', value: '' }] as { key: string; value: string; }[],
     interest_rate: 0,
     service_duration: '',
-    requirements_id: '',
-    requirements_en: '',
-    benefits_id: '',
-    benefits_en: '',
     status: 'draft',
     is_published: false,
     is_featured: false,
+    show_credit_simulation: false,
     sort_order: 0,
     meta_title_id: '',
     meta_title_en: '',
@@ -131,16 +125,13 @@ const resetForm = () => {
         category: '',
         featured_image: null,
         interest_list: [''],
-        document_list: [''],
+        document_list: [{ key: '', value: '' }],
         interest_rate: 0,
         service_duration: '',
-        requirements_id: '',
-        requirements_en: '',
-        benefits_id: '',
-        benefits_en: '',
         status: 'draft',
         is_published: false,
         is_featured: false,
+        show_credit_simulation: false,
         sort_order: 0,
         meta_title_id: '',
         meta_title_en: '',
@@ -172,16 +163,17 @@ const openEditModal = (service: Service) => {
         category: service.category || '',
         featured_image: null,
         interest_list: service.interest_list && service.interest_list.length > 0 ? service.interest_list : [''],
-        document_list: service.document_list && service.document_list.length > 0 ? service.document_list : [''],
+        document_list: service.document_list && service.document_list.length > 0 ? 
+            service.document_list.map((doc: string) => {
+                const parts = doc.split(':');
+                return { key: parts[0]?.trim() || '', value: parts[1]?.trim() || doc };
+            }) : [{ key: '', value: '' }],
         interest_rate: service.interest_rate || 0,
         service_duration: service.service_duration || '',
-        requirements_id: service.requirements_id || '',
-        requirements_en: service.requirements_en || '',
-        benefits_id: service.benefits_id || '',
-        benefits_en: service.benefits_en || '',
         status: service.status || 'draft',
         is_published: service.is_published || false,
         is_featured: service.is_featured || false,
+        show_credit_simulation: service.show_credit_simulation || false,
         sort_order: service.sort_order || 0,
         meta_title_id: service.meta_title_id || '',
         meta_title_en: service.meta_title_en || '',
@@ -286,14 +278,14 @@ const removeInterestItem = (index: number) => {
 };
 
 const addDocumentItem = () => {
-    form.document_list.push('');
+    form.document_list.push({ key: '', value: '' });
 };
 
 const removeDocumentItem = (index: number) => {
     if (form.document_list.length > 1) {
         form.document_list.splice(index, 1);
     } else {
-        form.document_list[0] = '';
+        form.document_list[0] = { key: '', value: '' };
     }
 };
 
@@ -359,22 +351,22 @@ const submitForm = async () => {
             content_en: form.content_en?.trim() || '',
             category: form.category || '',
             interest_list: form.interest_list.filter(item => item && item.trim()),
-            document_list: form.document_list.filter(item => item && item.trim()),
+            document_list: form.document_list
+                .filter(item => item.key && item.key.trim() && item.value && item.value.trim())
+                .map(item => `${item.key.trim()}: ${item.value.trim()}`),
             interest_rate: form.interest_rate || 0,
             service_duration: form.service_duration?.trim() || '',
-            requirements_id: form.requirements_id?.trim() || '',
-            requirements_en: form.requirements_en?.trim() || '',
-            benefits_id: form.benefits_id?.trim() || '',
-            benefits_en: form.benefits_en?.trim() || '',
             status: form.status || 'draft',
-            is_published: form.is_published ? '1' : '0',  // Convert boolean to string
-            is_featured: form.is_featured ? '1' : '0',    // Convert boolean to string
+            is_published: form.is_published,
+            is_featured: form.is_featured,
+            show_credit_simulation: form.show_credit_simulation,
             sort_order: String(parseInt(form.sort_order) || 0),
             meta_title_id: form.meta_title_id?.trim() || '',
             meta_title_en: form.meta_title_en?.trim() || '',
             meta_description_id: form.meta_description_id?.trim() || '',
             meta_description_en: form.meta_description_en?.trim() || ''
         };
+
 
         // Add image if present
         if (form.featured_image) {
@@ -415,13 +407,19 @@ const submitForm = async () => {
                             variant: 'success'
                         });
                         
+                        // Update the local data to reflect changes
+                        if (currentService.value) {
+                            const serviceIndex = contents.value.data.findIndex(s => s.id === currentService.value.id);
+                            if (serviceIndex !== -1) {
+                                contents.value.data[serviceIndex] = {
+                                    ...contents.value.data[serviceIndex],
+                                    ...cleanFormData
+                                };
+                            }
+                        }
+                        
                         showEditModal.value = false;
                         resetForm();
-                        
-                        // Refresh data to show changes
-                        setTimeout(() => {
-                            window.location.reload();
-                        }, 500);
                     },
                     onError: (errors) => {
                         //('Update errors:', errors);
@@ -446,13 +444,20 @@ const submitForm = async () => {
                             description: 'Service updated successfully',
                             variant: 'success'
                         });
+                        
+                        // Update the local data to reflect changes
+                        if (currentService.value) {
+                            const serviceIndex = contents.value.data.findIndex(s => s.id === currentService.value.id);
+                            if (serviceIndex !== -1) {
+                                contents.value.data[serviceIndex] = {
+                                    ...contents.value.data[serviceIndex],
+                                    ...cleanFormData
+                                };
+                            }
+                        }
+                        
                         showEditModal.value = false;
                         resetForm();
-                        
-                        // Refresh data to show changes
-                        setTimeout(() => {
-                            window.location.reload();
-                        }, 500);
                     },
                     onError: (errors) => {
                         //('Update errors:', errors);
@@ -501,11 +506,6 @@ const submitForm = async () => {
                         });
                         showCreateModal.value = false;
                         resetForm();
-                        
-                        // Refresh data to show new service
-                        setTimeout(() => {
-                            window.location.reload();
-                        }, 500);
                     },
                     onError: (errors) => {
                         //('Create errors:', errors);
@@ -532,11 +532,6 @@ const submitForm = async () => {
                         });
                         showCreateModal.value = false;
                         resetForm();
-                        
-                        // Refresh data to show new service
-                        setTimeout(() => {
-                            window.location.reload();
-                        }, 500);
                     },
                     onError: (errors) => {
                         //('Create errors:', errors);
@@ -588,11 +583,6 @@ const deleteService = async () => {
                 // Close dialog and reset state
                 showDeleteConfirm.value = false;
                 currentService.value = null;
-                
-                // Simple page refresh to show updated data
-                setTimeout(() => {
-                    window.location.reload();
-                }, 500);
             },
             onError: (errors) => {
                 console.log('Delete errors:', errors);
@@ -985,8 +975,13 @@ const clearFilters = () => {
                         <div class="space-y-2">
                             <div v-for="(item, index) in form.document_list" :key="`document-${index}`" class="flex items-center gap-2">
                                 <Input
-                                    v-model="form.document_list[index]"
-                                    :placeholder="`Document ${index + 1}`"
+                                    v-model="form.document_list[index].key"
+                                    :placeholder="`Document Key ${index + 1}`"
+                                    class="flex-1"
+                                />
+                                <Input
+                                    v-model="form.document_list[index].value"
+                                    :placeholder="`Document Value ${index + 1}`"
                                     class="flex-1"
                                 />
                                 <Button
@@ -1005,51 +1000,6 @@ const clearFilters = () => {
                         </div>
                     </div>
 
-                    <!-- Requirements -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="space-y-2">
-                            <Label for="requirements_id">Requirements (Indonesian)</Label>
-                            <Textarea
-                                id="requirements_id"
-                                v-model="form.requirements_id"
-                                placeholder="Service requirements in Indonesian"
-                                rows="4"
-                            />
-                        </div>
-                        
-                        <div v-if="bilingualEnabled" class="space-y-2">
-                            <Label for="requirements_en">Requirements (English)</Label>
-                            <Textarea
-                                id="requirements_en"
-                                v-model="form.requirements_en"
-                                placeholder="Service requirements in English"
-                                rows="4"
-                            />
-                        </div>
-                    </div>
-
-                    <!-- Benefits -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="space-y-2">
-                            <Label for="benefits_id">Benefits (Indonesian)</Label>
-                            <Textarea
-                                id="benefits_id"
-                                v-model="form.benefits_id"
-                                placeholder="Service benefits in Indonesian"
-                                rows="4"
-                            />
-                        </div>
-                        
-                        <div v-if="bilingualEnabled" class="space-y-2">
-                            <Label for="benefits_en">Benefits (English)</Label>
-                            <Textarea
-                                id="benefits_en"
-                                v-model="form.benefits_en"
-                                placeholder="Service benefits in English"
-                                rows="4"
-                            />
-                        </div>
-                    </div>
 
                     <!-- Featured Image -->
                     <div class="space-y-2">
@@ -1107,6 +1057,10 @@ const clearFilters = () => {
                             <Switch id="is_featured" v-model:checked="form.is_featured" />
                             <Label for="is_featured">Featured</Label>
                         </div>
+                        <div class="flex items-center space-x-2">
+                            <Switch id="show_credit_simulation" v-model:checked="form.show_credit_simulation" />
+                            <Label for="show_credit_simulation">Show Credit Simulation</Label>
+                        </div>
                     </div>
                 </form>
                 
@@ -1114,7 +1068,7 @@ const clearFilters = () => {
                     <Button type="button" variant="outline" @click="showCreateModal = false">
                         Cancel
                     </Button>
-                    <Button @click="submitForm" :disabled="isSubmitting">
+                    <Button type="button" @click="submitForm" :disabled="isSubmitting">
                         <Save class="h-4 w-4 mr-2" />
                         {{ isSubmitting ? 'Creating...' : 'Create Service' }}
                     </Button>
@@ -1293,8 +1247,13 @@ const clearFilters = () => {
                         <div class="space-y-2">
                             <div v-for="(item, index) in form.document_list" :key="`edit-document-${index}`" class="flex items-center gap-2">
                                 <Input
-                                    v-model="form.document_list[index]"
-                                    :placeholder="`Document ${index + 1}`"
+                                    v-model="form.document_list[index].key"
+                                    :placeholder="`Document Key ${index + 1}`"
+                                    class="flex-1"
+                                />
+                                <Input
+                                    v-model="form.document_list[index].value"
+                                    :placeholder="`Document Value ${index + 1}`"
                                     class="flex-1"
                                 />
                                 <Button
@@ -1313,51 +1272,6 @@ const clearFilters = () => {
                         </div>
                     </div>
 
-                    <!-- Requirements -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="space-y-2">
-                            <Label for="edit_requirements_id">Requirements (Indonesian)</Label>
-                            <Textarea
-                                id="edit_requirements_id"
-                                v-model="form.requirements_id"
-                                placeholder="Service requirements in Indonesian"
-                                rows="4"
-                            />
-                        </div>
-                        
-                        <div v-if="bilingualEnabled" class="space-y-2">
-                            <Label for="edit_requirements_en">Requirements (English)</Label>
-                            <Textarea
-                                id="edit_requirements_en"
-                                v-model="form.requirements_en"
-                                placeholder="Service requirements in English"
-                                rows="4"
-                            />
-                        </div>
-                    </div>
-
-                    <!-- Benefits -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="space-y-2">
-                            <Label for="edit_benefits_id">Benefits (Indonesian)</Label>
-                            <Textarea
-                                id="edit_benefits_id"
-                                v-model="form.benefits_id"
-                                placeholder="Service benefits in Indonesian"
-                                rows="4"
-                            />
-                        </div>
-                        
-                        <div v-if="bilingualEnabled" class="space-y-2">
-                            <Label for="edit_benefits_en">Benefits (English)</Label>
-                            <Textarea
-                                id="edit_benefits_en"
-                                v-model="form.benefits_en"
-                                placeholder="Service benefits in English"
-                                rows="4"
-                            />
-                        </div>
-                    </div>
 
                     <!-- Featured Image -->
                     <div class="space-y-2">
@@ -1428,6 +1342,10 @@ const clearFilters = () => {
                             <Switch id="edit_is_featured" v-model:checked="form.is_featured" />
                             <Label for="edit_is_featured">Featured</Label>
                         </div>
+                        <div class="flex items-center space-x-2">
+                            <Switch id="edit_show_credit_simulation" v-model:checked="form.show_credit_simulation" />
+                            <Label for="edit_show_credit_simulation">Show Credit Simulation</Label>
+                        </div>
                     </div>
                 </form>
                 
@@ -1435,7 +1353,7 @@ const clearFilters = () => {
                     <Button type="button" variant="outline" @click="showEditModal = false">
                         Cancel
                     </Button>
-                    <Button @click="submitForm" :disabled="isSubmitting">
+                    <Button type="button" @click="submitForm" :disabled="isSubmitting">
                         <Save class="h-4 w-4 mr-2" />
                         {{ isSubmitting ? 'Updating...' : 'Update Service' }}
                     </Button>

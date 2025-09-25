@@ -33,6 +33,7 @@ class ContentRequest extends FormRequest
             'source_url' => 'nullable|url',
             'is_published' => 'boolean',
             'is_featured' => 'boolean',
+            'show_credit_simulation' => 'boolean',
             'published_at' => 'nullable|date|before_or_equal:now',
             'status' => ['required', Rule::in(array_keys(Content::getStatuses()))],
             'sort_order' => 'integer|min:0',
@@ -98,6 +99,19 @@ class ContentRequest extends FormRequest
         if ($type === 'partner') {
             return [
                 'source_url' => 'nullable|url',
+            ];
+        }
+
+        if ($type === 'service') {
+            return [
+                'interest_rate' => 'nullable|numeric|min:0|max:100',
+                'service_duration' => 'nullable|string|max:255',
+                'interest_list' => 'nullable|array',
+                'document_list' => 'nullable|array',
+                'requirements_id' => 'nullable|string',
+                'requirements_en' => 'nullable|string',
+                'benefits_id' => 'nullable|string',
+                'benefits_en' => 'nullable|string',
             ];
         }
 

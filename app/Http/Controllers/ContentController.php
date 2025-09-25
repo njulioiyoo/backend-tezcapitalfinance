@@ -94,8 +94,8 @@ class ContentController extends Controller
 
         $content = Content::create($validated);
 
-        // Return success response for AJAX requests
-        if ($request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+        // Return success response for AJAX/Inertia requests
+        if ($request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest' || $request->header('X-Inertia')) {
             return response()->json([
                 'message' => ucfirst($type) . ' created successfully',
                 'data' => $content
@@ -173,6 +173,11 @@ class ContentController extends Controller
             }
         }
 
+        // Ensure show_credit_simulation is included
+        if ($request->has('show_credit_simulation') && !isset($validated['show_credit_simulation'])) {
+            $validated['show_credit_simulation'] = $request->boolean('show_credit_simulation');
+        }
+        
         $content->update($validated);
 
         // Update event status if it's an event
@@ -180,8 +185,8 @@ class ContentController extends Controller
             $content->updateEventStatus();
         }
 
-        // Return success response for AJAX requests
-        if ($request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+        // Return success response for AJAX/Inertia requests
+        if ($request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest' || $request->header('X-Inertia')) {
             return response()->json([
                 'message' => ucfirst($type) . ' updated successfully',
                 'data' => $content
@@ -212,8 +217,8 @@ class ContentController extends Controller
         $type = $content->type;
         $content->delete();
 
-        // Return success response for AJAX requests
-        if ($request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+        // Return success response for AJAX/Inertia requests
+        if ($request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest' || $request->header('X-Inertia')) {
             return response()->json([
                 'message' => ucfirst($type) . ' deleted successfully'
             ], 200);

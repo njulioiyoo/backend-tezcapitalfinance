@@ -192,6 +192,10 @@ trait ContentHelpers
         if (isset($data['is_featured'])) {
             $data['is_featured'] = in_array($data['is_featured'], ['1', 'true', true], true);
         }
+        
+        if (isset($data['show_credit_simulation'])) {
+            $data['show_credit_simulation'] = in_array($data['show_credit_simulation'], ['1', 'true', true], true);
+        }
 
         return $data;
     }
