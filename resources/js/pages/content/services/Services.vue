@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
+// import { Switch } from '@/components/ui/switch'; // Disabled - causes auto-submit issue
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
@@ -407,19 +407,13 @@ const submitForm = async () => {
                             variant: 'success'
                         });
                         
-                        // Update the local data to reflect changes
-                        if (currentService.value) {
-                            const serviceIndex = contents.value.data.findIndex(s => s.id === currentService.value.id);
-                            if (serviceIndex !== -1) {
-                                contents.value.data[serviceIndex] = {
-                                    ...contents.value.data[serviceIndex],
-                                    ...cleanFormData
-                                };
-                            }
-                        }
-                        
                         showEditModal.value = false;
                         resetForm();
+                        
+                        // Refresh data to show changes
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 500);
                     },
                     onError: (errors) => {
                         //('Update errors:', errors);
@@ -445,19 +439,13 @@ const submitForm = async () => {
                             variant: 'success'
                         });
                         
-                        // Update the local data to reflect changes
-                        if (currentService.value) {
-                            const serviceIndex = contents.value.data.findIndex(s => s.id === currentService.value.id);
-                            if (serviceIndex !== -1) {
-                                contents.value.data[serviceIndex] = {
-                                    ...contents.value.data[serviceIndex],
-                                    ...cleanFormData
-                                };
-                            }
-                        }
-                        
                         showEditModal.value = false;
                         resetForm();
+                        
+                        // Refresh data to show changes
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 500);
                     },
                     onError: (errors) => {
                         //('Update errors:', errors);
@@ -506,6 +494,11 @@ const submitForm = async () => {
                         });
                         showCreateModal.value = false;
                         resetForm();
+                        
+                        // Refresh data to show new service
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 500);
                     },
                     onError: (errors) => {
                         //('Create errors:', errors);
@@ -532,6 +525,11 @@ const submitForm = async () => {
                         });
                         showCreateModal.value = false;
                         resetForm();
+                        
+                        // Refresh data to show new service
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 500);
                     },
                     onError: (errors) => {
                         //('Create errors:', errors);
@@ -583,6 +581,11 @@ const deleteService = async () => {
                 // Close dialog and reset state
                 showDeleteConfirm.value = false;
                 currentService.value = null;
+                
+                // Simple page refresh to show updated data
+                setTimeout(() => {
+                    window.location.reload();
+                }, 500);
             },
             onError: (errors) => {
                 console.log('Delete errors:', errors);
@@ -1048,17 +1051,17 @@ const clearFilters = () => {
                     </div>
 
                     <!-- Checkboxes -->
-                    <div class="flex gap-6">
+                    <div class="flex items-center space-x-6">
                         <div class="flex items-center space-x-2">
-                            <Switch id="is_published" v-model:checked="form.is_published" />
+                            <input type="checkbox" v-model="form.is_published" id="is_published" class="rounded border-gray-300" />
                             <Label for="is_published">Published</Label>
                         </div>
                         <div class="flex items-center space-x-2">
-                            <Switch id="is_featured" v-model:checked="form.is_featured" />
+                            <input type="checkbox" v-model="form.is_featured" id="is_featured" class="rounded border-gray-300" />
                             <Label for="is_featured">Featured</Label>
                         </div>
                         <div class="flex items-center space-x-2">
-                            <Switch id="show_credit_simulation" v-model:checked="form.show_credit_simulation" />
+                            <input type="checkbox" v-model="form.show_credit_simulation" id="show_credit_simulation" class="rounded border-gray-300" />
                             <Label for="show_credit_simulation">Show Credit Simulation</Label>
                         </div>
                     </div>
@@ -1333,18 +1336,18 @@ const clearFilters = () => {
                     </div>
 
                     <!-- Checkboxes -->
-                    <div class="flex gap-6">
+                    <div class="flex items-center space-x-6">
                         <div class="flex items-center space-x-2">
-                            <Switch id="edit_is_published" v-model:checked="form.is_published" />
-                            <Label for="edit_is_published">Published</Label>
+                            <input type="checkbox" v-model="form.is_published" id="is_published" class="rounded border-gray-300" />
+                            <Label for="is_published">Published</Label>
                         </div>
                         <div class="flex items-center space-x-2">
-                            <Switch id="edit_is_featured" v-model:checked="form.is_featured" />
-                            <Label for="edit_is_featured">Featured</Label>
+                            <input type="checkbox" v-model="form.is_featured" id="is_featured" class="rounded border-gray-300" />
+                            <Label for="is_featured">Featured</Label>
                         </div>
                         <div class="flex items-center space-x-2">
-                            <Switch id="edit_show_credit_simulation" v-model:checked="form.show_credit_simulation" />
-                            <Label for="edit_show_credit_simulation">Show Credit Simulation</Label>
+                            <input type="checkbox" v-model="form.show_credit_simulation" id="show_credit_simulation" class="rounded border-gray-300" />
+                            <Label for="show_credit_simulation">Show Credit Simulation</Label>
                         </div>
                     </div>
                 </form>
