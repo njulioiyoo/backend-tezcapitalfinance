@@ -19,7 +19,7 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['https://tezapi.dev.tezcapitalfinance.co.id', 'https://tezapi.tezcapitalfinance.co.id', 'https://cms.tezcapitalfinance.co.id', 'https://cms.dev.tezcapitalfinance.co.id/'],
+    'allowed_origins' => ['https://tezapi.dev.tezcapitalfinance.co.id', 'https://tezapi.tezcapitalfinance.co.id', 'https://cms.tezcapitalfinance.co.id', 'https://cms.dev.tezcapitalfinance.co.id'],
 
     'allowed_origins_patterns' => [],
 
