@@ -211,7 +211,7 @@ class HomepageController extends Controller
             ->where('status', 'published')
             ->orderBy('is_featured', 'desc')
             ->orderBy('sort_order', 'asc')
-            ->limit(6)
+            ->limit(3)
             ->get();
 
         return [

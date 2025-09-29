@@ -228,6 +228,7 @@ class ServiceController extends Controller
             'requirements_en' => 'nullable|string',
             'benefits_id' => 'nullable|string',
             'benefits_en' => 'nullable|string',
+            'show_credit_simulation' => 'boolean',
             'tags' => 'nullable|array',
             'sort_order' => 'nullable|integer|min:0',
             'is_published' => 'boolean',
@@ -260,6 +261,7 @@ class ServiceController extends Controller
                 'requirements_en' => $request->requirements_en,
                 'benefits_id' => $request->benefits_id,
                 'benefits_en' => $request->benefits_en,
+                'show_credit_simulation' => $request->boolean('show_credit_simulation', false),
                 'tags' => $request->tags ? json_encode($request->tags) : null,
                 'sort_order' => $request->sort_order ?? 0,
                 'is_published' => $request->boolean('is_published', false),
@@ -361,6 +363,7 @@ class ServiceController extends Controller
             'requirements_en' => 'nullable|string',
             'benefits_id' => 'nullable|string',
             'benefits_en' => 'nullable|string',
+            'show_credit_simulation' => 'boolean',
             'tags' => 'nullable|array',
             'sort_order' => 'nullable|integer|min:0',
             'is_published' => 'boolean',
@@ -395,6 +398,7 @@ class ServiceController extends Controller
                 'requirements_en' => $request->requirements_en,
                 'benefits_id' => $request->benefits_id,
                 'benefits_en' => $request->benefits_en,
+                'show_credit_simulation' => $request->boolean('show_credit_simulation', false),
                 'tags' => $request->tags ? json_encode($request->tags) : null,
                 'sort_order' => $request->sort_order ?? $service->sort_order,
                 'is_published' => $willBePublished,
@@ -674,7 +678,7 @@ class ServiceController extends Controller
             $services = $query->orderBy('is_featured', 'desc')
                 ->orderBy('sort_order', 'asc')
                 ->orderBy('published_at', 'desc')
-                ->paginate(3);
+                ->paginate($request->get('limit', 3));
 
             // Transform the data to include full image URLs
             $services->getCollection()->transform(function ($service) {

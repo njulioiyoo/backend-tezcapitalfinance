@@ -16,6 +16,8 @@ class ServiceController extends Controller
     {
         try {
             $startTime = microtime(true);
+            $limit = $request->get('limit', 5);
+            \Log::info('Services API called with limit: ' . $limit);
             
             $query = Content::where('type', 'service')->where('is_published', true)->where('status', 'published');
 
@@ -40,7 +42,7 @@ class ServiceController extends Controller
             $services = $query->orderBy('is_featured', 'desc')
                 ->orderBy('sort_order', 'asc')
                 ->orderBy('published_at', 'desc')
-                ->paginate(3);
+                ->paginate($limit);
 
             // Transform the data to include full image URLs
             $services->getCollection()->transform(function ($service) {
