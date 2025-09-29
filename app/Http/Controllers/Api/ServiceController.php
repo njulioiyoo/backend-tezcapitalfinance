@@ -46,7 +46,7 @@ class ServiceController extends Controller
 
             // Transform the data to include full image URLs
             $services->getCollection()->transform(function ($service) {
-                $service->featured_image_url = $service->featured_image ? asset('storage/' . $service->featured_image) : null;
+                $service->featured_image_url = $service->featured_image ? config('app.url') . '/storage/' . $service->featured_image : null;
                 return $service;
             });
 
@@ -82,7 +82,7 @@ class ServiceController extends Controller
                 ->findOrFail($id);
 
             // Transform the data to include full image URLs
-            $service->featured_image_url = $service->featured_image ? asset('storage/' . $service->featured_image) : null;
+            $service->featured_image_url = $service->featured_image ? config('app.url') . '/storage/' . $service->featured_image : null;
             
             // Parse gallery images if they exist
             if ($service->gallery) {
@@ -165,7 +165,7 @@ class ServiceController extends Controller
                 ->firstOrFail();
 
             // Transform the data to include full image URLs
-            $service->featured_image_url = $service->featured_image ? asset('storage/' . $service->featured_image) : null;
+            $service->featured_image_url = $service->featured_image ? config('app.url') . '/storage/' . $service->featured_image : null;
             
             // Parse gallery images if they exist
             if ($service->gallery) {
