@@ -179,7 +179,7 @@ class AboutController extends Controller
         }
         
         // Convert storage path to full URL
-        return url('storage/' . $path);
+        return config('app.url') . '/storage/' . $path;
     }
 
     /**
