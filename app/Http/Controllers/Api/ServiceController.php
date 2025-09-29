@@ -90,7 +90,7 @@ class ServiceController extends Controller
                     $galleryImages = json_decode($service->gallery, true);
                     if (is_array($galleryImages)) {
                         $service->gallery_urls = array_map(function($image) {
-                            return asset('storage/' . $image);
+                            return config('app.url') . '/storage/' . $image;
                         }, $galleryImages);
                     }
                 } catch (\Exception $e) {
@@ -173,7 +173,7 @@ class ServiceController extends Controller
                     $galleryImages = json_decode($service->gallery, true);
                     if (is_array($galleryImages)) {
                         $service->gallery_urls = array_map(function($image) {
-                            return asset('storage/' . $image);
+                            return config('app.url') . '/storage/' . $image;
                         }, $galleryImages);
                     }
                 } catch (\Exception $e) {

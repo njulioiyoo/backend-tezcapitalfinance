@@ -235,7 +235,7 @@ class HomepageController extends Controller
                     'sort_order' => $service->sort_order,
                     'created_at' => $service->created_at?->toISOString(),
                     'updated_at' => $service->updated_at?->toISOString(),
-                    'url' => url('/services/' . $service->id)
+                    'url' => config('app.url') . '/services/' . $service->id
                 ];
             })->toArray()
         ];

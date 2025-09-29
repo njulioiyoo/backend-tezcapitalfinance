@@ -45,7 +45,7 @@ class Report extends Model
             return null;
         }
         
-        return asset('storage/' . $this->file_path);
+        return config('app.url') . '/storage/' . $this->file_path;
     }
 
     /**

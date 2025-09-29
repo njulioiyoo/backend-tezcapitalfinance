@@ -133,7 +133,7 @@ class ReportController extends Controller
                             'desc' => $lang === 'en' ? ($report->title_en ?: $report->title_id) : $report->title_id,
                             'desc_id' => $report->title_id,
                             'desc_en' => $report->title_en ?: $report->title_id,
-                            'file_url' => $report->file_path ? asset('storage/' . $report->file_path) : null,
+                            'file_url' => $report->file_path ? config('app.url') . '/storage/' . $report->file_path : null,
                             'file_size' => $this->formatFileSize($this->getActualFileSize($report)),
                             'created_at' => $report->created_at
                         ];
@@ -154,7 +154,7 @@ class ReportController extends Controller
                             'desc' => $lang === 'en' ? ($report->title_en ?: $report->title_id) : $report->title_id,
                             'desc_id' => $report->title_id,
                             'desc_en' => $report->title_en ?: $report->title_id,
-                            'file_url' => $report->file_path ? asset('storage/' . $report->file_path) : null,
+                            'file_url' => $report->file_path ? config('app.url') . '/storage/' . $report->file_path : null,
                             'file_size' => $this->formatFileSize($this->getActualFileSize($report)),
                             'created_at' => $report->created_at
                         ];
@@ -175,7 +175,7 @@ class ReportController extends Controller
                             'desc' => $lang === 'en' ? ($report->title_en ?: $report->title_id) : $report->title_id,
                             'desc_id' => $report->title_id,
                             'desc_en' => $report->title_en ?: $report->title_id,
-                            'file_url' => $report->file_path ? asset('storage/' . $report->file_path) : null,
+                            'file_url' => $report->file_path ? config('app.url') . '/storage/' . $report->file_path : null,
                             'file_size' => $this->formatFileSize($this->getActualFileSize($report)),
                             'created_at' => $report->created_at
                         ];
@@ -265,7 +265,7 @@ class ReportController extends Controller
                         'desc' => $lang === 'en' ? ($report->title_en ?: $report->title_id) : $report->title_id,
                         'desc_id' => $report->title_id,
                         'desc_en' => $report->title_en ?: $report->title_id,
-                        'link' => $report->file_path ? asset('storage/' . $report->file_path) : null,
+                        'link' => $report->file_path ? config('app.url') . '/storage/' . $report->file_path : null,
                         'file_size' => $this->formatFileSize($this->getActualFileSize($report)),
                         'created_at' => $report->created_at
                     ];
@@ -323,7 +323,7 @@ class ReportController extends Controller
                     'year' => $report->year,
                     'month' => $report->month,
                     'quarter' => $report->quarter,
-                    'file_url' => $report->file_path ? asset('storage/' . $report->file_path) : null,
+                    'file_url' => $report->file_path ? config('app.url') . '/storage/' . $report->file_path : null,
                     'file_size' => $this->formatFileSize($this->getActualFileSize($report)),
                     'created_at' => $report->created_at
                 ],
@@ -369,7 +369,7 @@ class ReportController extends Controller
                 'success' => true,
                 'message' => 'Download URL retrieved successfully',
                 'data' => [
-                    'download_url' => asset('storage/' . $report->file_path),
+                    'download_url' => config('app.url') . '/storage/' . $report->file_path,
                     'filename' => basename($report->file_path) ?? "report-{$report->id}.pdf"
                 ],
                 'response_time_ms' => $responseTime

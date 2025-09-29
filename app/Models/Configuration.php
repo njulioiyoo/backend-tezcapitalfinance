@@ -112,7 +112,7 @@ class Configuration extends Model implements Auditable
                                 $image['url'] = Storage::disk('public')->url($image['url']);
                             } elseif (str_starts_with($image['url'], '/storage/')) {
                                 // Already has /storage/ prefix, ensure it's a full URL
-                                $image['url'] = url($image['url']);
+                                $image['url'] = config('app.url') . $image['url'];
                             }
                         }
                         return $image;
