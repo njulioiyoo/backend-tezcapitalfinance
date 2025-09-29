@@ -116,6 +116,9 @@ class ServiceController extends Controller
             
             // Process document list - already array from model cast
             $service->document_list_array = $service->document_list ?: [];
+            
+            // Process fees list - already array from model cast
+            $service->fees_list_array = $service->fees_list ?: [];
 
             $endTime = microtime(true);
             $responseTime = round(($endTime - $startTime) * 1000, 2);
@@ -199,6 +202,9 @@ class ServiceController extends Controller
             
             // Process document list - already array from model cast
             $service->document_list_array = $service->document_list ?: [];
+            
+            // Process fees list - already array from model cast
+            $service->fees_list_array = $service->fees_list ?: [];
 
             $endTime = microtime(true);
             $responseTime = round(($endTime - $startTime) * 1000, 2);
@@ -223,4 +229,5 @@ class ServiceController extends Controller
             ], 404);
         }
     }
+
 }

@@ -63,6 +63,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/search', [\App\Http\Controllers\Api\MotorController::class, 'search'])->name('search');
     });
     
+    
     Route::get('csrf-token', function () {
         return response()->json(['csrf_token' => csrf_token()]);
     })->name('api.csrf-token');

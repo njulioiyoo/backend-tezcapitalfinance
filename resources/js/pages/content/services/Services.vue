@@ -29,8 +29,9 @@ interface Service {
     content_id: string;
     content_en: string;
     featured_image: string;
-    interest_list: string[];
+    interest_list: { name: string; rate: number; }[];
     document_list: string[];
+    fees_list: { name: string; type: string; value: number; }[];
     interest_rate: number;
     service_duration: string;
     status: string;
@@ -84,8 +85,9 @@ const form = reactive({
     content_en: '',
     category: '',
     featured_image: null as File | null,
-    interest_list: [''] as string[],
+    interest_list: [{ name: '', rate: 0 }] as { name: string; rate: number; }[],
     document_list: [{ key: '', value: '' }] as { key: string; value: string; }[],
+    fees_list: [{ name: '', type: 'percentage', value: 0 }] as { name: string; type: string; value: number; }[],
     interest_rate: 0,
     service_duration: '',
     status: 'draft',
@@ -124,8 +126,9 @@ const resetForm = () => {
         content_en: '',
         category: '',
         featured_image: null,
-        interest_list: [''],
+        interest_list: [{ name: '', rate: 0 }],
         document_list: [{ key: '', value: '' }],
+        fees_list: [{ name: '', type: 'percentage', value: 0 }],
         interest_rate: 0,
         service_duration: '',
         status: 'draft',
@@ -162,7 +165,8 @@ const openEditModal = (service: Service) => {
         content_en: service.content_en || '',
         category: service.category || '',
         featured_image: null,
-        interest_list: service.interest_list && service.interest_list.length > 0 ? service.interest_list : [''],
+        interest_list: service.interest_list && service.interest_list.length > 0 ? service.interest_list : [{ name: '', rate: 0 }],
+        fees_list: service.fees_list && service.fees_list.length > 0 ? service.fees_list : [{ name: '', type: 'percentage', value: 0 }],
         document_list: service.document_list && service.document_list.length > 0 ? 
             service.document_list.map((doc: string) => {
                 const parts = doc.split(':');
@@ -266,14 +270,14 @@ const removeImage = () => {
 
 // Helper functions for interest and document lists
 const addInterestItem = () => {
-    form.interest_list.push('');
+    form.interest_list.push({ name: '', rate: 0 });
 };
 
 const removeInterestItem = (index: number) => {
     if (form.interest_list.length > 1) {
         form.interest_list.splice(index, 1);
     } else {
-        form.interest_list[0] = '';
+        form.interest_list[0] = { name: '', rate: 0 };
     }
 };
 
@@ -286,6 +290,18 @@ const removeDocumentItem = (index: number) => {
         form.document_list.splice(index, 1);
     } else {
         form.document_list[0] = { key: '', value: '' };
+    }
+};
+
+const addFeesItem = () => {
+    form.fees_list.push({ name: '', type: 'percentage', value: 0 });
+};
+
+const removeFeesItem = (index: number) => {
+    if (form.fees_list.length > 1) {
+        form.fees_list.splice(index, 1);
+    } else {
+        form.fees_list[0] = { name: '', type: 'percentage', value: 0 };
     }
 };
 
@@ -350,7 +366,8 @@ const submitForm = async () => {
             content_id: form.content_id?.trim() || '',
             content_en: form.content_en?.trim() || '',
             category: form.category || '',
-            interest_list: form.interest_list.filter(item => item && item.trim()),
+            interest_list: form.interest_list.filter(item => item.name && item.name.trim()),
+            fees_list: form.fees_list.filter(item => item.name && item.name.trim()),
             document_list: form.document_list
                 .filter(item => item.key && item.key.trim() && item.value && item.value.trim())
                 .map(item => `${item.key.trim()}: ${item.value.trim()}`),
@@ -944,21 +961,32 @@ const clearFilters = () => {
                             </Button>
                         </div>
                         <div class="space-y-2">
-                            <div v-for="(item, index) in form.interest_list" :key="`interest-${index}`" class="flex items-center gap-2">
+                            <div v-for="(item, index) in form.interest_list" :key="`interest-${index}`" class="grid grid-cols-2 gap-2 items-center">
                                 <Input
-                                    v-model="form.interest_list[index]"
-                                    :placeholder="`Interest item ${index + 1}`"
-                                    class="flex-1"
+                                    v-model="form.interest_list[index].name"
+                                    :placeholder="`Interest name ${index + 1}`"
+                                    class="col-span-1"
                                 />
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    @click="removeInterestItem(index)"
-                                    class="text-red-600 hover:text-red-700"
-                                >
-                                    <X class="h-4 w-4" />
-                                </Button>
+                                <div class="flex gap-2 items-center">
+                                    <Input
+                                        v-model.number="form.interest_list[index].rate"
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        max="100"
+                                        placeholder="Rate (%)"
+                                        class="flex-1"
+                                    />
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        @click="removeInterestItem(index)"
+                                        class="text-red-600 hover:text-red-700"
+                                    >
+                                        <X class="h-4 w-4" />
+                                    </Button>
+                                </div>
                             </div>
                             <p v-if="form.interest_list.length === 0" class="text-sm text-muted-foreground">
                                 No interest items added yet.
@@ -999,6 +1027,58 @@ const clearFilters = () => {
                             </div>
                             <p v-if="form.document_list.length === 0" class="text-sm text-muted-foreground">
                                 No required documents added yet.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Fees List -->
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <Label>Fees List</Label>
+                            <Button type="button" size="sm" variant="outline" @click="addFeesItem">
+                                <Plus class="h-4 w-4 mr-2" />
+                                Add Fee
+                            </Button>
+                        </div>
+                        <div class="space-y-2">
+                            <div v-for="(item, index) in form.fees_list" :key="`fees-${index}`" class="grid grid-cols-12 gap-2 items-center">
+                                <Input
+                                    v-model="form.fees_list[index].name"
+                                    :placeholder="`Fee name ${index + 1}`"
+                                    class="col-span-5"
+                                />
+                                <select
+                                    v-model="form.fees_list[index].type"
+                                    class="col-span-3 px-3 py-2 border border-input bg-background text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md"
+                                >
+                                    <option value="percentage">Percentage (%)</option>
+                                    <option value="fixed">Fixed Amount</option>
+                                </select>
+                                <div class="col-span-3 flex gap-2 items-center">
+                                    <Input
+                                        v-model.number="form.fees_list[index].value"
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        :placeholder="form.fees_list[index].type === 'percentage' ? '2.5' : '500000'"
+                                        class="flex-1"
+                                    />
+                                    <span class="text-sm text-muted-foreground">
+                                        {{ form.fees_list[index].type === 'percentage' ? '%' : 'IDR' }}
+                                    </span>
+                                </div>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    @click="removeFeesItem(index)"
+                                    class="col-span-1 text-red-600 hover:text-red-700"
+                                >
+                                    <X class="h-4 w-4" />
+                                </Button>
+                            </div>
+                            <p v-if="form.fees_list.length === 0" class="text-sm text-muted-foreground">
+                                No fee items added yet.
                             </p>
                         </div>
                     </div>
@@ -1216,21 +1296,32 @@ const clearFilters = () => {
                             </Button>
                         </div>
                         <div class="space-y-2">
-                            <div v-for="(item, index) in form.interest_list" :key="`edit-interest-${index}`" class="flex items-center gap-2">
+                            <div v-for="(item, index) in form.interest_list" :key="`edit-interest-${index}`" class="grid grid-cols-2 gap-2 items-center">
                                 <Input
-                                    v-model="form.interest_list[index]"
-                                    :placeholder="`Interest item ${index + 1}`"
-                                    class="flex-1"
+                                    v-model="form.interest_list[index].name"
+                                    :placeholder="`Interest name ${index + 1}`"
+                                    class="col-span-1"
                                 />
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    @click="removeInterestItem(index)"
-                                    class="text-red-600 hover:text-red-700"
-                                >
-                                    <X class="h-4 w-4" />
-                                </Button>
+                                <div class="flex gap-2 items-center">
+                                    <Input
+                                        v-model.number="form.interest_list[index].rate"
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        max="100"
+                                        placeholder="Rate (%)"
+                                        class="flex-1"
+                                    />
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        @click="removeInterestItem(index)"
+                                        class="text-red-600 hover:text-red-700"
+                                    >
+                                        <X class="h-4 w-4" />
+                                    </Button>
+                                </div>
                             </div>
                             <p v-if="form.interest_list.length === 0" class="text-sm text-muted-foreground">
                                 No interest items added yet.
@@ -1271,6 +1362,58 @@ const clearFilters = () => {
                             </div>
                             <p v-if="form.document_list.length === 0" class="text-sm text-muted-foreground">
                                 No required documents added yet.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Fees List -->
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <Label>Fees List</Label>
+                            <Button type="button" size="sm" variant="outline" @click="addFeesItem">
+                                <Plus class="h-4 w-4 mr-2" />
+                                Add Fee
+                            </Button>
+                        </div>
+                        <div class="space-y-2">
+                            <div v-for="(item, index) in form.fees_list" :key="`edit-fees-${index}`" class="grid grid-cols-12 gap-2 items-center">
+                                <Input
+                                    v-model="form.fees_list[index].name"
+                                    :placeholder="`Fee name ${index + 1}`"
+                                    class="col-span-5"
+                                />
+                                <select
+                                    v-model="form.fees_list[index].type"
+                                    class="col-span-3 px-3 py-2 border border-input bg-background text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md"
+                                >
+                                    <option value="percentage">Percentage (%)</option>
+                                    <option value="fixed">Fixed Amount</option>
+                                </select>
+                                <div class="col-span-3 flex gap-2 items-center">
+                                    <Input
+                                        v-model.number="form.fees_list[index].value"
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        :placeholder="form.fees_list[index].type === 'percentage' ? '2.5' : '500000'"
+                                        class="flex-1"
+                                    />
+                                    <span class="text-sm text-muted-foreground">
+                                        {{ form.fees_list[index].type === 'percentage' ? '%' : 'IDR' }}
+                                    </span>
+                                </div>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    @click="removeFeesItem(index)"
+                                    class="col-span-1 text-red-600 hover:text-red-700"
+                                >
+                                    <X class="h-4 w-4" />
+                                </Button>
+                            </div>
+                            <p v-if="form.fees_list.length === 0" class="text-sm text-muted-foreground">
+                                No fee items added yet.
                             </p>
                         </div>
                     </div>
