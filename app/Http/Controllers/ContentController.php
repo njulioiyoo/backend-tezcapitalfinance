@@ -379,7 +379,7 @@ class ContentController extends Controller
 
             // Transform the data to include full image URLs
             $content->getCollection()->transform(function ($item) {
-                $item->featured_image_url = $item->featured_image ? asset('storage/' . $item->featured_image) : null;
+                $item->featured_image_url = $item->featured_image ? config('app.url') . '/storage/' . $item->featured_image : null;
                 return $item;
             });
 
@@ -431,7 +431,7 @@ class ContentController extends Controller
             $path = $file->store('content/images', 'public');
 
             return response()->json([
-                'url' => Storage::disk('public')->url($path),
+                'url' => config('app.url') . '/storage/' . $path,
                 'path' => $path,
             ]);
         }
@@ -471,7 +471,7 @@ class ContentController extends Controller
                 ->firstOrFail();
 
             // Transform the data to include full image URLs
-            $news->featured_image_url = $news->featured_image ? asset('storage/' . $news->featured_image) : null;
+            $news->featured_image_url = $news->featured_image ? config('app.url') . '/storage/' . $news->featured_image : null;
             
             // Parse gallery images if they exist
             if ($news->gallery) {
@@ -479,7 +479,7 @@ class ContentController extends Controller
                     $galleryImages = json_decode($news->gallery, true);
                     if (is_array($galleryImages)) {
                         $news->gallery_urls = array_map(function($image) {
-                            return asset('storage/' . $image);
+                            return config('app.url') . '/storage/' . $image;
                         }, $galleryImages);
                     }
                 } catch (\Exception $e) {
