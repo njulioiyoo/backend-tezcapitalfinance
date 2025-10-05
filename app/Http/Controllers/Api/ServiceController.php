@@ -119,6 +119,14 @@ class ServiceController extends Controller
             
             // Process fees list - already array from model cast
             $service->fees_list_array = $service->fees_list ?: [];
+            
+            // Process bilingual dynamic tables with fallback to existing data
+            $service->interest_list_id_array = $service->interest_list_id ?: ($service->interest_list ?: []);
+            $service->interest_list_en_array = $service->interest_list_en ?: ($service->interest_list ?: []);
+            $service->document_list_id_array = $service->document_list_id ?: ($service->document_list ?: []);
+            $service->document_list_en_array = $service->document_list_en ?: ($service->document_list ?: []);
+            $service->fees_list_id_array = $service->fees_list_id ?: ($service->fees_list ?: []);
+            $service->fees_list_en_array = $service->fees_list_en ?: ($service->fees_list ?: []);
 
             $endTime = microtime(true);
             $responseTime = round(($endTime - $startTime) * 1000, 2);
@@ -205,6 +213,14 @@ class ServiceController extends Controller
             
             // Process fees list - already array from model cast
             $service->fees_list_array = $service->fees_list ?: [];
+            
+            // Process bilingual dynamic tables with fallback to existing data
+            $service->interest_list_id_array = $service->interest_list_id ?: ($service->interest_list ?: []);
+            $service->interest_list_en_array = $service->interest_list_en ?: ($service->interest_list ?: []);
+            $service->document_list_id_array = $service->document_list_id ?: ($service->document_list ?: []);
+            $service->document_list_en_array = $service->document_list_en ?: ($service->document_list ?: []);
+            $service->fees_list_id_array = $service->fees_list_id ?: ($service->fees_list ?: []);
+            $service->fees_list_en_array = $service->fees_list_en ?: ($service->fees_list ?: []);
 
             $endTime = microtime(true);
             $responseTime = round(($endTime - $startTime) * 1000, 2);

@@ -17,6 +17,7 @@ import {
     Globe,
     RefreshCw,
     Image,
+    Users,
 } from 'lucide-vue-next';
 import GeneralSettings from '@/components/configurations/GeneralSettings.vue';
 import BrandingSettings from '@/components/configurations/BrandingSettings.vue';
@@ -27,6 +28,7 @@ import ContactSettings from '@/components/configurations/ContactSettings.vue';
 import LanguageSettings from '@/components/configurations/LanguageSettings.vue';
 import BannerSettings from '@/components/configurations/BannerSettings.vue';
 import OjkSettings from '@/components/configurations/OjkSettings.vue';
+import JoinUsSettings from '@/components/configurations/JoinUsSettings.vue';
 import { useConfigurations } from '@/composables/useConfigurations.js';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -93,7 +95,7 @@ watch(configurations, (newConfigs) => {
                 <Card>
                     <CardContent>
                         <Tabs v-model:modelValue="activeTab" class="w-full">
-                            <TabsList class="grid w-full grid-cols-8">
+                            <TabsList class="grid w-full grid-cols-9">
                                 <TabsTrigger value="general" class="flex items-center gap-2">
                                     <Settings class="w-4 h-4" />
                                     General
@@ -129,6 +131,10 @@ watch(configurations, (newConfigs) => {
                                 <TabsTrigger value="ojk" class="flex items-center gap-2">
                                     <Image class="w-4 h-4" />
                                     OJK
+                                </TabsTrigger>
+                                <TabsTrigger value="join-us" class="flex items-center gap-2">
+                                    <Users class="w-4 h-4" />
+                                    Join Us
                                 </TabsTrigger>
                             </TabsList>
 
@@ -224,6 +230,17 @@ watch(configurations, (newConfigs) => {
                                 <TabsContent value="ojk" class="space-y-4">
                                     <OjkSettings 
                                         :configurations="configurations.ojk || {}"
+                                        :is-loading="isLoading"
+                                        :is-saving="isSaving"
+                                        @save="saveConfiguration"
+                                        @update="updateConfiguration"
+                                        @bulk-save="saveBulkConfigurations"
+                                    />
+                                </TabsContent>
+
+                                <TabsContent value="join-us" class="space-y-4">
+                                    <JoinUsSettings 
+                                        :configurations="configurations.join_us || {}"
                                         :is-loading="isLoading"
                                         :is-saving="isSaving"
                                         @save="saveConfiguration"

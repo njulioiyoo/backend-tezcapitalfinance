@@ -100,6 +100,17 @@ class ConfigurationController extends Controller
                     $filteredData['ojk'] = $data['ojk'];
                 }
                 
+                if (isset($data['join_us'])) {
+                    $joinUsFiltered = [];
+                    $allowedJoinUsKeys = ['career_application_email'];
+                    foreach ($allowedJoinUsKeys as $key) {
+                        if (isset($data['join_us'][$key])) {
+                            $joinUsFiltered[$key] = $data['join_us'][$key];
+                        }
+                    }
+                    $filteredData['join_us'] = $joinUsFiltered;
+                }
+                
                 $data = $filteredData;
             }
                 
@@ -234,6 +245,11 @@ class ConfigurationController extends Controller
     public function ojk(): JsonResponse
     {
         return $this->getByGroup(Configuration::GROUP_OJK);
+    }
+
+    public function joinUs(): JsonResponse
+    {
+        return $this->getByGroup(Configuration::GROUP_JOIN_US);
     }
 
     /**

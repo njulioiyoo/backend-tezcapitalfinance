@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AboutController;
+use App\Http\Controllers\Api\CareerController as ApiCareerController;
 use App\Http\Controllers\Api\ComplaintController;
 use App\Http\Controllers\Api\ConfigurationController as ApiConfigurationController;
 use App\Http\Controllers\Api\HomepageController;
@@ -52,6 +53,15 @@ Route::prefix('v1')->group(function () {
     Route::get('services', [ApiServiceController::class, 'index'])->name('api.services.index');
     Route::get('services/{id}', [ApiServiceController::class, 'show'])->name('api.services.show');
     Route::get('services/slug/{slug}', [ApiServiceController::class, 'showBySlug'])->name('api.services.show-by-slug');
+    
+    // Careers API
+    Route::prefix('careers')->name('api.careers.')->group(function () {
+        Route::get('/', [ApiCareerController::class, 'index'])->name('index');
+        Route::get('/featured', [ApiCareerController::class, 'featured'])->name('featured');
+        Route::get('/search', [ApiCareerController::class, 'search'])->name('search');
+        Route::get('/stats', [ApiCareerController::class, 'stats'])->name('stats');
+        Route::get('/{slug}', [ApiCareerController::class, 'show'])->name('show');
+    });
     
     // Motor Credit Simulation API
     Route::prefix('motors')->name('api.motors.')->group(function () {

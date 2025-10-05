@@ -48,6 +48,10 @@ class Configuration extends Model implements Auditable
 
     const GROUP_OJK = 'ojk';
 
+    const GROUP_JOIN_US = 'join_us';
+
+    const GROUP_CAREERS = 'careers';
+
     const TYPE_STRING = 'string';
 
     const TYPE_TEXT = 'text';

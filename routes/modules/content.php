@@ -44,5 +44,16 @@ Route::prefix('content')->name('content.')->middleware(['auth', 'verified'])->gr
         Route::delete('/{service}', [ServiceController::class, 'destroy'])->middleware('permission:services.delete')->name('destroy');
         Route::post('/bulk-action', [ServiceController::class, 'bulkAction'])->middleware('permission:services.delete')->name('bulk-action');
     });
+    
+    // Careers Management
+    Route::prefix('careers')->name('careers.')->middleware('permission:careers.view')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Content\CareerController::class, 'index'])->name('index');
+        Route::get('/data', [\App\Http\Controllers\Content\CareerController::class, 'getData'])->name('data');
+        Route::post('/', [\App\Http\Controllers\Content\CareerController::class, 'store'])->middleware('permission:careers.create')->name('store');
+        Route::get('/{content}', [\App\Http\Controllers\Content\CareerController::class, 'show'])->name('show');
+        Route::put('/{content}', [\App\Http\Controllers\Content\CareerController::class, 'update'])->middleware('permission:careers.edit')->name('update');
+        Route::delete('/{content}', [\App\Http\Controllers\Content\CareerController::class, 'destroy'])->middleware('permission:careers.delete')->name('destroy');
+        Route::post('/bulk-action', [\App\Http\Controllers\Content\CareerController::class, 'bulkAction'])->middleware('permission:careers.delete')->name('bulk-action');
+    });
 });
 

@@ -12,11 +12,17 @@ import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 // import { Switch } from '@/components/ui/switch'; // Disabled - causes auto-submit issue
 import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
 import RichTextEditor from '@/components/ui/RichTextEditor.vue';
 import { toast } from '@/components/ui/toast';
 import { Search, Plus, Filter, Edit, Trash2, ExternalLink, Upload, Image, X, Save } from 'lucide-vue-next';
+
+interface DynamicTable {
+    headers: string[];
+    rows: string[][];
+}
 
 interface Service {
     id: number;
@@ -29,11 +35,15 @@ interface Service {
     content_id: string;
     content_en: string;
     featured_image: string;
-    interest_list: { name: string; rate: number; }[];
-    document_list: string[];
-    fees_list: { name: string; type: string; value: number; }[];
-    interest_rate: number;
-    service_duration: string;
+    interest_list: DynamicTable;
+    document_list: DynamicTable;
+    fees_list: DynamicTable;
+    interest_list_id?: DynamicTable;
+    interest_list_en?: DynamicTable;
+    document_list_id?: DynamicTable;
+    document_list_en?: DynamicTable;
+    fees_list_id?: DynamicTable;
+    fees_list_en?: DynamicTable;
     status: string;
     is_published: boolean;
     is_featured: boolean;
@@ -85,11 +95,42 @@ const form = reactive({
     content_en: '',
     category: '',
     featured_image: null as File | null,
-    interest_list: [{ name: '', rate: 0 }] as { name: string; rate: number; }[],
-    document_list: [{ key: '', value: '' }] as { key: string; value: string; }[],
-    fees_list: [{ name: '', type: 'percentage', value: 0 }] as { name: string; type: string; value: number; }[],
-    interest_rate: 0,
-    service_duration: '',
+    interest_list: {
+        headers: ['Jenis Interest', 'Pribadi/Perorangan (%)', 'Badan Usaha/PT (%)'],
+        rows: [['', '', '']]
+    } as DynamicTable,
+    document_list: {
+        headers: ['Document Type', 'Description'],
+        rows: [['', '']]
+    } as DynamicTable,
+    fees_list: {
+        headers: ['Jenis Biaya', 'Pribadi/Perorangan', 'Badan Usaha/PT'],
+        rows: [['', '', '']]
+    } as DynamicTable,
+    interest_list_id: {
+        headers: ['Jenis Interest', 'Pribadi/Perorangan (%)', 'Badan Usaha/PT (%)'],
+        rows: [['', '', '']]
+    } as DynamicTable,
+    interest_list_en: {
+        headers: ['Interest Type', 'Individual (%)', 'Corporate (%)'],
+        rows: [['', '', '']]
+    } as DynamicTable,
+    document_list_id: {
+        headers: ['Jenis Dokumen', 'Deskripsi'],
+        rows: [['', '']]
+    } as DynamicTable,
+    document_list_en: {
+        headers: ['Document Type', 'Description'],
+        rows: [['', '']]
+    } as DynamicTable,
+    fees_list_id: {
+        headers: ['Jenis Biaya', 'Pribadi/Perorangan', 'Badan Usaha/PT'],
+        rows: [['', '', '']]
+    } as DynamicTable,
+    fees_list_en: {
+        headers: ['Fee Type', 'Individual', 'Corporate'],
+        rows: [['', '', '']]
+    } as DynamicTable,
     status: 'draft',
     is_published: false,
     is_featured: false,
@@ -103,6 +144,11 @@ const form = reactive({
 
 // Featured image preview
 const featuredImagePreview = ref<string | null>(null);
+
+// Tab states for bilingual dynamic tables
+const activeInterestTab = ref('id');
+const activeDocumentTab = ref('id');
+const activeFeesTab = ref('id');
 
 // Watch for preview changes
 watch(featuredImagePreview, (newValue, oldValue) => {
@@ -126,11 +172,42 @@ const resetForm = () => {
         content_en: '',
         category: '',
         featured_image: null,
-        interest_list: [{ name: '', rate: 0 }],
-        document_list: [{ key: '', value: '' }],
-        fees_list: [{ name: '', type: 'percentage', value: 0 }],
-        interest_rate: 0,
-        service_duration: '',
+        interest_list: {
+            headers: ['Jenis Interest', 'Pribadi/Perorangan (%)', 'Badan Usaha/PT (%)'],
+            rows: [['', '', '']]
+        },
+        document_list: {
+            headers: ['Document Type', 'Description'],
+            rows: [['', '']]
+        },
+        fees_list: {
+            headers: ['Jenis Biaya', 'Pribadi/Perorangan', 'Badan Usaha/PT'],
+            rows: [['', '', '']]
+        },
+        interest_list_id: {
+            headers: ['Jenis Interest', 'Pribadi/Perorangan (%)', 'Badan Usaha/PT (%)'],
+            rows: [['', '', '']]
+        },
+        interest_list_en: {
+            headers: ['Interest Type', 'Individual (%)', 'Corporate (%)'],
+            rows: [['', '', '']]
+        },
+        document_list_id: {
+            headers: ['Jenis Dokumen', 'Deskripsi'],
+            rows: [['', '']]
+        },
+        document_list_en: {
+            headers: ['Document Type', 'Description'],
+            rows: [['', '']]
+        },
+        fees_list_id: {
+            headers: ['Jenis Biaya', 'Pribadi/Perorangan', 'Badan Usaha/PT'],
+            rows: [['', '', '']]
+        },
+        fees_list_en: {
+            headers: ['Fee Type', 'Individual', 'Corporate'],
+            rows: [['', '', '']]
+        },
         status: 'draft',
         is_published: false,
         is_featured: false,
@@ -153,9 +230,64 @@ const openCreateModal = () => {
 const openEditModal = (service: Service) => {
     currentService.value = service;
     
+    // Debug: Log the service data structure
+    console.log('Service data for edit:', service);
+    console.log('Interest table (old):', service.interest_list);
+    console.log('Interest table ID:', service.interest_list_id);
+    console.log('Interest table EN:', service.interest_list_en);
+    console.log('Document table (old):', service.document_list);
+    console.log('Document table ID:', service.document_list_id);
+    console.log('Document table EN:', service.document_list_en);
+    console.log('Fees table (old):', service.fees_list);
+    console.log('Fees table ID:', service.fees_list_id);
+    console.log('Fees table EN:', service.fees_list_en);
+    
     // Clear any previous preview
     featuredImagePreview.value = null;
     
+    // Helper function to ensure table data is in correct format
+    const ensureTableFormat = (tableData, fallbackData = null) => {
+        console.log('ensureTableFormat called with:', tableData, 'fallback:', fallbackData);
+        
+        // If it's already in the correct format, return as is
+        if (tableData && Array.isArray(tableData.headers) && Array.isArray(tableData.rows)) {
+            console.log('Using provided tableData');
+            return {
+                headers: tableData.headers.map(h => String(h || '')),
+                rows: tableData.rows.map(row => 
+                    Array.isArray(row) ? row.map(cell => String(cell || '')) : ['']
+                )
+            };
+        }
+        
+        // If tableData is null/empty but we have fallback data, use that
+        if (fallbackData && Array.isArray(fallbackData.headers) && Array.isArray(fallbackData.rows)) {
+            console.log('Using fallback data');
+            return {
+                headers: fallbackData.headers.map(h => String(h || '')),
+                rows: fallbackData.rows.map(row => 
+                    Array.isArray(row) ? row.map(cell => String(cell || '')) : ['']
+                )
+            };
+        }
+        
+        // If both are null or empty, return default
+        console.log('Using default empty data');
+        return {
+            headers: ['Column 1', 'Column 2'],
+            rows: [['', '']]
+        };
+    };
+    
+    // Process table data and log results
+    const processedInterestTable = ensureTableFormat(service.interest_list);
+    const processedDocumentTable = ensureTableFormat(service.document_list);
+    const processedFeesTable = ensureTableFormat(service.fees_list);
+    
+    console.log('Processed Interest Table:', processedInterestTable);
+    console.log('Processed Document Table:', processedDocumentTable);
+    console.log('Processed Fees Table:', processedFeesTable);
+
     Object.assign(form, {
         title_id: service.title_id || '',
         title_en: service.title_en || '',
@@ -165,15 +297,16 @@ const openEditModal = (service: Service) => {
         content_en: service.content_en || '',
         category: service.category || '',
         featured_image: null,
-        interest_list: service.interest_list && service.interest_list.length > 0 ? service.interest_list : [{ name: '', rate: 0 }],
-        fees_list: service.fees_list && service.fees_list.length > 0 ? service.fees_list : [{ name: '', type: 'percentage', value: 0 }],
-        document_list: service.document_list && service.document_list.length > 0 ? 
-            service.document_list.map((doc: string) => {
-                const parts = doc.split(':');
-                return { key: parts[0]?.trim() || '', value: parts[1]?.trim() || doc };
-            }) : [{ key: '', value: '' }],
-        interest_rate: service.interest_rate || 0,
-        service_duration: service.service_duration || '',
+        interest_list: processedInterestTable,
+        document_list: processedDocumentTable, 
+        fees_list: processedFeesTable,
+        // Bilingual dynamic tables - use existing data as fallback if bilingual data is empty
+        interest_list_id: ensureTableFormat(service.interest_list_id, service.interest_list),
+        interest_list_en: ensureTableFormat(service.interest_list_en, service.interest_list),
+        document_list_id: ensureTableFormat(service.document_list_id, service.document_list),
+        document_list_en: ensureTableFormat(service.document_list_en, service.document_list),
+        fees_list_id: ensureTableFormat(service.fees_list_id, service.fees_list),
+        fees_list_en: ensureTableFormat(service.fees_list_en, service.fees_list),
         status: service.status || 'draft',
         is_published: service.is_published || false,
         is_featured: service.is_featured || false,
@@ -188,6 +321,21 @@ const openEditModal = (service: Service) => {
     console.log('Edit modal opened for service:', service.title_id);
     console.log('Current service image:', service.featured_image);
     console.log('Preview cleared:', featuredImagePreview.value);
+    console.log('Form after assignment:', {
+        interest_list_id: form.interest_list_id,
+        interest_list_en: form.interest_list_en,
+        document_list_id: form.document_list_id,
+        document_list_en: form.document_list_en,
+        fees_list_id: form.fees_list_id,
+        fees_list_en: form.fees_list_en
+    });
+    
+    console.log('=== DEBUGGING DATA LOADING ===');
+    console.log('Service title:', service.title_id);
+    console.log('Raw interest_list_id from service:', service.interest_list_id);
+    console.log('Type of interest_list_id:', typeof service.interest_list_id);
+    console.log('Raw interest_list from service:', service.interest_list);
+    console.log('Type of interest_list:', typeof service.interest_list);
     
     showEditModal.value = true;
 };
@@ -268,40 +416,241 @@ const removeImage = () => {
     featuredImagePreview.value = null;
 };
 
-// Helper functions for interest and document lists
-const addInterestItem = () => {
-    form.interest_list.push({ name: '', rate: 0 });
-};
-
-const removeInterestItem = (index: number) => {
-    if (form.interest_list.length > 1) {
-        form.interest_list.splice(index, 1);
+// Helper functions for dynamic tables
+const addTableColumn = (tableType: 'interest' | 'fees', lang?: 'id' | 'en') => {
+    if (lang) {
+        // Add column to specific language version
+        const table = tableType === 'interest' 
+            ? (lang === 'id' ? form.interest_list_id : form.interest_list_en)
+            : (lang === 'id' ? form.fees_list_id : form.fees_list_en);
+        
+        table.headers.push('');
+        table.rows.forEach(row => {
+            row.push('');
+        });
     } else {
-        form.interest_list[0] = { name: '', rate: 0 };
+        // Update both ID and EN versions (backward compatibility)
+        const tableId = tableType === 'interest' ? form.interest_list_id : form.fees_list_id;
+        const tableEn = tableType === 'interest' ? form.interest_list_en : form.fees_list_en;
+        
+        tableId.headers.push('');
+        tableId.rows.forEach(row => {
+            row.push('');
+        });
+        
+        tableEn.headers.push('');
+        tableEn.rows.forEach(row => {
+            row.push('');
+        });
     }
 };
 
-const addDocumentItem = () => {
-    form.document_list.push({ key: '', value: '' });
-};
-
-const removeDocumentItem = (index: number) => {
-    if (form.document_list.length > 1) {
-        form.document_list.splice(index, 1);
+const removeTableColumn = (tableType: 'interest' | 'fees', langOrIndex: 'id' | 'en' | number, columnIndex?: number) => {
+    if (typeof langOrIndex === 'string' && columnIndex !== undefined) {
+        // Remove column from specific language version
+        const table = tableType === 'interest' 
+            ? (langOrIndex === 'id' ? form.interest_list_id : form.interest_list_en)
+            : (langOrIndex === 'id' ? form.fees_list_id : form.fees_list_en);
+        
+        table.headers.splice(columnIndex, 1);
+        table.rows.forEach(row => {
+            row.splice(columnIndex, 1);
+        });
+        
+        // If no headers left, reset to empty state
+        if (table.headers.length === 0) {
+            table.rows = [];
+        }
     } else {
-        form.document_list[0] = { key: '', value: '' };
+        // Backward compatibility: update both versions
+        const index = typeof langOrIndex === 'number' ? langOrIndex : columnIndex || 0;
+        const tableId = tableType === 'interest' ? form.interest_list_id : form.fees_list_id;
+        const tableEn = tableType === 'interest' ? form.interest_list_en : form.fees_list_en;
+        
+        tableId.headers.splice(index, 1);
+        tableId.rows.forEach(row => {
+            row.splice(index, 1);
+        });
+        
+        tableEn.headers.splice(index, 1);
+        tableEn.rows.forEach(row => {
+            row.splice(index, 1);
+        });
+        
+        // If no headers left, reset to empty state
+        if (tableId.headers.length === 0) {
+            tableId.rows = [];
+            tableEn.rows = [];
+        }
     }
 };
 
-const addFeesItem = () => {
-    form.fees_list.push({ name: '', type: 'percentage', value: 0 });
+const addTableRow = (tableType: 'interest' | 'fees', lang?: 'id' | 'en') => {
+    if (lang) {
+        // Add row to specific language version
+        const table = tableType === 'interest' 
+            ? (lang === 'id' ? form.interest_list_id : form.interest_list_en)
+            : (lang === 'id' ? form.fees_list_id : form.fees_list_en);
+        
+        // Don't add row if there are no headers
+        if (table.headers.length === 0) {
+            return;
+        }
+        
+        const newRow = new Array(table.headers.length).fill('');
+        table.rows.push(newRow);
+    } else {
+        // Update both ID and EN versions (backward compatibility)
+        const tableId = tableType === 'interest' ? form.interest_list_id : form.fees_list_id;
+        const tableEn = tableType === 'interest' ? form.interest_list_en : form.fees_list_en;
+        
+        // Don't add row if there are no headers
+        if (tableId.headers.length === 0) {
+            return;
+        }
+        
+        const newRowId = new Array(tableId.headers.length).fill('');
+        const newRowEn = new Array(tableEn.headers.length).fill('');
+        
+        tableId.rows.push(newRowId);
+        tableEn.rows.push(newRowEn);
+    }
 };
 
-const removeFeesItem = (index: number) => {
-    if (form.fees_list.length > 1) {
-        form.fees_list.splice(index, 1);
+const removeTableRow = (tableType: 'interest' | 'fees', langOrIndex: 'id' | 'en' | number, rowIndex?: number) => {
+    if (typeof langOrIndex === 'string' && rowIndex !== undefined) {
+        // Remove row from specific language version
+        const table = tableType === 'interest' 
+            ? (langOrIndex === 'id' ? form.interest_list_id : form.interest_list_en)
+            : (langOrIndex === 'id' ? form.fees_list_id : form.fees_list_en);
+        
+        if (table.rows.length > 1) {
+            table.rows.splice(rowIndex, 1);
+        } else {
+            table.rows[0] = new Array(table.headers.length).fill('');
+        }
     } else {
-        form.fees_list[0] = { name: '', type: 'percentage', value: 0 };
+        // Backward compatibility: update both versions
+        const index = typeof langOrIndex === 'number' ? langOrIndex : rowIndex || 0;
+        const tableId = tableType === 'interest' ? form.interest_list_id : form.fees_list_id;
+        const tableEn = tableType === 'interest' ? form.interest_list_en : form.fees_list_en;
+        
+        if (tableId.rows.length > 1) {
+            tableId.rows.splice(index, 1);
+            tableEn.rows.splice(index, 1);
+        } else {
+            tableId.rows[0] = new Array(tableId.headers.length).fill('');
+            tableEn.rows[0] = new Array(tableEn.headers.length).fill('');
+        }
+    }
+};
+
+// Helper functions for document table  
+const addDocumentColumn = (lang?: 'id' | 'en') => {
+    if (lang) {
+        // Add column to specific language version
+        const table = lang === 'id' ? form.document_list_id : form.document_list_en;
+        table.headers.push('');
+        table.rows.forEach(row => {
+            row.push('');
+        });
+    } else {
+        // Update both ID and EN versions (backward compatibility)
+        form.document_list_id.headers.push('');
+        form.document_list_id.rows.forEach(row => {
+            row.push('');
+        });
+        
+        form.document_list_en.headers.push('');
+        form.document_list_en.rows.forEach(row => {
+            row.push('');
+        });
+    }
+};
+
+const removeDocumentColumn = (langOrIndex: 'id' | 'en' | number, columnIndex?: number) => {
+    if (typeof langOrIndex === 'string' && columnIndex !== undefined) {
+        // Remove column from specific language version
+        const table = langOrIndex === 'id' ? form.document_list_id : form.document_list_en;
+        
+        table.headers.splice(columnIndex, 1);
+        table.rows.forEach(row => {
+            row.splice(columnIndex, 1);
+        });
+        
+        // If no headers left, reset to empty state
+        if (table.headers.length === 0) {
+            table.rows = [];
+        }
+    } else {
+        // Backward compatibility: update both versions
+        const index = typeof langOrIndex === 'number' ? langOrIndex : columnIndex || 0;
+        
+        form.document_list_id.headers.splice(index, 1);
+        form.document_list_id.rows.forEach(row => {
+            row.splice(index, 1);
+        });
+        
+        form.document_list_en.headers.splice(index, 1);
+        form.document_list_en.rows.forEach(row => {
+            row.splice(index, 1);
+        });
+        
+        // If no headers left, reset to empty state
+        if (form.document_list_id.headers.length === 0) {
+            form.document_list_id.rows = [];
+            form.document_list_en.rows = [];
+        }
+    }
+};
+
+const addDocumentRow = (lang?: 'id' | 'en') => {
+    if (lang) {
+        // Add row to specific language version
+        const table = lang === 'id' ? form.document_list_id : form.document_list_en;
+        
+        // Don't add row if there are no headers
+        if (table.headers.length === 0) {
+            return;
+        }
+        
+        const newRow = new Array(table.headers.length).fill('');
+        table.rows.push(newRow);
+    } else {
+        // Don't add row if there are no headers (backward compatibility)
+        if (form.document_list_id.headers.length === 0) {
+            return;
+        }
+        
+        const newRowId = new Array(form.document_list_id.headers.length).fill('');
+        const newRowEn = new Array(form.document_list_en.headers.length).fill('');
+        
+        form.document_list_id.rows.push(newRowId);
+        form.document_list_en.rows.push(newRowEn);
+    }
+};
+
+const removeDocumentRow = (langOrIndex: 'id' | 'en' | number, rowIndex?: number) => {
+    if (typeof langOrIndex === 'string' && rowIndex !== undefined) {
+        // Remove row from specific language version
+        const table = langOrIndex === 'id' ? form.document_list_id : form.document_list_en;
+        
+        if (table.rows.length > 1) {
+            table.rows.splice(rowIndex, 1);
+        } else {
+            table.rows[0] = new Array(table.headers.length).fill('');
+        }
+    } else {
+        // Backward compatibility: update both versions
+        const index = typeof langOrIndex === 'number' ? langOrIndex : rowIndex || 0;
+        
+        if (form.document_list_id.rows.length > 1) {
+            form.document_list_id.rows.splice(index, 1);
+            form.document_list_en.rows.splice(index, 1);
+        } else {
+            form.document_list_id.rows[0] = new Array(form.document_list_id.headers.length).fill('');
+            form.document_list_en.rows[0] = new Array(form.document_list_en.headers.length).fill('');
+        }
     }
 };
 
@@ -357,6 +706,7 @@ const submitForm = async () => {
         }
 
         // Clean form data - ensure all fields are strings and not empty
+        console.log('Original form data:', form);
         const cleanFormData = {
             type: 'service',
             title_id: form.title_id.trim(),
@@ -366,13 +716,61 @@ const submitForm = async () => {
             content_id: form.content_id?.trim() || '',
             content_en: form.content_en?.trim() || '',
             category: form.category || '',
-            interest_list: form.interest_list.filter(item => item.name && item.name.trim()),
-            fees_list: form.fees_list.filter(item => item.name && item.name.trim()),
-            document_list: form.document_list
-                .filter(item => item.key && item.key.trim() && item.value && item.value.trim())
-                .map(item => `${item.key.trim()}: ${item.value.trim()}`),
-            interest_rate: form.interest_rate || 0,
-            service_duration: form.service_duration?.trim() || '',
+            interest_list: {
+                headers: form.interest_list.headers.map(h => String(h || '')),
+                rows: form.interest_list.rows.map(row => 
+                    Array.isArray(row) ? row.map(cell => String(cell || '')) : ['']
+                )
+            },
+            document_list: {
+                headers: form.document_list.headers.map(h => String(h || '')),
+                rows: form.document_list.rows.map(row => 
+                    Array.isArray(row) ? row.map(cell => String(cell || '')) : ['']
+                )
+            },
+            fees_list: {
+                headers: form.fees_list.headers.map(h => String(h || '')),
+                rows: form.fees_list.rows.map(row => 
+                    Array.isArray(row) ? row.map(cell => String(cell || '')) : ['']
+                )
+            },
+            // Bilingual dynamic tables
+            interest_list_id: {
+                headers: form.interest_list_id.headers.map(h => String(h || '')),
+                rows: form.interest_list_id.rows.map(row => 
+                    Array.isArray(row) ? row.map(cell => String(cell || '')) : ['']
+                )
+            },
+            interest_list_en: {
+                headers: form.interest_list_en.headers.map(h => String(h || '')),
+                rows: form.interest_list_en.rows.map(row => 
+                    Array.isArray(row) ? row.map(cell => String(cell || '')) : ['']
+                )
+            },
+            document_list_id: {
+                headers: form.document_list_id.headers.map(h => String(h || '')),
+                rows: form.document_list_id.rows.map(row => 
+                    Array.isArray(row) ? row.map(cell => String(cell || '')) : ['']
+                )
+            },
+            document_list_en: {
+                headers: form.document_list_en.headers.map(h => String(h || '')),
+                rows: form.document_list_en.rows.map(row => 
+                    Array.isArray(row) ? row.map(cell => String(cell || '')) : ['']
+                )
+            },
+            fees_list_id: {
+                headers: form.fees_list_id.headers.map(h => String(h || '')),
+                rows: form.fees_list_id.rows.map(row => 
+                    Array.isArray(row) ? row.map(cell => String(cell || '')) : ['']
+                )
+            },
+            fees_list_en: {
+                headers: form.fees_list_en.headers.map(h => String(h || '')),
+                rows: form.fees_list_en.rows.map(row => 
+                    Array.isArray(row) ? row.map(cell => String(cell || '')) : ['']
+                )
+            },
             status: form.status || 'draft',
             is_published: form.is_published ? '1' : '0',
             is_featured: form.is_featured ? '1' : '0',
@@ -383,7 +781,51 @@ const submitForm = async () => {
             meta_description_id: form.meta_description_id?.trim() || '',
             meta_description_en: form.meta_description_en?.trim() || ''
         };
+        
+        console.log('Clean form data:', cleanFormData);
 
+        // Ensure all table data is properly formatted as strings
+        const processTableData = (tableData) => {
+            if (!tableData || !tableData.headers || !tableData.rows) {
+                return { headers: [], rows: [] };
+            }
+            
+            return {
+                headers: (tableData.headers || []).map(h => String(h || '')),
+                rows: (tableData.rows || []).map(row => {
+                    if (!Array.isArray(row)) return [''];
+                    return row.map(cell => String(cell || ''));
+                })
+            };
+        };
+
+        // Override table data with processed versions
+        cleanFormData.interest_list = processTableData(cleanFormData.interest_list);
+        cleanFormData.document_list = processTableData(cleanFormData.document_list);
+        cleanFormData.fees_list = processTableData(cleanFormData.fees_list);
+        // Process bilingual dynamic tables
+        cleanFormData.interest_list_id = processTableData(cleanFormData.interest_list_id);
+        cleanFormData.interest_list_en = processTableData(cleanFormData.interest_list_en);
+        cleanFormData.document_list_id = processTableData(cleanFormData.document_list_id);
+        cleanFormData.document_list_en = processTableData(cleanFormData.document_list_en);
+        cleanFormData.fees_list_id = processTableData(cleanFormData.fees_list_id);
+        cleanFormData.fees_list_en = processTableData(cleanFormData.fees_list_en);
+
+        console.log('Final processed form data:', cleanFormData);
+        
+        // Convert table data to JSON strings to avoid Inertia.js issues
+        cleanFormData.interest_list = JSON.stringify(cleanFormData.interest_list);
+        cleanFormData.document_list = JSON.stringify(cleanFormData.document_list);
+        cleanFormData.fees_list = JSON.stringify(cleanFormData.fees_list);
+        // Convert bilingual dynamic tables to JSON strings
+        cleanFormData.interest_list_id = JSON.stringify(cleanFormData.interest_list_id);
+        cleanFormData.interest_list_en = JSON.stringify(cleanFormData.interest_list_en);
+        cleanFormData.document_list_id = JSON.stringify(cleanFormData.document_list_id);
+        cleanFormData.document_list_en = JSON.stringify(cleanFormData.document_list_en);
+        cleanFormData.fees_list_id = JSON.stringify(cleanFormData.fees_list_id);
+        cleanFormData.fees_list_en = JSON.stringify(cleanFormData.fees_list_en);
+        
+        console.log('JSON stringified form data:', cleanFormData);
 
         // Add image if present
         if (form.featured_image) {
@@ -397,16 +839,39 @@ const submitForm = async () => {
                 // Create custom FormData to ensure all fields are included
                 const formData = new FormData();
                 
+                console.log('Using FormData for update with file');
+                
                 // Add all text fields explicitly
                 Object.keys(cleanFormData).forEach(key => {
                     if (key !== 'featured_image') {
-                        if (Array.isArray(cleanFormData[key])) {
-                            // Handle arrays properly in FormData
+                        if (key === 'interest_list' || key === 'document_list' || key === 'fees_list') {
+                            // Handle dynamic table objects
+                            const tableData = cleanFormData[key];
+                            if (tableData && typeof tableData === 'object') {
+                                // Add headers
+                                if (tableData.headers && Array.isArray(tableData.headers)) {
+                                    tableData.headers.forEach((header, index) => {
+                                        formData.append(`${key}[headers][${index}]`, String(header));
+                                    });
+                                }
+                                // Add rows
+                                if (tableData.rows && Array.isArray(tableData.rows)) {
+                                    tableData.rows.forEach((row, rowIndex) => {
+                                        if (Array.isArray(row)) {
+                                            row.forEach((cell, cellIndex) => {
+                                                formData.append(`${key}[rows][${rowIndex}][${cellIndex}]`, String(cell));
+                                            });
+                                        }
+                                    });
+                                }
+                            }
+                        } else if (Array.isArray(cleanFormData[key])) {
+                            // Handle other arrays
                             cleanFormData[key].forEach((item, index) => {
-                                formData.append(`${key}[${index}]`, item);
+                                formData.append(`${key}[${index}]`, String(item));
                             });
                         } else {
-                            formData.append(key, cleanFormData[key]);
+                            formData.append(key, String(cleanFormData[key] || ''));
                         }
                     }
                 });
@@ -447,6 +912,8 @@ const submitForm = async () => {
                 });
             } else {
                 // Use regular JSON for non-file data
+                console.log('Using JSON for update without file');
+                console.log('cleanFormData to send:', JSON.stringify(cleanFormData, null, 2));
                 router.put(route('content.services.update', currentService.value.id), cleanFormData, {
                     onSuccess: (page) => {
                         console.log('Update success response (no file):', page);
@@ -487,13 +954,34 @@ const submitForm = async () => {
                 // Add all text fields explicitly
                 Object.keys(cleanFormData).forEach(key => {
                     if (key !== 'featured_image') {
-                        if (Array.isArray(cleanFormData[key])) {
-                            // Handle arrays properly in FormData
+                        if (key === 'interest_list' || key === 'document_list' || key === 'fees_list') {
+                            // Handle dynamic table objects
+                            const tableData = cleanFormData[key];
+                            if (tableData && typeof tableData === 'object') {
+                                // Add headers
+                                if (tableData.headers && Array.isArray(tableData.headers)) {
+                                    tableData.headers.forEach((header, index) => {
+                                        formData.append(`${key}[headers][${index}]`, String(header));
+                                    });
+                                }
+                                // Add rows
+                                if (tableData.rows && Array.isArray(tableData.rows)) {
+                                    tableData.rows.forEach((row, rowIndex) => {
+                                        if (Array.isArray(row)) {
+                                            row.forEach((cell, cellIndex) => {
+                                                formData.append(`${key}[rows][${rowIndex}][${cellIndex}]`, String(cell));
+                                            });
+                                        }
+                                    });
+                                }
+                            }
+                        } else if (Array.isArray(cleanFormData[key])) {
+                            // Handle other arrays
                             cleanFormData[key].forEach((item, index) => {
-                                formData.append(`${key}[${index}]`, item);
+                                formData.append(`${key}[${index}]`, String(item));
                             });
                         } else {
-                            formData.append(key, cleanFormData[key]);
+                            formData.append(key, String(cleanFormData[key] || ''));
                         }
                     }
                 });
@@ -532,6 +1020,8 @@ const submitForm = async () => {
                 });
             } else {
                 // Use regular JSON for non-file data
+                console.log('Using JSON for create without file');
+                console.log('cleanFormData to send:', JSON.stringify(cleanFormData, null, 2));
                 router.post(route('content.services.store'), cleanFormData, {
                     onSuccess: (page) => {
                         console.log('Create success response (no file):', page);
@@ -572,6 +1062,21 @@ const submitForm = async () => {
         });
         isSubmitting.value = false;
     }
+};
+
+// Separate submit function for edit modal to prevent conflicts
+const submitEditForm = async () => {
+    // Just call the main submitForm function but ensure we're in edit mode
+    if (!currentService.value) {
+        toast({
+            title: 'Error',
+            description: 'No service selected for editing',
+            variant: 'error'
+        });
+        return;
+    }
+    
+    await submitForm();
 };
 
 const confirmDelete = (service: Service) => {
@@ -926,158 +1431,425 @@ const clearFilters = () => {
                         </div>
                     </div>
 
-                    <!-- Service Details -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="space-y-2">
-                            <Label for="interest_rate">Interest Rate (%)</Label>
-                            <Input
-                                id="interest_rate"
-                                v-model="form.interest_rate"
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                max="100"
-                                placeholder="0.00"
-                            />
+
+                    <!-- Interest Rate Table -->
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <Label>Interest Rate Table</Label>
+                            <div class="flex gap-2">
+                                <Button type="button" size="sm" variant="outline" @click="addTableColumn('interest')">
+                                    <Plus class="h-4 w-4 mr-2" />
+                                    Add Column
+                                </Button>
+                                <Button type="button" size="sm" variant="outline" @click="addTableRow('interest')">
+                                    <Plus class="h-4 w-4 mr-2" />
+                                    Add Row
+                                </Button>
+                            </div>
                         </div>
                         
-                        <div class="space-y-2">
-                            <Label for="service_duration">Service Duration</Label>
-                            <Input
-                                id="service_duration"
-                                v-model="form.service_duration"
-                                placeholder="e.g., 12 months, 2 years"
-                            />
-                        </div>
-                    </div>
-
-                    <!-- Interest List -->
-                    <div class="space-y-2">
-                        <div class="flex items-center justify-between">
-                            <Label>Interest List</Label>
-                            <Button type="button" size="sm" variant="outline" @click="addInterestItem">
-                                <Plus class="h-4 w-4 mr-2" />
-                                Add Item
-                            </Button>
-                        </div>
-                        <div class="space-y-2">
-                            <div v-for="(item, index) in form.interest_list" :key="`interest-${index}`" class="grid grid-cols-2 gap-2 items-center">
-                                <Input
-                                    v-model="form.interest_list[index].name"
-                                    :placeholder="`Interest name ${index + 1}`"
-                                    class="col-span-1"
-                                />
-                                <div class="flex gap-2 items-center">
+                        <!-- Language Tabs -->
+                        <Tabs v-model:modelValue="activeInterestTab" class="w-full">
+                            <TabsList class="grid w-full grid-cols-2">
+                                <TabsTrigger value="id">Bahasa Indonesia</TabsTrigger>
+                                <TabsTrigger value="en">English</TabsTrigger>
+                            </TabsList>
+                        </Tabs>
+                        
+                        <!-- Indonesian Table -->
+                        <div v-show="activeInterestTab === 'id'" class="space-y-2">
+                            <h4 class="font-medium text-sm text-gray-700">Tabel Interest Rate (Bahasa Indonesia)</h4>
+                            <!-- Table Headers -->
+                            <div v-if="form.interest_list_id.headers.length > 0" class="grid gap-2 items-center font-medium text-sm text-muted-foreground border-b pb-2" :style="{ gridTemplateColumns: `repeat(${form.interest_list_id.headers.length}, 1fr)` }">
+                                <div v-for="(header, headerIndex) in form.interest_list_id.headers" :key="`interest-id-header-${headerIndex}`">
+                                    {{ header || `Column ${headerIndex + 1}` }}
+                                </div>
+                            </div>
+                            
+                            <!-- Header Edit Row -->
+                            <div v-if="form.interest_list_id.headers.length > 0" class="grid gap-2 items-center mb-4" :style="{ gridTemplateColumns: `repeat(${form.interest_list_id.headers.length}, 1fr)` }">
+                                <div v-for="(header, headerIndex) in form.interest_list_id.headers" :key="`interest-id-header-${headerIndex}`" class="space-y-1">
                                     <Input
-                                        v-model.number="form.interest_list[index].rate"
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        max="100"
-                                        placeholder="Rate (%)"
-                                        class="flex-1"
+                                        v-model="form.interest_list_id.headers[headerIndex]"
+                                        :placeholder="`Header ${headerIndex + 1} (ID)`"
+                                        class="text-xs"
                                     />
                                     <Button
                                         type="button"
                                         size="sm"
                                         variant="outline"
-                                        @click="removeInterestItem(index)"
-                                        class="text-red-600 hover:text-red-700"
+                                        @click="removeTableColumn('interest', headerIndex)"
+                                        class="w-full text-red-600 hover:text-red-700 text-xs"
                                     >
-                                        <X class="h-4 w-4" />
+                                        Remove Column
                                     </Button>
                                 </div>
                             </div>
-                            <p v-if="form.interest_list.length === 0" class="text-sm text-muted-foreground">
+                            
+                            <!-- Table Rows -->
+                            <div v-for="(row, rowIndex) in form.interest_list_id.rows" :key="`interest-id-row-${rowIndex}`" class="flex gap-2 items-center">
+                                <div class="grid gap-2 items-center flex-1" 
+                                     :style="{ gridTemplateColumns: `repeat(${form.interest_list_id.headers.length}, 1fr)` }">
+                                    <Input
+                                        v-for="(cell, cellIndex) in row"
+                                        :key="`interest-id-cell-${rowIndex}-${cellIndex}`"
+                                        v-model="form.interest_list_id.rows[rowIndex][cellIndex]"
+                                        :placeholder="`Row ${rowIndex + 1}, Col ${cellIndex + 1}`"
+                                    />
+                                </div>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    @click="removeTableRow('interest', rowIndex)"
+                                    class="text-red-600 hover:text-red-700 hover:bg-red-50 p-2 shrink-0"
+                                    title="Remove Row"
+                                >
+                                    <X class="w-4 h-4" />
+                                </Button>
+                            </div>
+                            
+                            <p v-if="form.interest_list_id.headers.length === 0 || form.interest_list_id.rows.length === 0" class="text-sm text-muted-foreground">
+                                No interest items added yet.
+                            </p>
+                        </div>
+
+                        <!-- English Table -->
+                        <div v-show="activeInterestTab === 'en'" class="space-y-2">
+                            <h4 class="font-medium text-sm text-gray-700">Interest Rate Table (English)</h4>
+                            <!-- Table Headers -->
+                            <div v-if="form.interest_list_en.headers.length > 0" class="grid gap-2 items-center font-medium text-sm text-muted-foreground border-b pb-2" :style="{ gridTemplateColumns: `repeat(${form.interest_list_en.headers.length}, 1fr)` }">
+                                <div v-for="(header, headerIndex) in form.interest_list_en.headers" :key="`interest-en-header-${headerIndex}`">
+                                    {{ header || `Column ${headerIndex + 1}` }}
+                                </div>
+                            </div>
+                            
+                            <!-- Header Edit Row -->
+                            <div v-if="form.interest_list_en.headers.length > 0" class="grid gap-2 items-center mb-4" :style="{ gridTemplateColumns: `repeat(${form.interest_list_en.headers.length}, 1fr)` }">
+                                <div v-for="(header, headerIndex) in form.interest_list_en.headers" :key="`interest-en-header-${headerIndex}`" class="space-y-1">
+                                    <Input
+                                        v-model="form.interest_list_en.headers[headerIndex]"
+                                        :placeholder="`Header ${headerIndex + 1} (EN)`"
+                                        class="text-xs"
+                                    />
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        @click="removeTableColumn('interest', headerIndex)"
+                                        class="w-full text-red-600 hover:text-red-700 text-xs"
+                                    >
+                                        Remove Column
+                                    </Button>
+                                </div>
+                            </div>
+                            
+                            <!-- Table Rows -->
+                            <div v-for="(row, rowIndex) in form.interest_list_en.rows" :key="`interest-en-row-${rowIndex}`" class="flex gap-2 items-center">
+                                <div class="grid gap-2 items-center flex-1" 
+                                     :style="{ gridTemplateColumns: `repeat(${form.interest_list_en.headers.length}, 1fr)` }">
+                                    <Input
+                                        v-for="(cell, cellIndex) in row"
+                                        :key="`interest-en-cell-${rowIndex}-${cellIndex}`"
+                                        v-model="form.interest_list_en.rows[rowIndex][cellIndex]"
+                                        :placeholder="`Row ${rowIndex + 1}, Col ${cellIndex + 1}`"
+                                    />
+                                </div>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    @click="removeTableRow('interest', rowIndex)"
+                                    class="text-red-600 hover:text-red-700 hover:bg-red-50 p-2 shrink-0"
+                                    title="Remove Row"
+                                >
+                                    <X class="w-4 h-4" />
+                                </Button>
+                            </div>
+                            
+                            <p v-if="form.interest_list_en.headers.length === 0 || form.interest_list_en.rows.length === 0" class="text-sm text-muted-foreground">
                                 No interest items added yet.
                             </p>
                         </div>
                     </div>
 
-                    <!-- Document List -->
-                    <div class="space-y-2">
+                    <!-- Required Documents Table -->
+                    <div class="space-y-4">
                         <div class="flex items-center justify-between">
-                            <Label>Required Documents</Label>
-                            <Button type="button" size="sm" variant="outline" @click="addDocumentItem">
-                                <Plus class="h-4 w-4 mr-2" />
-                                Add Document
-                            </Button>
-                        </div>
-                        <div class="space-y-2">
-                            <div v-for="(item, index) in form.document_list" :key="`document-${index}`" class="flex items-center gap-2">
-                                <Input
-                                    v-model="form.document_list[index].key"
-                                    :placeholder="`Document Key ${index + 1}`"
-                                    class="flex-1"
-                                />
-                                <Input
-                                    v-model="form.document_list[index].value"
-                                    :placeholder="`Document Value ${index + 1}`"
-                                    class="flex-1"
-                                />
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    @click="removeDocumentItem(index)"
-                                    class="text-red-600 hover:text-red-700"
-                                >
-                                    <X class="h-4 w-4" />
+                            <Label>Required Documents Table</Label>
+                            <div class="flex gap-2">
+                                <Button type="button" size="sm" variant="outline" @click="addDocumentColumn">
+                                    <Plus class="h-4 w-4 mr-2" />
+                                    Add Column
+                                </Button>
+                                <Button type="button" size="sm" variant="outline" @click="addDocumentRow">
+                                    <Plus class="h-4 w-4 mr-2" />
+                                    Add Row
                                 </Button>
                             </div>
-                            <p v-if="form.document_list.length === 0" class="text-sm text-muted-foreground">
-                                No required documents added yet.
-                            </p>
                         </div>
-                    </div>
-
-                    <!-- Fees List -->
-                    <div class="space-y-2">
-                        <div class="flex items-center justify-between">
-                            <Label>Fees List</Label>
-                            <Button type="button" size="sm" variant="outline" @click="addFeesItem">
-                                <Plus class="h-4 w-4 mr-2" />
-                                Add Fee
-                            </Button>
-                        </div>
-                        <div class="space-y-2">
-                            <div v-for="(item, index) in form.fees_list" :key="`fees-${index}`" class="grid grid-cols-12 gap-2 items-center">
-                                <Input
-                                    v-model="form.fees_list[index].name"
-                                    :placeholder="`Fee name ${index + 1}`"
-                                    class="col-span-5"
-                                />
-                                <select
-                                    v-model="form.fees_list[index].type"
-                                    class="col-span-3 px-3 py-2 border border-input bg-background text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md"
-                                >
-                                    <option value="percentage">Percentage (%)</option>
-                                    <option value="fixed">Fixed Amount</option>
-                                </select>
-                                <div class="col-span-3 flex gap-2 items-center">
+                        
+                        <!-- Language Tabs -->
+                        <Tabs v-model:modelValue="activeDocumentTab" class="w-full">
+                            <TabsList class="grid w-full grid-cols-2">
+                                <TabsTrigger value="id">Bahasa Indonesia</TabsTrigger>
+                                <TabsTrigger value="en">English</TabsTrigger>
+                            </TabsList>
+                        </Tabs>
+                        
+                        <!-- Indonesian Table -->
+                        <div v-show="!bilingualEnabled || activeDocumentTab === 'id'" class="space-y-2">
+                            <h4 v-if="bilingualEnabled" class="font-medium text-sm text-gray-700">Tabel Dokumen Persyaratan (Bahasa Indonesia)</h4>
+                            <!-- Table Headers -->
+                            <div v-if="form.document_list_id.headers.length > 0" class="grid gap-2 items-center font-medium text-sm text-muted-foreground border-b pb-2" :style="{ gridTemplateColumns: `repeat(${form.document_list_id.headers.length}, 1fr)` }">
+                                <div v-for="(header, headerIndex) in form.document_list_id.headers" :key="`document-id-header-${headerIndex}`">
+                                    {{ header || `Column ${headerIndex + 1}` }}
+                                </div>
+                            </div>
+                            
+                            <!-- Header Edit Row -->
+                            <div v-if="form.document_list_id.headers.length > 0" class="grid gap-2 items-center mb-4" :style="{ gridTemplateColumns: `repeat(${form.document_list_id.headers.length}, 1fr)` }">
+                                <div v-for="(header, headerIndex) in form.document_list_id.headers" :key="`document-id-header-${headerIndex}`" class="space-y-1">
                                     <Input
-                                        v-model.number="form.fees_list[index].value"
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        :placeholder="form.fees_list[index].type === 'percentage' ? '2.5' : '500000'"
-                                        class="flex-1"
+                                        v-model="form.document_list_id.headers[headerIndex]"
+                                        :placeholder="`Header ${headerIndex + 1} (ID)`"
+                                        class="text-xs"
                                     />
-                                    <span class="text-sm text-muted-foreground">
-                                        {{ form.fees_list[index].type === 'percentage' ? '%' : 'IDR' }}
-                                    </span>
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        @click="removeDocumentColumn(headerIndex)"
+                                        class="w-full text-red-600 hover:text-red-700 text-xs"
+                                    >
+                                        Remove Column
+                                    </Button>
+                                </div>
+                            </div>
+                            
+                            <!-- Table Rows -->
+                            <div v-for="(row, rowIndex) in form.document_list_id.rows" :key="`document-id-row-${rowIndex}`" class="flex gap-2 items-center">
+                                <div class="grid gap-2 items-center flex-1" 
+                                     :style="{ gridTemplateColumns: `repeat(${form.document_list_id.headers.length}, 1fr)` }">
+                                    <Input
+                                        v-for="(cell, cellIndex) in row"
+                                        :key="`document-id-cell-${rowIndex}-${cellIndex}`"
+                                        v-model="form.document_list_id.rows[rowIndex][cellIndex]"
+                                        :placeholder="`Row ${rowIndex + 1}, Col ${cellIndex + 1}`"
+                                    />
                                 </div>
                                 <Button
                                     type="button"
                                     size="sm"
                                     variant="outline"
-                                    @click="removeFeesItem(index)"
-                                    class="col-span-1 text-red-600 hover:text-red-700"
+                                    @click="removeDocumentRow(rowIndex)"
+                                    class="text-red-600 hover:text-red-700 hover:bg-red-50 p-2 shrink-0"
+                                    title="Remove Row"
                                 >
-                                    <X class="h-4 w-4" />
+                                    <X class="w-4 h-4" />
                                 </Button>
                             </div>
-                            <p v-if="form.fees_list.length === 0" class="text-sm text-muted-foreground">
+                            
+                            <p v-if="form.document_list_id.headers.length === 0 || form.document_list_id.rows.length === 0" class="text-sm text-muted-foreground">
+                                No document items added yet.
+                            </p>
+                        </div>
+
+                        <!-- English Table -->
+                        <div v-if="bilingualEnabled" v-show="activeDocumentTab === 'en'" class="space-y-2">
+                            <h4 class="font-medium text-sm text-gray-700">Required Documents Table (English)</h4>
+                            <!-- Table Headers -->
+                            <div v-if="form.document_list_en.headers.length > 0" class="grid gap-2 items-center font-medium text-sm text-muted-foreground border-b pb-2" :style="{ gridTemplateColumns: `repeat(${form.document_list_en.headers.length}, 1fr)` }">
+                                <div v-for="(header, headerIndex) in form.document_list_en.headers" :key="`document-en-header-${headerIndex}`">
+                                    {{ header || `Column ${headerIndex + 1}` }}
+                                </div>
+                            </div>
+                            
+                            <!-- Header Edit Row -->
+                            <div v-if="form.document_list_en.headers.length > 0" class="grid gap-2 items-center mb-4" :style="{ gridTemplateColumns: `repeat(${form.document_list_en.headers.length}, 1fr)` }">
+                                <div v-for="(header, headerIndex) in form.document_list_en.headers" :key="`document-en-header-${headerIndex}`" class="space-y-1">
+                                    <Input
+                                        v-model="form.document_list_en.headers[headerIndex]"
+                                        :placeholder="`Header ${headerIndex + 1} (EN)`"
+                                        class="text-xs"
+                                    />
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        @click="removeDocumentColumn(headerIndex)"
+                                        class="w-full text-red-600 hover:text-red-700 text-xs"
+                                    >
+                                        Remove Column
+                                    </Button>
+                                </div>
+                            </div>
+                            
+                            <!-- Table Rows -->
+                            <div v-for="(row, rowIndex) in form.document_list_en.rows" :key="`document-en-row-${rowIndex}`" class="flex gap-2 items-center">
+                                <div class="grid gap-2 items-center flex-1" 
+                                     :style="{ gridTemplateColumns: `repeat(${form.document_list_en.headers.length}, 1fr)` }">
+                                    <Input
+                                        v-for="(cell, cellIndex) in row"
+                                        :key="`document-en-cell-${rowIndex}-${cellIndex}`"
+                                        v-model="form.document_list_en.rows[rowIndex][cellIndex]"
+                                        :placeholder="`Row ${rowIndex + 1}, Col ${cellIndex + 1}`"
+                                    />
+                                </div>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    @click="removeDocumentRow(rowIndex)"
+                                    class="text-red-600 hover:text-red-700 hover:bg-red-50 p-2 shrink-0"
+                                    title="Remove Row"
+                                >
+                                    <X class="w-4 h-4" />
+                                </Button>
+                            </div>
+                            
+                            <p v-if="form.document_list_en.headers.length === 0 || form.document_list_en.rows.length === 0" class="text-sm text-muted-foreground">
+                                No document items added yet.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Fees List Table -->
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <Label>Fees List Table</Label>
+                            <div class="flex gap-2">
+                                <Button type="button" size="sm" variant="outline" @click="addTableColumn('fees')">
+                                    <Plus class="h-4 w-4 mr-2" />
+                                    Add Column
+                                </Button>
+                                <Button type="button" size="sm" variant="outline" @click="addTableRow('fees')">
+                                    <Plus class="h-4 w-4 mr-2" />
+                                    Add Row
+                                </Button>
+                            </div>
+                        </div>
+                        
+                        <!-- Language Tabs -->
+                        <Tabs v-model:modelValue="activeFeesTab" class="w-full">
+                            <TabsList class="grid w-full grid-cols-2">
+                                <TabsTrigger value="id">Bahasa Indonesia</TabsTrigger>
+                                <TabsTrigger value="en">English</TabsTrigger>
+                            </TabsList>
+                        </Tabs>
+                        
+                        <!-- Indonesian Table -->
+                        <div v-show="!bilingualEnabled || activeFeesTab === 'id'" class="space-y-2">
+                            <h4 v-if="bilingualEnabled" class="font-medium text-sm text-gray-700">Tabel Biaya (Bahasa Indonesia)</h4>
+                            <!-- Table Headers -->
+                            <div v-if="form.fees_list_id.headers.length > 0" class="grid gap-2 items-center font-medium text-sm text-muted-foreground border-b pb-2" :style="{ gridTemplateColumns: `repeat(${form.fees_list_id.headers.length}, 1fr)` }">
+                                <div v-for="(header, headerIndex) in form.fees_list_id.headers" :key="`fees-id-header-${headerIndex}`">
+                                    {{ header || `Column ${headerIndex + 1}` }}
+                                </div>
+                            </div>
+                            
+                            <!-- Header Edit Row -->
+                            <div v-if="form.fees_list_id.headers.length > 0" class="grid gap-2 items-center mb-4" :style="{ gridTemplateColumns: `repeat(${form.fees_list_id.headers.length}, 1fr)` }">
+                                <div v-for="(header, headerIndex) in form.fees_list_id.headers" :key="`fees-id-header-${headerIndex}`" class="space-y-1">
+                                    <Input
+                                        v-model="form.fees_list_id.headers[headerIndex]"
+                                        :placeholder="`Header ${headerIndex + 1} (ID)`"
+                                        class="text-xs"
+                                    />
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        @click="removeTableColumn('fees', headerIndex)"
+                                        class="w-full text-red-600 hover:text-red-700 text-xs"
+                                    >
+                                        Remove Column
+                                    </Button>
+                                </div>
+                            </div>
+                            
+                            <!-- Table Rows -->
+                            <div v-for="(row, rowIndex) in form.fees_list_id.rows" :key="`fees-id-row-${rowIndex}`" class="flex gap-2 items-center">
+                                <div class="grid gap-2 items-center flex-1" 
+                                     :style="{ gridTemplateColumns: `repeat(${form.fees_list_id.headers.length}, 1fr)` }">
+                                    <Input
+                                        v-for="(cell, cellIndex) in row"
+                                        :key="`fees-id-cell-${rowIndex}-${cellIndex}`"
+                                        v-model="form.fees_list_id.rows[rowIndex][cellIndex]"
+                                        :placeholder="`Row ${rowIndex + 1}, Col ${cellIndex + 1}`"
+                                    />
+                                </div>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    @click="removeTableRow('fees', rowIndex)"
+                                    class="text-red-600 hover:text-red-700 hover:bg-red-50 p-2 shrink-0"
+                                    title="Remove Row"
+                                >
+                                    <X class="w-4 h-4" />
+                                </Button>
+                            </div>
+                            
+                            <p v-if="form.fees_list_id.headers.length === 0 || form.fees_list_id.rows.length === 0" class="text-sm text-muted-foreground">
+                                No fee items added yet.
+                            </p>
+                        </div>
+
+                        <!-- English Table -->
+                        <div v-if="bilingualEnabled" v-show="activeFeesTab === 'en'" class="space-y-2">
+                            <h4 class="font-medium text-sm text-gray-700">Fees List Table (English)</h4>
+                            <!-- Table Headers -->
+                            <div v-if="form.fees_list_en.headers.length > 0" class="grid gap-2 items-center font-medium text-sm text-muted-foreground border-b pb-2" :style="{ gridTemplateColumns: `repeat(${form.fees_list_en.headers.length}, 1fr)` }">
+                                <div v-for="(header, headerIndex) in form.fees_list_en.headers" :key="`fees-en-header-${headerIndex}`">
+                                    {{ header || `Column ${headerIndex + 1}` }}
+                                </div>
+                            </div>
+                            
+                            <!-- Header Edit Row -->
+                            <div v-if="form.fees_list_en.headers.length > 0" class="grid gap-2 items-center mb-4" :style="{ gridTemplateColumns: `repeat(${form.fees_list_en.headers.length}, 1fr)` }">
+                                <div v-for="(header, headerIndex) in form.fees_list_en.headers" :key="`fees-en-header-${headerIndex}`" class="space-y-1">
+                                    <Input
+                                        v-model="form.fees_list_en.headers[headerIndex]"
+                                        :placeholder="`Header ${headerIndex + 1} (EN)`"
+                                        class="text-xs"
+                                    />
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        @click="removeTableColumn('fees', headerIndex)"
+                                        class="w-full text-red-600 hover:text-red-700 text-xs"
+                                    >
+                                        Remove Column
+                                    </Button>
+                                </div>
+                            </div>
+                            
+                            <!-- Table Rows -->
+                            <div v-for="(row, rowIndex) in form.fees_list_en.rows" :key="`fees-en-row-${rowIndex}`" class="flex gap-2 items-center">
+                                <div class="grid gap-2 items-center flex-1" 
+                                     :style="{ gridTemplateColumns: `repeat(${form.fees_list_en.headers.length}, 1fr)` }">
+                                    <Input
+                                        v-for="(cell, cellIndex) in row"
+                                        :key="`fees-en-cell-${rowIndex}-${cellIndex}`"
+                                        v-model="form.fees_list_en.rows[rowIndex][cellIndex]"
+                                        :placeholder="`Row ${rowIndex + 1}, Col ${cellIndex + 1}`"
+                                    />
+                                </div>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    @click="removeTableRow('fees', rowIndex)"
+                                    class="text-red-600 hover:text-red-700 hover:bg-red-50 p-2 shrink-0"
+                                    title="Remove Row"
+                                >
+                                    <X class="w-4 h-4" />
+                                </Button>
+                            </div>
+                            
+                            <p v-if="form.fees_list_en.headers.length === 0 || form.fees_list_en.rows.length === 0" class="text-sm text-muted-foreground">
                                 No fee items added yet.
                             </p>
                         </div>
@@ -1169,7 +1941,7 @@ const clearFilters = () => {
                     </DialogDescription>
                 </DialogHeader>
                 
-                <form @submit.prevent="submitForm" class="space-y-6">
+                <form @submit.prevent="submitEditForm" class="space-y-6">
                     <!-- Same form content as Create Modal -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="space-y-2">
@@ -1261,161 +2033,487 @@ const clearFilters = () => {
                         </div>
                     </div>
 
-                    <!-- Service Details -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="space-y-2">
-                            <Label for="edit_interest_rate">Interest Rate (%)</Label>
-                            <Input
-                                id="edit_interest_rate"
-                                v-model="form.interest_rate"
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                max="100"
-                                placeholder="0.00"
-                            />
+                    <!-- Interest Rate Table -->
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <Label>Interest Rate Table</Label>
                         </div>
                         
-                        <div class="space-y-2">
-                            <Label for="edit_service_duration">Service Duration</Label>
-                            <Input
-                                id="edit_service_duration"
-                                v-model="form.service_duration"
-                                placeholder="e.g., 12 months, 2 years"
-                            />
-                        </div>
-                    </div>
-
-                    <!-- Interest List -->
-                    <div class="space-y-2">
-                        <div class="flex items-center justify-between">
-                            <Label>Interest List</Label>
-                            <Button type="button" size="sm" variant="outline" @click="addInterestItem">
-                                <Plus class="h-4 w-4 mr-2" />
-                                Add Item
-                            </Button>
-                        </div>
-                        <div class="space-y-2">
-                            <div v-for="(item, index) in form.interest_list" :key="`edit-interest-${index}`" class="grid grid-cols-2 gap-2 items-center">
-                                <Input
-                                    v-model="form.interest_list[index].name"
-                                    :placeholder="`Interest name ${index + 1}`"
-                                    class="col-span-1"
-                                />
-                                <div class="flex gap-2 items-center">
-                                    <Input
-                                        v-model.number="form.interest_list[index].rate"
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        max="100"
-                                        placeholder="Rate (%)"
-                                        class="flex-1"
-                                    />
-                                    <Button
-                                        type="button"
-                                        size="sm"
-                                        variant="outline"
-                                        @click="removeInterestItem(index)"
-                                        class="text-red-600 hover:text-red-700"
-                                    >
-                                        <X class="h-4 w-4" />
-                                    </Button>
+                        <!-- Language Tabs -->
+                        <Tabs v-model:modelValue="activeInterestTab" class="w-full">
+                            <TabsList class="grid w-full grid-cols-2">
+                                <TabsTrigger value="id">Bahasa Indonesia</TabsTrigger>
+                                <TabsTrigger value="en">English</TabsTrigger>
+                            </TabsList>
+                            
+                            <!-- Indonesian Version -->
+                            <TabsContent value="id" class="space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <Label class="text-sm text-muted-foreground">Indonesian Version</Label>
+                                    <div class="flex gap-2">
+                                        <Button type="button" size="sm" variant="outline" @click="addTableColumn('interest', 'id')">
+                                            <Plus class="h-4 w-4 mr-2" />
+                                            Add Column
+                                        </Button>
+                                        <Button type="button" size="sm" variant="outline" @click="addTableRow('interest', 'id')">
+                                            <Plus class="h-4 w-4 mr-2" />
+                                            Add Row
+                                        </Button>
+                                    </div>
                                 </div>
-                            </div>
-                            <p v-if="form.interest_list.length === 0" class="text-sm text-muted-foreground">
-                                No interest items added yet.
-                            </p>
-                        </div>
-                    </div>
-
-                    <!-- Document List -->
-                    <div class="space-y-2">
-                        <div class="flex items-center justify-between">
-                            <Label>Required Documents</Label>
-                            <Button type="button" size="sm" variant="outline" @click="addDocumentItem">
-                                <Plus class="h-4 w-4 mr-2" />
-                                Add Document
-                            </Button>
-                        </div>
-                        <div class="space-y-2">
-                            <div v-for="(item, index) in form.document_list" :key="`edit-document-${index}`" class="flex items-center gap-2">
-                                <Input
-                                    v-model="form.document_list[index].key"
-                                    :placeholder="`Document Key ${index + 1}`"
-                                    class="flex-1"
-                                />
-                                <Input
-                                    v-model="form.document_list[index].value"
-                                    :placeholder="`Document Value ${index + 1}`"
-                                    class="flex-1"
-                                />
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    @click="removeDocumentItem(index)"
-                                    class="text-red-600 hover:text-red-700"
-                                >
-                                    <X class="h-4 w-4" />
-                                </Button>
-                            </div>
-                            <p v-if="form.document_list.length === 0" class="text-sm text-muted-foreground">
-                                No required documents added yet.
-                            </p>
-                        </div>
-                    </div>
-
-                    <!-- Fees List -->
-                    <div class="space-y-2">
-                        <div class="flex items-center justify-between">
-                            <Label>Fees List</Label>
-                            <Button type="button" size="sm" variant="outline" @click="addFeesItem">
-                                <Plus class="h-4 w-4 mr-2" />
-                                Add Fee
-                            </Button>
-                        </div>
-                        <div class="space-y-2">
-                            <div v-for="(item, index) in form.fees_list" :key="`edit-fees-${index}`" class="grid grid-cols-12 gap-2 items-center">
-                                <Input
-                                    v-model="form.fees_list[index].name"
-                                    :placeholder="`Fee name ${index + 1}`"
-                                    class="col-span-5"
-                                />
-                                <select
-                                    v-model="form.fees_list[index].type"
-                                    class="col-span-3 px-3 py-2 border border-input bg-background text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md"
-                                >
-                                    <option value="percentage">Percentage (%)</option>
-                                    <option value="fixed">Fixed Amount</option>
-                                </select>
-                                <div class="col-span-3 flex gap-2 items-center">
-                                    <Input
-                                        v-model.number="form.fees_list[index].value"
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        :placeholder="form.fees_list[index].type === 'percentage' ? '2.5' : '500000'"
-                                        class="flex-1"
-                                    />
-                                    <span class="text-sm text-muted-foreground">
-                                        {{ form.fees_list[index].type === 'percentage' ? '%' : 'IDR' }}
-                                    </span>
+                                
+                                <div class="space-y-2">
+                                    <!-- Table Headers -->
+                                    <div class="grid gap-2 items-center font-medium text-sm text-muted-foreground border-b pb-2" :style="{ gridTemplateColumns: `repeat(${form.interest_list_id.headers.length}, 1fr)` }">
+                                        <div v-for="(header, headerIndex) in form.interest_list_id.headers" :key="`edit-interest-id-header-${headerIndex}`">
+                                            {{ header || `Column ${headerIndex + 1}` }}
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Header Edit Row -->
+                                    <div class="grid gap-2 items-center mb-4" :style="{ gridTemplateColumns: `repeat(${form.interest_list_id.headers.length}, 1fr)` }">
+                                        <div v-for="(header, headerIndex) in form.interest_list_id.headers" :key="`edit-interest-id-header-${headerIndex}`" class="space-y-1">
+                                            <Input
+                                                v-model="form.interest_list_id.headers[headerIndex]"
+                                                :placeholder="`Header ${headerIndex + 1}`"
+                                                class="text-xs"
+                                            />
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="outline"
+                                                @click="removeTableColumn('interest', 'id', headerIndex)"
+                                                class="w-full text-red-600 hover:text-red-700 text-xs"
+                                            >
+                                                Remove Column
+                                            </Button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Table Rows -->
+                                    <div v-for="(row, rowIndex) in form.interest_list_id.rows" :key="`edit-interest-id-row-${rowIndex}`" class="flex gap-2 items-center">
+                                        <div class="grid gap-2 items-center flex-1" 
+                                             :style="{ gridTemplateColumns: `repeat(${form.interest_list_id.headers.length}, 1fr)` }">
+                                            <Input
+                                                v-for="(cell, cellIndex) in row"
+                                                :key="`edit-interest-id-cell-${rowIndex}-${cellIndex}`"
+                                                v-model="form.interest_list_id.rows[rowIndex][cellIndex]"
+                                                :placeholder="`Row ${rowIndex + 1}, Col ${cellIndex + 1}`"
+                                            />
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            variant="outline"
+                                            @click="removeTableRow('interest', 'id', rowIndex)"
+                                            class="text-red-600 hover:text-red-700 hover:bg-red-50 p-2 shrink-0"
+                                            title="Remove Row"
+                                        >
+                                            <X class="w-4 h-4" />
+                                        </Button>
+                                    </div>
+                                    
+                                    <p v-if="form.interest_list_id.headers.length === 0 || form.interest_list_id.rows.length === 0" class="text-sm text-muted-foreground">
+                                        No interest items added yet.
+                                    </p>
                                 </div>
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    @click="removeFeesItem(index)"
-                                    class="col-span-1 text-red-600 hover:text-red-700"
-                                >
-                                    <X class="h-4 w-4" />
-                                </Button>
-                            </div>
-                            <p v-if="form.fees_list.length === 0" class="text-sm text-muted-foreground">
-                                No fee items added yet.
-                            </p>
+                            </TabsContent>
+                            
+                            <!-- English Version -->
+                            <TabsContent value="en" class="space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <Label class="text-sm text-muted-foreground">English Version</Label>
+                                    <div class="flex gap-2">
+                                        <Button type="button" size="sm" variant="outline" @click="addTableColumn('interest', 'en')">
+                                            <Plus class="h-4 w-4 mr-2" />
+                                            Add Column
+                                        </Button>
+                                        <Button type="button" size="sm" variant="outline" @click="addTableRow('interest', 'en')">
+                                            <Plus class="h-4 w-4 mr-2" />
+                                            Add Row
+                                        </Button>
+                                    </div>
+                                </div>
+                                
+                                <div class="space-y-2">
+                                    <!-- Table Headers -->
+                                    <div class="grid gap-2 items-center font-medium text-sm text-muted-foreground border-b pb-2" :style="{ gridTemplateColumns: `repeat(${form.interest_list_en.headers.length}, 1fr)` }">
+                                        <div v-for="(header, headerIndex) in form.interest_list_en.headers" :key="`edit-interest-en-header-${headerIndex}`">
+                                            {{ header || `Column ${headerIndex + 1}` }}
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Header Edit Row -->
+                                    <div class="grid gap-2 items-center mb-4" :style="{ gridTemplateColumns: `repeat(${form.interest_list_en.headers.length}, 1fr)` }">
+                                        <div v-for="(header, headerIndex) in form.interest_list_en.headers" :key="`edit-interest-en-header-${headerIndex}`" class="space-y-1">
+                                            <Input
+                                                v-model="form.interest_list_en.headers[headerIndex]"
+                                                :placeholder="`Header ${headerIndex + 1}`"
+                                                class="text-xs"
+                                            />
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="outline"
+                                                @click="removeTableColumn('interest', 'en', headerIndex)"
+                                                class="w-full text-red-600 hover:text-red-700 text-xs"
+                                            >
+                                                Remove Column
+                                            </Button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Table Rows -->
+                                    <div v-for="(row, rowIndex) in form.interest_list_en.rows" :key="`edit-interest-en-row-${rowIndex}`" class="flex gap-2 items-center">
+                                        <div class="grid gap-2 items-center flex-1" 
+                                             :style="{ gridTemplateColumns: `repeat(${form.interest_list_en.headers.length}, 1fr)` }">
+                                            <Input
+                                                v-for="(cell, cellIndex) in row"
+                                                :key="`edit-interest-en-cell-${rowIndex}-${cellIndex}`"
+                                                v-model="form.interest_list_en.rows[rowIndex][cellIndex]"
+                                                :placeholder="`Row ${rowIndex + 1}, Col ${cellIndex + 1}`"
+                                            />
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            variant="outline"
+                                            @click="removeTableRow('interest', 'en', rowIndex)"
+                                            class="text-red-600 hover:text-red-700 hover:bg-red-50 p-2 shrink-0"
+                                            title="Remove Row"
+                                        >
+                                            <X class="w-4 h-4" />
+                                        </Button>
+                                    </div>
+                                    
+                                    <p v-if="form.interest_list_en.headers.length === 0 || form.interest_list_en.rows.length === 0" class="text-sm text-muted-foreground">
+                                        No interest items added yet.
+                                    </p>
+                                </div>
+                            </TabsContent>
+                        </Tabs>
+                    </div>
+
+                    <!-- Required Documents Table -->
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <Label>Required Documents Table</Label>
                         </div>
+                        
+                        <!-- Language Tabs -->
+                        <Tabs v-model:modelValue="activeDocumentTab" class="w-full">
+                            <TabsList class="grid w-full grid-cols-2">
+                                <TabsTrigger value="id">Bahasa Indonesia</TabsTrigger>
+                                <TabsTrigger value="en">English</TabsTrigger>
+                            </TabsList>
+                            
+                            <!-- Indonesian Version -->
+                            <TabsContent value="id" class="space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <Label class="text-sm text-muted-foreground">Indonesian Version</Label>
+                                    <div class="flex gap-2">
+                                        <Button type="button" size="sm" variant="outline" @click="addDocumentColumn('id')">
+                                            <Plus class="h-4 w-4 mr-2" />
+                                            Add Column
+                                        </Button>
+                                        <Button type="button" size="sm" variant="outline" @click="addDocumentRow('id')">
+                                            <Plus class="h-4 w-4 mr-2" />
+                                            Add Row
+                                        </Button>
+                                    </div>
+                                </div>
+                                
+                                <div class="space-y-2">
+                                    <!-- Table Headers -->
+                                    <div class="grid gap-2 items-center font-medium text-sm text-muted-foreground border-b pb-2" :style="{ gridTemplateColumns: `repeat(${form.document_list_id.headers.length}, 1fr)` }">
+                                        <div v-for="(header, headerIndex) in form.document_list_id.headers" :key="`edit-document-id-header-${headerIndex}`">
+                                            {{ header || `Column ${headerIndex + 1}` }}
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Header Edit Row -->
+                                    <div class="grid gap-2 items-center mb-4" :style="{ gridTemplateColumns: `repeat(${form.document_list_id.headers.length}, 1fr)` }">
+                                        <div v-for="(header, headerIndex) in form.document_list_id.headers" :key="`edit-document-id-header-${headerIndex}`" class="space-y-1">
+                                            <Input
+                                                v-model="form.document_list_id.headers[headerIndex]"
+                                                :placeholder="`Header ${headerIndex + 1}`"
+                                                class="text-xs"
+                                            />
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="outline"
+                                                @click="removeDocumentColumn('id', headerIndex)"
+                                                class="w-full text-red-600 hover:text-red-700 text-xs"
+                                            >
+                                                Remove Column
+                                            </Button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Table Rows -->
+                                    <div v-for="(row, rowIndex) in form.document_list_id.rows" :key="`edit-document-id-row-${rowIndex}`" class="flex gap-2 items-center">
+                                        <div class="grid gap-2 items-center flex-1" 
+                                             :style="{ gridTemplateColumns: `repeat(${form.document_list_id.headers.length}, 1fr)` }">
+                                            <Input
+                                                v-for="(cell, cellIndex) in row"
+                                                :key="`edit-document-id-cell-${rowIndex}-${cellIndex}`"
+                                                v-model="form.document_list_id.rows[rowIndex][cellIndex]"
+                                                :placeholder="`Row ${rowIndex + 1}, Col ${cellIndex + 1}`"
+                                            />
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            variant="outline"
+                                            @click="removeDocumentRow('id', rowIndex)"
+                                            class="text-red-600 hover:text-red-700 hover:bg-red-50 p-2 shrink-0"
+                                            title="Remove Row"
+                                        >
+                                            <X class="w-4 h-4" />
+                                        </Button>
+                                    </div>
+                                    
+                                    <p v-if="form.document_list_id.headers.length === 0 || form.document_list_id.rows.length === 0" class="text-sm text-muted-foreground">
+                                        No document items added yet.
+                                    </p>
+                                </div>
+                            </TabsContent>
+                            
+                            <!-- English Version -->
+                            <TabsContent value="en" class="space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <Label class="text-sm text-muted-foreground">English Version</Label>
+                                    <div class="flex gap-2">
+                                        <Button type="button" size="sm" variant="outline" @click="addDocumentColumn('en')">
+                                            <Plus class="h-4 w-4 mr-2" />
+                                            Add Column
+                                        </Button>
+                                        <Button type="button" size="sm" variant="outline" @click="addDocumentRow('en')">
+                                            <Plus class="h-4 w-4 mr-2" />
+                                            Add Row
+                                        </Button>
+                                    </div>
+                                </div>
+                                
+                                <div class="space-y-2">
+                                    <!-- Table Headers -->
+                                    <div class="grid gap-2 items-center font-medium text-sm text-muted-foreground border-b pb-2" :style="{ gridTemplateColumns: `repeat(${form.document_list_en.headers.length}, 1fr)` }">
+                                        <div v-for="(header, headerIndex) in form.document_list_en.headers" :key="`edit-document-en-header-${headerIndex}`">
+                                            {{ header || `Column ${headerIndex + 1}` }}
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Header Edit Row -->
+                                    <div class="grid gap-2 items-center mb-4" :style="{ gridTemplateColumns: `repeat(${form.document_list_en.headers.length}, 1fr)` }">
+                                        <div v-for="(header, headerIndex) in form.document_list_en.headers" :key="`edit-document-en-header-${headerIndex}`" class="space-y-1">
+                                            <Input
+                                                v-model="form.document_list_en.headers[headerIndex]"
+                                                :placeholder="`Header ${headerIndex + 1}`"
+                                                class="text-xs"
+                                            />
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="outline"
+                                                @click="removeDocumentColumn('en', headerIndex)"
+                                                class="w-full text-red-600 hover:text-red-700 text-xs"
+                                            >
+                                                Remove Column
+                                            </Button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Table Rows -->
+                                    <div v-for="(row, rowIndex) in form.document_list_en.rows" :key="`edit-document-en-row-${rowIndex}`" class="flex gap-2 items-center">
+                                        <div class="grid gap-2 items-center flex-1" 
+                                             :style="{ gridTemplateColumns: `repeat(${form.document_list_en.headers.length}, 1fr)` }">
+                                            <Input
+                                                v-for="(cell, cellIndex) in row"
+                                                :key="`edit-document-en-cell-${rowIndex}-${cellIndex}`"
+                                                v-model="form.document_list_en.rows[rowIndex][cellIndex]"
+                                                :placeholder="`Row ${rowIndex + 1}, Col ${cellIndex + 1}`"
+                                            />
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            variant="outline"
+                                            @click="removeDocumentRow('en', rowIndex)"
+                                            class="text-red-600 hover:text-red-700 hover:bg-red-50 p-2 shrink-0"
+                                            title="Remove Row"
+                                        >
+                                            <X class="w-4 h-4" />
+                                        </Button>
+                                    </div>
+                                    
+                                    <p v-if="form.document_list_en.headers.length === 0 || form.document_list_en.rows.length === 0" class="text-sm text-muted-foreground">
+                                        No document items added yet.
+                                    </p>
+                                </div>
+                            </TabsContent>
+                        </Tabs>
+                    </div>
+
+                    <!-- Fees List Table -->
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <Label>Fees List Table</Label>
+                        </div>
+                        
+                        <!-- Language Tabs -->
+                        <Tabs v-model:modelValue="activeFeesTab" class="w-full">
+                            <TabsList class="grid w-full grid-cols-2">
+                                <TabsTrigger value="id">Bahasa Indonesia</TabsTrigger>
+                                <TabsTrigger value="en">English</TabsTrigger>
+                            </TabsList>
+                            
+                            <!-- Indonesian Version -->
+                            <TabsContent value="id" class="space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <Label class="text-sm text-muted-foreground">Indonesian Version</Label>
+                                    <div class="flex gap-2">
+                                        <Button type="button" size="sm" variant="outline" @click="addTableColumn('fees', 'id')">
+                                            <Plus class="h-4 w-4 mr-2" />
+                                            Add Column
+                                        </Button>
+                                        <Button type="button" size="sm" variant="outline" @click="addTableRow('fees', 'id')">
+                                            <Plus class="h-4 w-4 mr-2" />
+                                            Add Row
+                                        </Button>
+                                    </div>
+                                </div>
+                                
+                                <div class="space-y-2">
+                                    <!-- Table Headers -->
+                                    <div class="grid gap-2 items-center font-medium text-sm text-muted-foreground border-b pb-2" :style="{ gridTemplateColumns: `repeat(${form.fees_list_id.headers.length}, 1fr)` }">
+                                        <div v-for="(header, headerIndex) in form.fees_list_id.headers" :key="`edit-fees-id-header-${headerIndex}`">
+                                            {{ header || `Column ${headerIndex + 1}` }}
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Header Edit Row -->
+                                    <div class="grid gap-2 items-center mb-4" :style="{ gridTemplateColumns: `repeat(${form.fees_list_id.headers.length}, 1fr)` }">
+                                        <div v-for="(header, headerIndex) in form.fees_list_id.headers" :key="`edit-fees-id-header-${headerIndex}`" class="space-y-1">
+                                            <Input
+                                                v-model="form.fees_list_id.headers[headerIndex]"
+                                                :placeholder="`Header ${headerIndex + 1}`"
+                                                class="text-xs"
+                                            />
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="outline"
+                                                @click="removeTableColumn('fees', 'id', headerIndex)"
+                                                class="w-full text-red-600 hover:text-red-700 text-xs"
+                                            >
+                                                Remove Column
+                                            </Button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Table Rows -->
+                                    <div v-for="(row, rowIndex) in form.fees_list_id.rows" :key="`edit-fees-id-row-${rowIndex}`" class="flex gap-2 items-center">
+                                        <div class="grid gap-2 items-center flex-1" 
+                                             :style="{ gridTemplateColumns: `repeat(${form.fees_list_id.headers.length}, 1fr)` }">
+                                            <Input
+                                                v-for="(cell, cellIndex) in row"
+                                                :key="`edit-fees-id-cell-${rowIndex}-${cellIndex}`"
+                                                v-model="form.fees_list_id.rows[rowIndex][cellIndex]"
+                                                :placeholder="`Row ${rowIndex + 1}, Col ${cellIndex + 1}`"
+                                            />
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            variant="outline"
+                                            @click="removeTableRow('fees', 'id', rowIndex)"
+                                            class="text-red-600 hover:text-red-700 hover:bg-red-50 p-2 shrink-0"
+                                            title="Remove Row"
+                                        >
+                                            <X class="w-4 h-4" />
+                                        </Button>
+                                    </div>
+                                    
+                                    <p v-if="form.fees_list_id.headers.length === 0 || form.fees_list_id.rows.length === 0" class="text-sm text-muted-foreground">
+                                        No fee items added yet.
+                                    </p>
+                                </div>
+                            </TabsContent>
+                            
+                            <!-- English Version -->
+                            <TabsContent value="en" class="space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <Label class="text-sm text-muted-foreground">English Version</Label>
+                                    <div class="flex gap-2">
+                                        <Button type="button" size="sm" variant="outline" @click="addTableColumn('fees', 'en')">
+                                            <Plus class="h-4 w-4 mr-2" />
+                                            Add Column
+                                        </Button>
+                                        <Button type="button" size="sm" variant="outline" @click="addTableRow('fees', 'en')">
+                                            <Plus class="h-4 w-4 mr-2" />
+                                            Add Row
+                                        </Button>
+                                    </div>
+                                </div>
+                                
+                                <div class="space-y-2">
+                                    <!-- Table Headers -->
+                                    <div class="grid gap-2 items-center font-medium text-sm text-muted-foreground border-b pb-2" :style="{ gridTemplateColumns: `repeat(${form.fees_list_en.headers.length}, 1fr)` }">
+                                        <div v-for="(header, headerIndex) in form.fees_list_en.headers" :key="`edit-fees-en-header-${headerIndex}`">
+                                            {{ header || `Column ${headerIndex + 1}` }}
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Header Edit Row -->
+                                    <div class="grid gap-2 items-center mb-4" :style="{ gridTemplateColumns: `repeat(${form.fees_list_en.headers.length}, 1fr)` }">
+                                        <div v-for="(header, headerIndex) in form.fees_list_en.headers" :key="`edit-fees-en-header-${headerIndex}`" class="space-y-1">
+                                            <Input
+                                                v-model="form.fees_list_en.headers[headerIndex]"
+                                                :placeholder="`Header ${headerIndex + 1}`"
+                                                class="text-xs"
+                                            />
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="outline"
+                                                @click="removeTableColumn('fees', 'en', headerIndex)"
+                                                class="w-full text-red-600 hover:text-red-700 text-xs"
+                                            >
+                                                Remove Column
+                                            </Button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Table Rows -->
+                                    <div v-for="(row, rowIndex) in form.fees_list_en.rows" :key="`edit-fees-en-row-${rowIndex}`" class="flex gap-2 items-center">
+                                        <div class="grid gap-2 items-center flex-1" 
+                                             :style="{ gridTemplateColumns: `repeat(${form.fees_list_en.headers.length}, 1fr)` }">
+                                            <Input
+                                                v-for="(cell, cellIndex) in row"
+                                                :key="`edit-fees-en-cell-${rowIndex}-${cellIndex}`"
+                                                v-model="form.fees_list_en.rows[rowIndex][cellIndex]"
+                                                :placeholder="`Row ${rowIndex + 1}, Col ${cellIndex + 1}`"
+                                            />
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            variant="outline"
+                                            @click="removeTableRow('fees', 'en', rowIndex)"
+                                            class="text-red-600 hover:text-red-700 hover:bg-red-50 p-2 shrink-0"
+                                            title="Remove Row"
+                                        >
+                                            <X class="w-4 h-4" />
+                                        </Button>
+                                    </div>
+                                    
+                                    <p v-if="form.fees_list_en.headers.length === 0 || form.fees_list_en.rows.length === 0" class="text-sm text-muted-foreground">
+                                        No fee items added yet.
+                                    </p>
+                                </div>
+                            </TabsContent>
+                        </Tabs>
                     </div>
 
 
@@ -1499,7 +2597,7 @@ const clearFilters = () => {
                     <Button type="button" variant="outline" @click="showEditModal = false">
                         Cancel
                     </Button>
-                    <Button type="button" @click="submitForm" :disabled="isSubmitting">
+                    <Button type="button" @click="submitEditForm" :disabled="isSubmitting">
                         <Save class="h-4 w-4 mr-2" />
                         {{ isSubmitting ? 'Updating...' : 'Update Service' }}
                     </Button>

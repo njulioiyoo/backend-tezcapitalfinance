@@ -54,19 +54,6 @@ class ServiceController extends Controller
         $query->orderBy($sortBy, $sortOrder);
 
         $services = $query->paginate($perPage)->withQueryString();
-        
-        // Debug logging for bilingual data
-        if ($services->isNotEmpty()) {
-            $firstService = $services->first();
-            \Log::info('Service bilingual data debug:', [
-                'title' => $firstService->title_id,
-                'interest_list' => $firstService->interest_list,
-                'interest_list_id' => $firstService->interest_list_id,
-                'interest_list_en' => $firstService->interest_list_en,
-                'has_interest_list_id_field' => isset($firstService->interest_list_id),
-                'has_interest_list_en_field' => isset($firstService->interest_list_en)
-            ]);
-        }
 
         // Get categories and statuses for filters
         $categories = Content::where('type', 'service')
@@ -224,40 +211,21 @@ class ServiceController extends Controller
         // Debug: Log the incoming request data
         \Log::info('Service Store Request Data:', [
             'all_data' => $request->all(),
-            'interest_list' => $request->get('interest_list'),
-            'document_list' => $request->get('document_list'),
-            'fees_list' => $request->get('fees_list'),
+            'interest_table' => $request->get('interest_table'),
+            'document_table' => $request->get('document_table'),
+            'fees_table' => $request->get('fees_table'),
         ]);
 
         // Decode JSON strings back to arrays for validation
         $decodedData = $request->all();
-        if (is_string($request->get('interest_list'))) {
-            $decodedData['interest_list'] = json_decode($request->get('interest_list'), true);
+        if (is_string($request->get('interest_table'))) {
+            $decodedData['interest_table'] = json_decode($request->get('interest_table'), true);
         }
-        if (is_string($request->get('document_list'))) {
-            $decodedData['document_list'] = json_decode($request->get('document_list'), true);
+        if (is_string($request->get('document_table'))) {
+            $decodedData['document_table'] = json_decode($request->get('document_table'), true);
         }
-        if (is_string($request->get('fees_list'))) {
-            $decodedData['fees_list'] = json_decode($request->get('fees_list'), true);
-        }
-        // Decode bilingual dynamic table JSON strings
-        if (is_string($request->get('interest_list_id'))) {
-            $decodedData['interest_list_id'] = json_decode($request->get('interest_list_id'), true);
-        }
-        if (is_string($request->get('interest_list_en'))) {
-            $decodedData['interest_list_en'] = json_decode($request->get('interest_list_en'), true);
-        }
-        if (is_string($request->get('document_list_id'))) {
-            $decodedData['document_list_id'] = json_decode($request->get('document_list_id'), true);
-        }
-        if (is_string($request->get('document_list_en'))) {
-            $decodedData['document_list_en'] = json_decode($request->get('document_list_en'), true);
-        }
-        if (is_string($request->get('fees_list_id'))) {
-            $decodedData['fees_list_id'] = json_decode($request->get('fees_list_id'), true);
-        }
-        if (is_string($request->get('fees_list_en'))) {
-            $decodedData['fees_list_en'] = json_decode($request->get('fees_list_en'), true);
+        if (is_string($request->get('fees_table'))) {
+            $decodedData['fees_table'] = json_decode($request->get('fees_table'), true);
         }
         
         // Replace request data with decoded data
@@ -273,61 +241,24 @@ class ServiceController extends Controller
             'category' => 'nullable|string|max:100',
             'featured_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             'gallery' => 'nullable|array',
-            'interest_list' => 'nullable|array',
-            'interest_list.headers' => 'nullable|array',
-            'interest_list.headers.*' => 'string|max:255',
-            'interest_list.rows' => 'nullable|array',
-            'interest_list.rows.*' => 'array',
-            'interest_list.rows.*.*' => 'string',
-            'document_list' => 'nullable|array',
-            'document_list.headers' => 'nullable|array',
-            'document_list.headers.*' => 'string|max:255',
-            'document_list.rows' => 'nullable|array',
-            'document_list.rows.*' => 'array',
-            'document_list.rows.*.*' => 'string',
-            'fees_list' => 'nullable|array',
-            'fees_list.headers' => 'nullable|array',
-            'fees_list.headers.*' => 'string|max:255',
-            'fees_list.rows' => 'nullable|array',
-            'fees_list.rows.*' => 'array',
-            'fees_list.rows.*.*' => 'string',
-            // Bilingual dynamic table validation
-            'interest_list_id' => 'nullable|array',
-            'interest_list_id.headers' => 'nullable|array',
-            'interest_list_id.headers.*' => 'string|max:255',
-            'interest_list_id.rows' => 'nullable|array',
-            'interest_list_id.rows.*' => 'array',
-            'interest_list_id.rows.*.*' => 'string',
-            'interest_list_en' => 'nullable|array',
-            'interest_list_en.headers' => 'nullable|array',
-            'interest_list_en.headers.*' => 'string|max:255',
-            'interest_list_en.rows' => 'nullable|array',
-            'interest_list_en.rows.*' => 'array',
-            'interest_list_en.rows.*.*' => 'string',
-            'document_list_id' => 'nullable|array',
-            'document_list_id.headers' => 'nullable|array',
-            'document_list_id.headers.*' => 'string|max:255',
-            'document_list_id.rows' => 'nullable|array',
-            'document_list_id.rows.*' => 'array',
-            'document_list_id.rows.*.*' => 'string',
-            'document_list_en' => 'nullable|array',
-            'document_list_en.headers' => 'nullable|array',
-            'document_list_en.headers.*' => 'string|max:255',
-            'document_list_en.rows' => 'nullable|array',
-            'document_list_en.rows.*' => 'array',
-            'document_list_en.rows.*.*' => 'string',
-            'fees_list_id' => 'nullable|array',
-            'fees_list_id.headers' => 'nullable|array',
-            'fees_list_id.headers.*' => 'string|max:255',
-            'fees_list_id.rows' => 'nullable|array',
-            'fees_list_id.rows.*' => 'array',
-            'fees_list_id.rows.*.*' => 'string',
-            'fees_list_en' => 'nullable|array',
-            'fees_list_en.headers' => 'nullable|array',
-            'fees_list_en.headers.*' => 'string|max:255',
-            'fees_list_en.rows' => 'nullable|array',
-            'fees_list_en.rows.*' => 'array',
-            'fees_list_en.rows.*.*' => 'string',
+            'interest_table' => 'nullable|array',
+            'interest_table.headers' => 'nullable|array',
+            'interest_table.headers.*' => 'string|max:255',
+            'interest_table.rows' => 'nullable|array',
+            'interest_table.rows.*' => 'array',
+            'interest_table.rows.*.*' => 'string',
+            'document_table' => 'nullable|array',
+            'document_table.headers' => 'nullable|array',
+            'document_table.headers.*' => 'string|max:255',
+            'document_table.rows' => 'nullable|array',
+            'document_table.rows.*' => 'array',
+            'document_table.rows.*.*' => 'string',
+            'fees_table' => 'nullable|array',
+            'fees_table.headers' => 'nullable|array',
+            'fees_table.headers.*' => 'string|max:255',
+            'fees_table.rows' => 'nullable|array',
+            'fees_table.rows.*' => 'array',
+            'fees_table.rows.*.*' => 'string',
             'requirements_id' => 'nullable|string',
             'requirements_en' => 'nullable|string',
             'benefits_id' => 'nullable|string',
@@ -357,16 +288,9 @@ class ServiceController extends Controller
                 'content_id' => $request->content_id,
                 'content_en' => $request->content_en,
                 'gallery' => $request->gallery ? json_encode($request->gallery) : null,
-                'interest_list' => $request->interest_list && is_array($request->interest_list) ? $request->interest_list : null,
-                'document_list' => $request->document_list && is_array($request->document_list) ? $request->document_list : null,
-                'fees_list' => $request->fees_list && is_array($request->fees_list) ? $request->fees_list : null,
-                // Bilingual dynamic tables
-                'interest_list_id' => $request->interest_list_id && is_array($request->interest_list_id) ? $request->interest_list_id : null,
-                'interest_list_en' => $request->interest_list_en && is_array($request->interest_list_en) ? $request->interest_list_en : null,
-                'document_list_id' => $request->document_list_id && is_array($request->document_list_id) ? $request->document_list_id : null,
-                'document_list_en' => $request->document_list_en && is_array($request->document_list_en) ? $request->document_list_en : null,
-                'fees_list_id' => $request->fees_list_id && is_array($request->fees_list_id) ? $request->fees_list_id : null,
-                'fees_list_en' => $request->fees_list_en && is_array($request->fees_list_en) ? $request->fees_list_en : null,
+                'interest_table' => $request->interest_table && is_array($request->interest_table) ? $request->interest_table : null,
+                'document_table' => $request->document_table && is_array($request->document_table) ? $request->document_table : null,
+                'fees_table' => $request->fees_table && is_array($request->fees_table) ? $request->fees_table : null,
                 'requirements_id' => $request->requirements_id,
                 'requirements_en' => $request->requirements_en,
                 'benefits_id' => $request->benefits_id,
@@ -455,40 +379,21 @@ class ServiceController extends Controller
 
         // Debug: Log the incoming request data
         \Log::info('Service Update Request Data:', [
-            'interest_list' => $request->get('interest_list'),
-            'document_list' => $request->get('document_list'),
-            'fees_list' => $request->get('fees_list'),
+            'interest_table' => $request->get('interest_table'),
+            'document_table' => $request->get('document_table'),
+            'fees_table' => $request->get('fees_table'),
         ]);
 
         // Decode JSON strings back to arrays for validation
         $decodedData = $request->all();
-        if (is_string($request->get('interest_list'))) {
-            $decodedData['interest_list'] = json_decode($request->get('interest_list'), true);
+        if (is_string($request->get('interest_table'))) {
+            $decodedData['interest_table'] = json_decode($request->get('interest_table'), true);
         }
-        if (is_string($request->get('document_list'))) {
-            $decodedData['document_list'] = json_decode($request->get('document_list'), true);
+        if (is_string($request->get('document_table'))) {
+            $decodedData['document_table'] = json_decode($request->get('document_table'), true);
         }
-        if (is_string($request->get('fees_list'))) {
-            $decodedData['fees_list'] = json_decode($request->get('fees_list'), true);
-        }
-        // Decode bilingual dynamic table JSON strings
-        if (is_string($request->get('interest_list_id'))) {
-            $decodedData['interest_list_id'] = json_decode($request->get('interest_list_id'), true);
-        }
-        if (is_string($request->get('interest_list_en'))) {
-            $decodedData['interest_list_en'] = json_decode($request->get('interest_list_en'), true);
-        }
-        if (is_string($request->get('document_list_id'))) {
-            $decodedData['document_list_id'] = json_decode($request->get('document_list_id'), true);
-        }
-        if (is_string($request->get('document_list_en'))) {
-            $decodedData['document_list_en'] = json_decode($request->get('document_list_en'), true);
-        }
-        if (is_string($request->get('fees_list_id'))) {
-            $decodedData['fees_list_id'] = json_decode($request->get('fees_list_id'), true);
-        }
-        if (is_string($request->get('fees_list_en'))) {
-            $decodedData['fees_list_en'] = json_decode($request->get('fees_list_en'), true);
+        if (is_string($request->get('fees_table'))) {
+            $decodedData['fees_table'] = json_decode($request->get('fees_table'), true);
         }
         
         // Replace request data with decoded data
@@ -504,61 +409,24 @@ class ServiceController extends Controller
             'category' => 'nullable|string|max:100',
             'featured_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             'gallery' => 'nullable|array',
-            'interest_list' => 'nullable|array',
-            'interest_list.headers' => 'nullable|array',
-            'interest_list.headers.*' => 'string|max:255',
-            'interest_list.rows' => 'nullable|array',
-            'interest_list.rows.*' => 'array',
-            'interest_list.rows.*.*' => 'string',
-            'document_list' => 'nullable|array',
-            'document_list.headers' => 'nullable|array',
-            'document_list.headers.*' => 'string|max:255',
-            'document_list.rows' => 'nullable|array',
-            'document_list.rows.*' => 'array',
-            'document_list.rows.*.*' => 'string',
-            'fees_list' => 'nullable|array',
-            'fees_list.headers' => 'nullable|array',
-            'fees_list.headers.*' => 'string|max:255',
-            'fees_list.rows' => 'nullable|array',
-            'fees_list.rows.*' => 'array',
-            'fees_list.rows.*.*' => 'string',
-            // Bilingual dynamic table validation
-            'interest_list_id' => 'nullable|array',
-            'interest_list_id.headers' => 'nullable|array',
-            'interest_list_id.headers.*' => 'string|max:255',
-            'interest_list_id.rows' => 'nullable|array',
-            'interest_list_id.rows.*' => 'array',
-            'interest_list_id.rows.*.*' => 'string',
-            'interest_list_en' => 'nullable|array',
-            'interest_list_en.headers' => 'nullable|array',
-            'interest_list_en.headers.*' => 'string|max:255',
-            'interest_list_en.rows' => 'nullable|array',
-            'interest_list_en.rows.*' => 'array',
-            'interest_list_en.rows.*.*' => 'string',
-            'document_list_id' => 'nullable|array',
-            'document_list_id.headers' => 'nullable|array',
-            'document_list_id.headers.*' => 'string|max:255',
-            'document_list_id.rows' => 'nullable|array',
-            'document_list_id.rows.*' => 'array',
-            'document_list_id.rows.*.*' => 'string',
-            'document_list_en' => 'nullable|array',
-            'document_list_en.headers' => 'nullable|array',
-            'document_list_en.headers.*' => 'string|max:255',
-            'document_list_en.rows' => 'nullable|array',
-            'document_list_en.rows.*' => 'array',
-            'document_list_en.rows.*.*' => 'string',
-            'fees_list_id' => 'nullable|array',
-            'fees_list_id.headers' => 'nullable|array',
-            'fees_list_id.headers.*' => 'string|max:255',
-            'fees_list_id.rows' => 'nullable|array',
-            'fees_list_id.rows.*' => 'array',
-            'fees_list_id.rows.*.*' => 'string',
-            'fees_list_en' => 'nullable|array',
-            'fees_list_en.headers' => 'nullable|array',
-            'fees_list_en.headers.*' => 'string|max:255',
-            'fees_list_en.rows' => 'nullable|array',
-            'fees_list_en.rows.*' => 'array',
-            'fees_list_en.rows.*.*' => 'string',
+            'interest_table' => 'nullable|array',
+            'interest_table.headers' => 'nullable|array',
+            'interest_table.headers.*' => 'string|max:255',
+            'interest_table.rows' => 'nullable|array',
+            'interest_table.rows.*' => 'array',
+            'interest_table.rows.*.*' => 'string',
+            'document_table' => 'nullable|array',
+            'document_table.headers' => 'nullable|array',
+            'document_table.headers.*' => 'string|max:255',
+            'document_table.rows' => 'nullable|array',
+            'document_table.rows.*' => 'array',
+            'document_table.rows.*.*' => 'string',
+            'fees_table' => 'nullable|array',
+            'fees_table.headers' => 'nullable|array',
+            'fees_table.headers.*' => 'string|max:255',
+            'fees_table.rows' => 'nullable|array',
+            'fees_table.rows.*' => 'array',
+            'fees_table.rows.*.*' => 'string',
             'requirements_id' => 'nullable|string',
             'requirements_en' => 'nullable|string',
             'benefits_id' => 'nullable|string',
@@ -590,16 +458,9 @@ class ServiceController extends Controller
                 'content_id' => $request->content_id,
                 'content_en' => $request->content_en,
                 'gallery' => $request->gallery ? json_encode($request->gallery) : null,
-                'interest_list' => $request->interest_list && is_array($request->interest_list) ? $request->interest_list : null,
-                'document_list' => $request->document_list && is_array($request->document_list) ? $request->document_list : null,
-                'fees_list' => $request->fees_list && is_array($request->fees_list) ? $request->fees_list : null,
-                // Bilingual dynamic tables
-                'interest_list_id' => $request->interest_list_id && is_array($request->interest_list_id) ? $request->interest_list_id : null,
-                'interest_list_en' => $request->interest_list_en && is_array($request->interest_list_en) ? $request->interest_list_en : null,
-                'document_list_id' => $request->document_list_id && is_array($request->document_list_id) ? $request->document_list_id : null,
-                'document_list_en' => $request->document_list_en && is_array($request->document_list_en) ? $request->document_list_en : null,
-                'fees_list_id' => $request->fees_list_id && is_array($request->fees_list_id) ? $request->fees_list_id : null,
-                'fees_list_en' => $request->fees_list_en && is_array($request->fees_list_en) ? $request->fees_list_en : null,
+                'interest_table' => $request->interest_table && is_array($request->interest_table) ? $request->interest_table : null,
+                'document_table' => $request->document_table && is_array($request->document_table) ? $request->document_table : null,
+                'fees_table' => $request->fees_table && is_array($request->fees_table) ? $request->fees_table : null,
                 'requirements_id' => $request->requirements_id,
                 'requirements_en' => $request->requirements_en,
                 'benefits_id' => $request->benefits_id,

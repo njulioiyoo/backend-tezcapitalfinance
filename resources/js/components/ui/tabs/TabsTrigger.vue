@@ -23,6 +23,7 @@ const handleClick = () => {
 
 <template>
   <button
+    type="button"
     v-bind="$attrs"
     :class="
       cn(

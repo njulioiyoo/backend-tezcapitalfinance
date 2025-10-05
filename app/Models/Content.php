@@ -29,6 +29,15 @@ class Content extends Model implements Auditable
         'interest_list',
         'document_list',
         'fees_list',
+        'interest_list_id',
+        'interest_list_en',
+        'document_list_id',
+        'document_list_en',
+        'fees_list_id',
+        'fees_list_en',
+        'interest_table',
+        'document_table',
+        'fees_table',
         'interest_rate',
         'service_duration',
         'requirements_id',
@@ -40,6 +49,8 @@ class Content extends Model implements Auditable
         'source_url',
         'location_id',
         'location_en',
+        'department_id',
+        'department_en',
         'start_date',
         'end_date',
         'organizer',
@@ -69,6 +80,19 @@ class Content extends Model implements Auditable
             'interest_list' => 'array',
             'document_list' => 'array',
             'fees_list' => 'array',
+            'interest_list_id' => 'array',
+            'interest_list_en' => 'array',
+            'document_list_id' => 'array',
+            'document_list_en' => 'array',
+            'fees_list_id' => 'array',
+            'fees_list_en' => 'array',
+            'interest_table' => 'array',
+            'document_table' => 'array',
+            'fees_table' => 'array',
+            'requirements_id' => 'json',
+            'requirements_en' => 'json',
+            'benefits_id' => 'json',
+            'benefits_en' => 'json',
             'is_published' => 'boolean',
             'is_featured' => 'boolean',
             'show_credit_simulation' => 'boolean',
@@ -276,6 +300,7 @@ class Content extends Model implements Auditable
             'announcement' => 'Announcement',
             'partner' => 'Partner',
             'service' => 'Service',
+            'career' => 'Career',
         ];
     }
 
@@ -328,6 +353,21 @@ class Content extends Model implements Auditable
         ];
     }
 
+    public static function getCareerCategories()
+    {
+        return [
+            'procurement' => 'Procurement',
+            'engineering' => 'Engineering',
+            'marketing' => 'Marketing',
+            'human-resources' => 'Human Resources',
+            'technology' => 'Technology',
+            'finance' => 'Finance',
+            'operations' => 'Operations',
+            'sales' => 'Sales',
+            'other' => 'Other',
+        ];
+    }
+
     public static function getStatuses()
     {
         return [
@@ -346,6 +386,7 @@ class Content extends Model implements Auditable
             'event' => self::getEventCategories(),
             'partner' => self::getPartnerCategories(),
             'service' => self::getServiceCategories(),
+            'career' => self::getCareerCategories(),
             default => [],
         };
     }
@@ -384,6 +425,18 @@ class Content extends Model implements Auditable
     public function scopeServices($query)
     {
         return $query->where('type', 'service');
+    }
+
+    // Scope for careers
+    public function scopeCareers($query)
+    {
+        return $query->where('type', 'career');
+    }
+
+    // Check if content is career
+    public function isCareer()
+    {
+        return $this->type === 'career';
     }
 
     /**
