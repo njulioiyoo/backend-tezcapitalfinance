@@ -206,7 +206,8 @@ const submitForm = async () => {
             },
             onError: (err) => {
                 errors.value = err;
-                toast.error('Please check the form for errors');
+                const firstError = Object.values(err)[0];
+                toast({ title: 'Validation Error', description: firstError, variant: 'error' });
             },
             onFinish: () => {
                 isLoading.value = false;

@@ -143,6 +143,8 @@ const resetForm = () => {
     });
 };
 
+import { toast } from '@/components/ui/toast';
+
 const saveCareer = async () => {
     try {
         const careerData = {
@@ -157,13 +159,21 @@ const saveCareer = async () => {
 
         if (editingCareer.value) {
             await axios.put(`/content/careers/${editingCareer.value.id}`, careerData);
+            toast({ title: 'Success', description: 'Career updated successfully.', variant: 'success' });
         } else {
             await axios.post('/content/careers', careerData);
+            toast({ title: 'Success', description: 'Career created successfully.', variant: 'success' });
         }
         
         closeDialog();
         loadCareers();
     } catch (error) {
+        if (error.response && error.response.data && error.response.data.errors) {
+            const firstError = Object.values(error.response.data.errors)[0][0];
+            toast({ title: 'Validation Error', description: firstError, variant: 'error' });
+        } else {
+            toast({ title: 'Error', description: 'An unexpected error occurred.', variant: 'error' });
+        }
         console.error('Error saving career:', error);
     }
 };

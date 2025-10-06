@@ -29,8 +29,8 @@ class CareerController extends Controller
             });
         }
 
-        if ($request->filled('category')) {
-            $query->where('category', $request->category);
+        if ($request->filled('department')) {
+            $query->where('department_id', $request->department);
         }
 
         if ($request->filled('status')) {
@@ -53,7 +53,6 @@ class CareerController extends Controller
         $validator = Validator::make($request->all(), [
             'title_id' => 'required|string|max:255',
             'title_en' => 'required|string|max:255',
-            'category' => 'required|string|max:255',
             'excerpt_id' => 'nullable|string',
             'excerpt_en' => 'nullable|string',
             'content_id' => 'required|string',
@@ -89,18 +88,36 @@ class CareerController extends Controller
         ], 201);
     }
 
-    public function show(Content $content)
+    public function show($content)
     {
-        if ($content->type !== 'career') {
+        // Handle both ID and slug parameters
+        if (is_numeric($content)) {
+            // If parameter is numeric, treat it as ID
+            $contentModel = Content::where('id', $content)->where('type', 'career')->first();
+        } else {
+            // If parameter is not numeric, treat it as slug
+            $contentModel = Content::where('slug', $content)->where('type', 'career')->first();
+        }
+
+        if (!$contentModel) {
             return response()->json(['message' => 'Career not found'], 404);
         }
 
-        return response()->json(['data' => $content]);
+        return response()->json(['data' => $contentModel]);
     }
 
-    public function update(Request $request, Content $content)
+    public function update(Request $request, $content)
     {
-        if ($content->type !== 'career') {
+        // Handle both ID and slug parameters
+        if (is_numeric($content)) {
+            // If parameter is numeric, treat it as ID
+            $contentModel = Content::where('id', $content)->where('type', 'career')->first();
+        } else {
+            // If parameter is not numeric, treat it as slug
+            $contentModel = Content::where('slug', $content)->where('type', 'career')->first();
+        }
+
+        if (!$contentModel) {
             return response()->json(['message' => 'Career not found'], 404);
         }
 
@@ -132,23 +149,32 @@ class CareerController extends Controller
             ], 422);
         }
 
-        $content->update(array_merge($request->all(), [
-            'published_at' => $request->is_published ? ($content->published_at ?? now()) : null,
+        $contentModel->update(array_merge($request->all(), [
+            'published_at' => $request->is_published ? ($contentModel->published_at ?? now()) : null,
         ]));
 
         return response()->json([
             'message' => 'Career updated successfully',
-            'data' => $content->fresh()
+            'data' => $contentModel->fresh()
         ]);
     }
 
-    public function destroy(Content $content)
+    public function destroy(Request $request, $content)
     {
-        if ($content->type !== 'career') {
+        // Handle both ID and slug parameters
+        if (is_numeric($content)) {
+            // If parameter is numeric, treat it as ID
+            $contentModel = Content::where('id', $content)->where('type', 'career')->first();
+        } else {
+            // If parameter is not numeric, treat it as slug
+            $contentModel = Content::where('slug', $content)->where('type', 'career')->first();
+        }
+
+        if (!$contentModel) {
             return response()->json(['message' => 'Career not found'], 404);
         }
 
-        $content->delete();
+        $contentModel->delete();
 
         return response()->json([
             'message' => 'Career deleted successfully'
