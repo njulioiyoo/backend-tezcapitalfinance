@@ -359,6 +359,73 @@
                 </div>
             </div>
 
+            <!-- Join Us Page Banner -->
+            <div class="mb-8 p-4 border rounded">
+                <h4 class="font-medium mb-4">Join Us Page Banner</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <Label>Title (Indonesian)</Label>
+                            <Input 
+                                v-model="localConfigs.banner_join_us_title_id"
+                                placeholder="Bergabunglah dengan Tim Kami"
+                            />
+                        </div>
+                        <div class="space-y-2">
+                            <Label>Title (English)</Label>
+                            <Input 
+                                v-model="localConfigs.banner_join_us_title_en"
+                                placeholder="Join Our Team"
+                            />
+                        </div>
+                        <div class="space-y-2">
+                            <Label>Description (Indonesian)</Label>
+                            <Textarea 
+                                v-model="localConfigs.banner_join_us_description_id"
+                                placeholder="Temukan peluang karir yang tepat untuk Anda di TEZ Capital. Bergabunglah dengan tim profesional kami dan wujudkan potensi terbaik Anda."
+                            />
+                        </div>
+                        <div class="space-y-2">
+                            <Label>Description (English)</Label>
+                            <Textarea 
+                                v-model="localConfigs.banner_join_us_description_en"
+                                placeholder="Discover the right career opportunities for you at TEZ Capital. Join our professional team and realize your full potential."
+                            />
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <Label>Banner Image</Label>
+                            <div class="space-y-3">
+                                <div class="relative border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                                    <div v-if="joinUsBannerPreview || getImageUrl(localConfigs.banner_join_us_image)" class="mb-4">
+                                        <img 
+                                            :src="joinUsBannerPreview || getImageUrl(localConfigs.banner_join_us_image)" 
+                                            alt="Join Us Banner Preview" 
+                                            class="w-full h-32 object-cover rounded-md border mx-auto"
+                                        />
+                                    </div>
+                                    <div v-else class="mb-4">
+                                        <Image class="mx-auto h-8 w-8 text-gray-400" />
+                                    </div>
+                                    <Button size="sm" variant="outline" @click="$refs.joinUsBannerInput.click()">
+                                        <Upload class="w-4 h-4 mr-2" />
+                                        Upload Banner Image
+                                    </Button>
+                                    <input 
+                                        ref="joinUsBannerInput"
+                                        type="file" 
+                                        @change="handleImageUpload('banner_join_us_image', $event)"
+                                        accept="image/*"
+                                        class="hidden"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Save Button -->
             <div class="flex justify-end pt-4">
                 <Button 
@@ -425,7 +492,12 @@ const localConfigs = reactive({
     banner_corporate_title_en: '',
     banner_corporate_description_id: '',
     banner_corporate_description_en: '',
-    banner_corporate_image: ''
+    banner_corporate_image: '',
+    banner_join_us_title_id: '',
+    banner_join_us_title_en: '',
+    banner_join_us_description_id: '',
+    banner_join_us_description_en: '',
+    banner_join_us_image: ''
 });
 
 const aboutBannerPreview = ref('');
@@ -433,6 +505,7 @@ const servicesBannerPreview = ref('');
 const newsBannerPreview = ref('');
 const contactBannerPreview = ref('');
 const corporateBannerPreview = ref('');
+const joinUsBannerPreview = ref('');
 
 // Check if there are changes to save
 const hasChanges = () => {
@@ -469,6 +542,8 @@ const handleImageUpload = (configKey, event) => {
             contactBannerPreview.value = preview;
         } else if (configKey === 'banner_corporate_image') {
             corporateBannerPreview.value = preview;
+        } else if (configKey === 'banner_join_us_image') {
+            joinUsBannerPreview.value = preview;
         }
     };
     reader.readAsDataURL(file);

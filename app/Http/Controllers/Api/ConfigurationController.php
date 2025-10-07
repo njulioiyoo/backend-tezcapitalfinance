@@ -102,7 +102,16 @@ class ConfigurationController extends Controller
                 
                 if (isset($data['join_us'])) {
                     $joinUsFiltered = [];
-                    $allowedJoinUsKeys = ['career_application_email'];
+                    $allowedJoinUsKeys = [
+                        'career_application_email',
+                        'hero_title_id',
+                        'hero_title_en',
+                        'ceo_message_title_id',
+                        'ceo_message_title_en',
+                        'ceo_message_content_id',
+                        'ceo_message_content_en',
+                        'ceo_image'
+                    ];
                     foreach ($allowedJoinUsKeys as $key) {
                         if (isset($data['join_us'][$key])) {
                             $joinUsFiltered[$key] = $data['join_us'][$key];

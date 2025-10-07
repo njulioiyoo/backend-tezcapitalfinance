@@ -55,5 +55,16 @@ Route::prefix('content')->name('content.')->middleware(['auth', 'verified'])->gr
         Route::delete('/{content}', [\App\Http\Controllers\Content\CareerController::class, 'destroy'])->middleware('permission:careers.delete')->name('destroy');
         Route::post('/bulk-action', [\App\Http\Controllers\Content\CareerController::class, 'bulkAction'])->middleware('permission:careers.delete')->name('bulk-action');
     });
+    
+    // Team Members Management
+    Route::prefix('team-members')->name('team-members.')->middleware('permission:team-members.view')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Content\TeamMemberController::class, 'index'])->name('index');
+        Route::get('/data', [\App\Http\Controllers\Content\TeamMemberController::class, 'getData'])->name('data');
+        Route::post('/', [\App\Http\Controllers\Content\TeamMemberController::class, 'store'])->middleware('permission:team-members.create')->name('store');
+        Route::get('/{id}', [\App\Http\Controllers\Content\TeamMemberController::class, 'show'])->name('show');
+        Route::put('/{id}', [\App\Http\Controllers\Content\TeamMemberController::class, 'update'])->middleware('permission:team-members.edit')->name('update');
+        Route::delete('/{id}', [\App\Http\Controllers\Content\TeamMemberController::class, 'destroy'])->middleware('permission:team-members.delete')->name('destroy');
+        Route::post('/bulk-action', [\App\Http\Controllers\Content\TeamMemberController::class, 'bulkAction'])->middleware('permission:team-members.delete')->name('bulk-action');
+    });
 });
 

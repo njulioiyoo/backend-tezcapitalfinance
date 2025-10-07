@@ -56,6 +56,20 @@ class RolesAndPermissionsSeeder extends Seeder
             'delete_events',
             'publish_events',
             
+            // Careers Management
+            'view_careers',
+            'create_careers',
+            'edit_careers',
+            'delete_careers',
+            'publish_careers',
+            
+            // Team Members Management
+            'view_team-members',
+            'create_team-members',
+            'edit_team-members',
+            'delete_team-members',
+            'publish_team-members',
+            
             // Motor Management
             'view_motors',
             'create_motors',
@@ -103,6 +117,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'view_contents', 'create_contents', 'edit_contents', 'delete_contents', 'publish_contents',
             'view_news', 'create_news', 'edit_news', 'delete_news', 'publish_news',
             'view_events', 'create_events', 'edit_events', 'delete_events', 'publish_events',
+            'view_careers', 'create_careers', 'edit_careers', 'delete_careers', 'publish_careers',
+            'view_team-members', 'create_team-members', 'edit_team-members', 'delete_team-members', 'publish_team-members',
             'view_motors', 'create_motors', 'edit_motors', 'delete_motors',
             'view_configurations', 'edit_configurations',
             'view_menus', 'create_menus', 'edit_menus', 'delete_menus',
@@ -118,6 +134,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'view_contents', 'create_contents', 'edit_contents',
             'view_news', 'create_news', 'edit_news',
             'view_events', 'create_events', 'edit_events',
+            'view_careers', 'create_careers', 'edit_careers',
+            'view_team-members', 'create_team-members', 'edit_team-members',
             'view_motors',
         ];
         $editorRole->givePermissionTo($editorPermissions);
@@ -129,6 +147,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'view_contents',
             'view_news',
             'view_events',
+            'view_careers',
+            'view_team-members',
             'view_motors',
             'reports.view',
         ];

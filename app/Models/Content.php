@@ -301,6 +301,7 @@ class Content extends Model implements Auditable
             'partner' => 'Partner',
             'service' => 'Service',
             'career' => 'Career',
+            'team-member' => 'Team Member',
         ];
     }
 
@@ -368,6 +369,22 @@ class Content extends Model implements Auditable
         ];
     }
 
+    public static function getTeamMemberCategories()
+    {
+        return [
+            'leadership' => 'Leadership',
+            'management' => 'Management',
+            'finance' => 'Finance',
+            'operations' => 'Operations',
+            'technology' => 'Technology',
+            'marketing' => 'Marketing',
+            'human-resources' => 'Human Resources',
+            'sales' => 'Sales',
+            'advisory' => 'Advisory',
+            'other' => 'Other',
+        ];
+    }
+
     public static function getStatuses()
     {
         return [
@@ -387,6 +404,7 @@ class Content extends Model implements Auditable
             'partner' => self::getPartnerCategories(),
             'service' => self::getServiceCategories(),
             'career' => self::getCareerCategories(),
+            'team-member' => self::getTeamMemberCategories(),
             default => [],
         };
     }

@@ -63,6 +63,15 @@ Route::prefix('v1')->group(function () {
         Route::get('/{slug}', [ApiCareerController::class, 'show'])->name('show');
     });
     
+    // Team Members API
+    Route::prefix('team-members')->name('api.team-members.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\TeamMemberController::class, 'index'])->name('index');
+        Route::get('/featured', [\App\Http\Controllers\Api\TeamMemberController::class, 'featured'])->name('featured');
+        Route::get('/search', [\App\Http\Controllers\Api\TeamMemberController::class, 'search'])->name('search');
+        Route::get('/stats', [\App\Http\Controllers\Api\TeamMemberController::class, 'stats'])->name('stats');
+        Route::get('/{slug}', [\App\Http\Controllers\Api\TeamMemberController::class, 'show'])->name('show');
+    });
+    
     // Motor Credit Simulation API
     Route::prefix('motors')->name('api.motors.')->group(function () {
         Route::get('/', [\App\Http\Controllers\Api\MotorController::class, 'index'])->name('index');
