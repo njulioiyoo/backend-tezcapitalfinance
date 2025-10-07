@@ -341,7 +341,11 @@ class ContentController extends Controller
                 $search = $request->get('search');
                 $query->where(function ($q) use ($search, $type) {
                     $q->where('title_id', 'like', "%{$search}%")
-                        ->orWhere('title_en', 'like', "%{$search}%");
+                        ->orWhere('title_en', 'like', "%{$search}%")
+                        ->orWhere('content_id', 'like', "%{$search}%")
+                        ->orWhere('content_en', 'like', "%{$search}%")
+                        ->orWhere('excerpt_id', 'like', "%{$search}%")
+                        ->orWhere('excerpt_en', 'like', "%{$search}%");
                     
                     // Add location search for events
                     if ($type !== 'news') {
