@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Content\NewsEvents;
 
 use App\Http\Controllers\Controller;
 use App\Models\Content;
-use App\Traits\ContentHelpers;
 use App\Http\Requests\ContentRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,7 +13,28 @@ use Inertia\Response;
 
 class NewsEventController extends Controller
 {
-    use ContentHelpers;
+    /**
+     * Convert boolean form data
+     */
+    protected function convertBooleanFormData(Request $request): array
+    {
+        $data = $request->all();
+        
+        if (isset($data['is_published'])) {
+            $data['is_published'] = in_array($data['is_published'], ['1', 'true', true], true);
+        }
+        
+        if (isset($data['is_featured'])) {
+            $data['is_featured'] = in_array($data['is_featured'], ['1', 'true', true], true);
+        }
+        
+        if (isset($data['show_credit_simulation'])) {
+            $data['show_credit_simulation'] = in_array($data['show_credit_simulation'], ['1', 'true', true], true);
+        }
+
+        return $data;
+    }
+
     public function index(Request $request): Response
     {
         return Inertia::render('content/news-events/NewsEvents', [
@@ -40,15 +60,25 @@ class NewsEventController extends Controller
 
         // Handle file upload (exactly like TeamMemberController)
         if ($request->hasFile('featured_image')) {
+            \Log::error('🔧 NEW CODE - File upload starting');
+            
             $file = $request->file('featured_image');
             $folder = $type === 'partner' ? 'content/partner' : 'content';
+            
+            \Log::error('🔧 NEW CODE - About to store: folder=' . $folder);
+            
             $path = $file->store($folder, 'public');
             
-            \Log::error('🔧 SIMPLE UPLOAD - Path result: ' . ($path ?: 'FALSE'));
+            \Log::error('🔧 NEW CODE - Store result: ' . ($path ?: 'FALSE'));
             
             if ($path) {
                 $validated['featured_image'] = $path;
+                \Log::error('🔧 NEW CODE - Set featured_image to: ' . $path);
+            } else {
+                \Log::error('🔧 NEW CODE - Path is FALSE, not setting featured_image');
             }
+        } else {
+            \Log::error('🔧 NEW CODE - No file received');
         }
 
         // Set published_at if publishing
