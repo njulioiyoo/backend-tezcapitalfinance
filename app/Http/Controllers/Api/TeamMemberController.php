@@ -10,6 +10,27 @@ use Illuminate\Http\JsonResponse;
 class TeamMemberController extends Controller
 {
     /**
+     * Process team member data to include full URLs for images
+     */
+    private function processTeamMemberData($teamMembers)
+    {
+        $baseUrl = config('app.url');
+        
+        if (is_iterable($teamMembers)) {
+            foreach ($teamMembers as $member) {
+                if ($member->featured_image) {
+                    $member->featured_image = $baseUrl . '/storage/' . $member->featured_image;
+                }
+            }
+        } else {
+            if ($teamMembers->featured_image) {
+                $teamMembers->featured_image = $baseUrl . '/storage/' . $teamMembers->featured_image;
+            }
+        }
+        
+        return $teamMembers;
+    }
+    /**
      * Get all team members
      */
     public function index(Request $request): JsonResponse
@@ -38,10 +59,13 @@ class TeamMemberController extends Controller
             $perPage = $request->get('per_page', 10);
             $teamMembers = $query->paginate($perPage);
 
+            // Process team member data to include full URLs
+            $processedItems = $this->processTeamMemberData($teamMembers->items());
+
             return response()->json([
                 'success' => true,
                 'message' => 'Team members retrieved successfully',
-                'data' => $teamMembers->items(),
+                'data' => $processedItems,
                 'pagination' => [
                     'current_page' => $teamMembers->currentPage(),
                     'last_page' => $teamMembers->lastPage(),
@@ -76,10 +100,13 @@ class TeamMemberController extends Controller
                 ->limit($limit)
                 ->get();
 
+            // Process team member data to include full URLs
+            $processedTeamMembers = $this->processTeamMemberData($teamMembers);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Featured team members retrieved successfully',
-                'data' => $teamMembers
+                'data' => $processedTeamMembers
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -111,10 +138,13 @@ class TeamMemberController extends Controller
             // Increment view count
             $teamMember->incrementViews();
 
+            // Process team member data to include full URLs
+            $processedTeamMember = $this->processTeamMemberData($teamMember);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Team member retrieved successfully',
-                'data' => $teamMember
+                'data' => $processedTeamMember
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -161,10 +191,13 @@ class TeamMemberController extends Controller
             $perPage = $request->get('per_page', 10);
             $teamMembers = $query->paginate($perPage);
 
+            // Process team member data to include full URLs
+            $processedItems = $this->processTeamMemberData($teamMembers->items());
+
             return response()->json([
                 'success' => true,
                 'message' => 'Team members search completed successfully',
-                'data' => $teamMembers->items(),
+                'data' => $processedItems,
                 'pagination' => [
                     'current_page' => $teamMembers->currentPage(),
                     'last_page' => $teamMembers->lastPage(),
