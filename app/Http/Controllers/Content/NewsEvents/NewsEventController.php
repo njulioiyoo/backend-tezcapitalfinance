@@ -58,74 +58,12 @@ class NewsEventController extends Controller
         $request->merge($requestData);
         $validated = $request->validated();
 
-        // Handle file upload (exactly like TeamMemberController)
+        // Handle file upload (exactly like ConfigurationController)
         if ($request->hasFile('featured_image')) {
-            \Log::error('🔧 NEW CODE - File upload starting');
-            
             $file = $request->file('featured_image');
-            $folder = $type === 'partner' ? 'team-members' : 'team-members';
-            
-            \Log::error('🔧 NEW CODE - File info: ' . json_encode([
-                'original_name' => $file->getClientOriginalName(),
-                'size' => $file->getSize(),
-                'mime_type' => $file->getMimeType(),
-                'is_valid' => $file->isValid(),
-                'error' => $file->getError(),
-                'folder' => $folder
-            ]));
-            
-            // Check if storage disk exists
-            \Log::error('🔧 NEW CODE - Storage disk check: ' . json_encode([
-                'disk_exists' => Storage::disk('public')->exists('.'),
-                'disk_path' => Storage::disk('public')->path('.'),
-                'folder_path' => Storage::disk('public')->path($folder),
-                'folder_exists' => Storage::disk('public')->exists($folder),
-                'is_writable' => is_writable(Storage::disk('public')->path('.')),
-                'disk_free_space' => disk_free_space(Storage::disk('public')->path('.')),
-                'disk_total_space' => disk_total_space(Storage::disk('public')->path('.'))
-            ]));
-            
-            // Ensure folder exists
-            if (!Storage::disk('public')->exists($folder)) {
-                Storage::disk('public')->makeDirectory($folder);
-                \Log::error('🔧 NEW CODE - Created folder: ' . $folder);
-            }
-            
-            try {
-                // Try alternative storage methods
-                \Log::error('🔧 NEW CODE - Trying store method...');
-                $path = $file->store($folder, 'public');
-                \Log::error('🔧 NEW CODE - Store result: ' . ($path ?: 'FALSE'));
-                
-                if (!$path) {
-                    \Log::error('🔧 NEW CODE - Store failed, trying putFileAs...');
-                    $filename = time() . '_' . $file->getClientOriginalName();
-                    $path = $file->storeAs($folder, $filename, 'public');
-                    \Log::error('🔧 NEW CODE - StoreAs result: ' . ($path ?: 'FALSE'));
-                }
-                
-                if (!$path) {
-                    \Log::error('🔧 NEW CODE - Both methods failed, trying direct storage...');
-                    $filename = time() . '_' . $file->getClientOriginalName();
-                    $fullPath = Storage::disk('public')->path($folder . '/' . $filename);
-                    $success = Storage::disk('public')->put($folder . '/' . $filename, file_get_contents($file->getRealPath()));
-                    \Log::error('🔧 NEW CODE - Direct put result: ' . ($success ? 'SUCCESS' : 'FAILED'));
-                    if ($success) {
-                        $path = $folder . '/' . $filename;
-                    }
-                }
-                
-                if ($path) {
-                    $validated['featured_image'] = $path;
-                    \Log::error('🔧 NEW CODE - Set featured_image to: ' . $path);
-                } else {
-                    \Log::error('🔧 NEW CODE - All methods failed, not setting featured_image');
-                }
-            } catch (\Exception $e) {
-                \Log::error('🔧 NEW CODE - Store exception: ' . $e->getMessage());
-            }
-        } else {
-            \Log::error('🔧 NEW CODE - No file received');
+            $path = $file->store('team-members', 'public');
+            $validated['featured_image'] = $path;
+            \Log::error('🔧 CONFIG STYLE - Upload success: ' . $path);
         }
 
         // Set published_at if publishing
@@ -175,6 +113,7 @@ class NewsEventController extends Controller
         $request->merge($requestData);
         $validated = $request->validated();
 
+        // Handle file upload (exactly like ConfigurationController)
         if ($request->hasFile('featured_image')) {
             // Delete old image if exists
             if ($content->featured_image) {
@@ -182,21 +121,9 @@ class NewsEventController extends Controller
             }
             
             $file = $request->file('featured_image');
-            $folder = $type === 'partner' ? 'team-members' : 'team-members';
-            
-            // Ensure folder exists
-            if (!Storage::disk('public')->exists($folder)) {
-                Storage::disk('public')->makeDirectory($folder);
-                \Log::error('🔧 SIMPLE UPDATE - Created folder: ' . $folder);
-            }
-            
-            $path = $file->store($folder, 'public');
-            
-            \Log::error('🔧 SIMPLE UPDATE - Path result: ' . ($path ?: 'FALSE'));
-            
-            if ($path) {
-                $validated['featured_image'] = $path;
-            }
+            $path = $file->store('team-members', 'public');
+            $validated['featured_image'] = $path;
+            \Log::error('🔧 CONFIG STYLE UPDATE - Upload success: ' . $path);
         }
 
         // Set published_at if publishing for the first time
