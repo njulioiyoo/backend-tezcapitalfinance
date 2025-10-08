@@ -168,10 +168,14 @@ class ContentRequest extends FormRequest
     {
         $rules = [];
 
+        // Always add featured_image validation rule when file is present
         if ($this->hasFile('featured_image')) {
-            $rules['featured_image'] = 'image|mimes:jpeg,png,jpg,gif,svg|max:2048';
+            $rules['featured_image'] = 'image|mimes:jpeg,png,jpg,gif,webp,svg|max:5120';
         } elseif ($type === 'partner' && !$isUpdate) {
-            $rules['featured_image'] = 'required';
+            $rules['featured_image'] = 'required|image|mimes:jpeg,png,jpg,gif,webp,svg|max:5120';
+        } else {
+            // For news-events and other types, make it nullable but validate when present
+            $rules['featured_image'] = 'nullable|image|mimes:jpeg,png,jpg,gif,webp,svg|max:5120';
         }
 
         return $rules;

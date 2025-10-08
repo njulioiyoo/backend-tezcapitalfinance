@@ -40,9 +40,19 @@ class NewsEventController extends Controller
 
         // Handle file upload
         if ($request->hasFile('featured_image')) {
+            \Log::info('🔧 NewsEventController::store - File received', [
+                'filename' => $request->file('featured_image')->getClientOriginalName(),
+                'size' => $request->file('featured_image')->getSize(),
+                'type' => $request->file('featured_image')->getMimeType()
+            ]);
             if ($imagePath = $this->handleFileUpload($request, $type)) {
                 $validated['featured_image'] = $imagePath;
+                \Log::info('🔧 NewsEventController::store - File stored', ['path' => $imagePath]);
+            } else {
+                \Log::error('🔧 NewsEventController::store - File upload failed');
             }
+        } else {
+            \Log::info('🔧 NewsEventController::store - No file received');
         }
 
         // Set published_at if publishing
@@ -93,12 +103,23 @@ class NewsEventController extends Controller
         $validated = $request->validated();
 
         if ($request->hasFile('featured_image')) {
+            \Log::info('🔧 NewsEventController::update - File received', [
+                'content_id' => $content->id,
+                'filename' => $request->file('featured_image')->getClientOriginalName(),
+                'size' => $request->file('featured_image')->getSize(),
+                'type' => $request->file('featured_image')->getMimeType()
+            ]);
             if ($content->featured_image) {
                 Storage::disk('public')->delete($content->featured_image);
             }
             if ($imagePath = $this->handleFileUpload($request, $type)) {
                 $validated['featured_image'] = $imagePath;
+                \Log::info('🔧 NewsEventController::update - File stored', ['path' => $imagePath]);
+            } else {
+                \Log::error('🔧 NewsEventController::update - File upload failed');
             }
+        } else {
+            \Log::info('🔧 NewsEventController::update - No file received');
         }
 
         // Set published_at if publishing for the first time
