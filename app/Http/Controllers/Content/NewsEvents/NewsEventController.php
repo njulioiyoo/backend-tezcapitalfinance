@@ -34,54 +34,16 @@ class NewsEventController extends Controller
     public function store(ContentRequest $request)
     {
         $type = $request->input('type', 'news');
-        \Log::error('🔧 NewsEventController::store - Starting validation', [
-            'type' => $type,
-            'request_data' => $request->except(['featured_image'])
-        ]);
-        
         $requestData = $this->convertBooleanFormData($request);
         $request->merge($requestData);
-        
-        try {
-            $validated = $request->validated();
-            \Log::error('🔧 NewsEventController::store - Validation passed', [
-                'validated_data' => $validated
-            ]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            \Log::error('🔧 NewsEventController::store - Validation failed', [
-                'errors' => $e->errors()
-            ]);
-            throw $e;
-        }
+        $validated = $request->validated();
 
-        // Handle file upload (using direct method like TeamMemberController)
+        // Handle file upload (exactly like TeamMemberController)
         if ($request->hasFile('featured_image')) {
-            \Log::error('🔧 NewsEventController::store - File received', [
-                'filename' => $request->file('featured_image')->getClientOriginalName(),
-                'size' => $request->file('featured_image')->getSize(),
-                'type' => $request->file('featured_image')->getMimeType()
-            ]);
-            
-            try {
-                $file = $request->file('featured_image');
-                $folder = $type === 'partner' ? 'content/partner' : 'content';
-                $path = $file->store($folder, 'public');
-                
-                \Log::error('🔧 NewsEventController::store - File stored directly', [
-                    'path' => $path,
-                    'full_path' => storage_path('app/public/' . $path)
-                ]);
-                
-                $validated['featured_image'] = $path;
-            } catch (\Exception $e) {
-                \Log::error('🔧 NewsEventController::store - File upload failed', [
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString()
-                ]);
-                unset($validated['featured_image']);
-            }
-        } else {
-            \Log::error('🔧 NewsEventController::store - No file received');
+            $file = $request->file('featured_image');
+            $folder = $type === 'partner' ? 'content/partner' : 'content';
+            $path = $file->store($folder, 'public');
+            $validated['featured_image'] = $path;
         }
 
         // Set published_at if publishing
@@ -92,24 +54,7 @@ class NewsEventController extends Controller
         // Remove slug from validated data to ensure unique generation
         unset($validated['slug']);
 
-        \Log::error('🔧 NewsEventController::store - Creating content', [
-            'validated_data' => $validated
-        ]);
-
-        try {
-            $content = Content::create($validated);
-            \Log::error('🔧 NewsEventController::store - Content created successfully', [
-                'content_id' => $content->id,
-                'title' => $content->title_id,
-                'featured_image' => $content->featured_image
-            ]);
-        } catch (\Exception $e) {
-            \Log::error('🔧 NewsEventController::store - Content creation failed', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            throw $e;
-        }
+        $content = Content::create($validated);
 
         // Return appropriate response based on request type
         if (request()->wantsJson() || request()->expectsJson()) {
@@ -149,38 +94,15 @@ class NewsEventController extends Controller
         $validated = $request->validated();
 
         if ($request->hasFile('featured_image')) {
-            \Log::error('🔧 NewsEventController::update - File received', [
-                'content_id' => $content->id,
-                'filename' => $request->file('featured_image')->getClientOriginalName(),
-                'size' => $request->file('featured_image')->getSize(),
-                'type' => $request->file('featured_image')->getMimeType()
-            ]);
-            
             // Delete old image if exists
             if ($content->featured_image) {
                 Storage::disk('public')->delete($content->featured_image);
             }
             
-            try {
-                $file = $request->file('featured_image');
-                $folder = $type === 'partner' ? 'content/partner' : 'content';
-                $path = $file->store($folder, 'public');
-                
-                \Log::error('🔧 NewsEventController::update - File stored directly', [
-                    'path' => $path,
-                    'full_path' => storage_path('app/public/' . $path)
-                ]);
-                
-                $validated['featured_image'] = $path;
-            } catch (\Exception $e) {
-                \Log::error('🔧 NewsEventController::update - File upload failed', [
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString()
-                ]);
-                unset($validated['featured_image']);
-            }
-        } else {
-            \Log::error('🔧 NewsEventController::update - No file received');
+            $file = $request->file('featured_image');
+            $folder = $type === 'partner' ? 'content/partner' : 'content';
+            $path = $file->store($folder, 'public');
+            $validated['featured_image'] = $path;
         }
 
         // Set published_at if publishing for the first time
@@ -312,12 +234,6 @@ class NewsEventController extends Controller
         
         // Transform data for frontend
         $newsEvents->getCollection()->transform(function ($content) {
-            \Log::error('🔧 Content featured_image from DB:', [
-                'id' => $content->id,
-                'title' => $content->title_id,
-                'featured_image' => $content->featured_image
-            ]);
-            
             return [
                 'id' => $content->id,
                 'type' => $content->type,
