@@ -34,25 +34,41 @@ class NewsEventController extends Controller
     public function store(ContentRequest $request)
     {
         $type = $request->input('type', 'news');
+        \Log::error('🔧 NewsEventController::store - Starting validation', [
+            'type' => $type,
+            'request_data' => $request->except(['featured_image'])
+        ]);
+        
         $requestData = $this->convertBooleanFormData($request);
         $request->merge($requestData);
-        $validated = $request->validated();
+        
+        try {
+            $validated = $request->validated();
+            \Log::error('🔧 NewsEventController::store - Validation passed', [
+                'validated_data' => $validated
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('🔧 NewsEventController::store - Validation failed', [
+                'errors' => $e->errors()
+            ]);
+            throw $e;
+        }
 
         // Handle file upload
         if ($request->hasFile('featured_image')) {
-            \Log::info('🔧 NewsEventController::store - File received', [
+            \Log::error('🔧 NewsEventController::store - File received', [
                 'filename' => $request->file('featured_image')->getClientOriginalName(),
                 'size' => $request->file('featured_image')->getSize(),
                 'type' => $request->file('featured_image')->getMimeType()
             ]);
             if ($imagePath = $this->handleFileUpload($request, $type)) {
                 $validated['featured_image'] = $imagePath;
-                \Log::info('🔧 NewsEventController::store - File stored', ['path' => $imagePath]);
+                \Log::error('🔧 NewsEventController::store - File stored', ['path' => $imagePath]);
             } else {
                 \Log::error('🔧 NewsEventController::store - File upload failed');
             }
         } else {
-            \Log::info('🔧 NewsEventController::store - No file received');
+            \Log::error('🔧 NewsEventController::store - No file received');
         }
 
         // Set published_at if publishing
@@ -63,7 +79,24 @@ class NewsEventController extends Controller
         // Remove slug from validated data to ensure unique generation
         unset($validated['slug']);
 
-        $content = Content::create($validated);
+        \Log::error('🔧 NewsEventController::store - Creating content', [
+            'validated_data' => $validated
+        ]);
+
+        try {
+            $content = Content::create($validated);
+            \Log::error('🔧 NewsEventController::store - Content created successfully', [
+                'content_id' => $content->id,
+                'title' => $content->title_id,
+                'featured_image' => $content->featured_image
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('🔧 NewsEventController::store - Content creation failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            throw $e;
+        }
 
         // Return appropriate response based on request type
         if (request()->wantsJson() || request()->expectsJson()) {

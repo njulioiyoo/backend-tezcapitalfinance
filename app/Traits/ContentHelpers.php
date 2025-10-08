@@ -171,11 +171,35 @@ trait ContentHelpers
     protected function handleFileUpload(Request $request, string $type): ?string
     {
         if (!$request->hasFile('featured_image')) {
+            \Log::error('🔧 ContentHelpers::handleFileUpload - No file found');
             return null;
         }
 
         $folder = $type === 'partner' ? 'content/partner' : 'content';
-        return $request->file('featured_image')->store($folder, 'public');
+        
+        try {
+            \Log::error('🔧 ContentHelpers::handleFileUpload - Starting upload', [
+                'type' => $type,
+                'folder' => $folder,
+                'filename' => $request->file('featured_image')->getClientOriginalName(),
+                'size' => $request->file('featured_image')->getSize()
+            ]);
+            
+            $path = $request->file('featured_image')->store($folder, 'public');
+            
+            \Log::error('🔧 ContentHelpers::handleFileUpload - Upload successful', [
+                'path' => $path,
+                'full_path' => storage_path('app/public/' . $path)
+            ]);
+            
+            return $path;
+        } catch (\Exception $e) {
+            \Log::error('🔧 ContentHelpers::handleFileUpload - Upload failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return null;
+        }
     }
 
     /**

@@ -221,13 +221,11 @@ const handleFileUpload = (event: Event) => {
         }
         
         form.featured_image_file = file;
-        console.log('🔧 File selected:', file.name, 'Size:', file.size, 'Type:', file.type);
         
         // Create preview URL
         const reader = new FileReader();
         reader.onload = (e) => {
             form.featured_image = e.target?.result as string;
-            console.log('🔧 Preview URL created for:', file.name);
         };
         reader.readAsDataURL(file);
     }
@@ -287,15 +285,6 @@ const handleSubmit = async () => {
         // Add file if exists
         if (form.featured_image_file) {
             formData.append('featured_image', form.featured_image_file);
-            console.log('🔧 Added featured_image file to FormData:', form.featured_image_file.name);
-        } else {
-            console.log('🔧 No featured_image_file to upload');
-        }
-
-        // Debug FormData
-        console.log('🔧 FormData entries:');
-        for (let pair of formData.entries()) {
-            console.log(pair[0] + ': ' + (pair[1] instanceof File ? `[File: ${pair[1].name}]` : pair[1]));
         }
 
         // Use native fetch for proper file upload
