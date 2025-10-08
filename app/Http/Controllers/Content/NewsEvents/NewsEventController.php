@@ -81,6 +81,12 @@ class NewsEventController extends Controller
                 'folder_path' => Storage::disk('public')->path($folder)
             ]));
             
+            // Ensure folder exists
+            if (!Storage::disk('public')->exists($folder)) {
+                Storage::disk('public')->makeDirectory($folder);
+                \Log::error('🔧 NEW CODE - Created folder: ' . $folder);
+            }
+            
             try {
                 $path = $file->store($folder, 'public');
                 \Log::error('🔧 NEW CODE - Store result: ' . ($path ?: 'FALSE'));
@@ -153,6 +159,13 @@ class NewsEventController extends Controller
             
             $file = $request->file('featured_image');
             $folder = $type === 'partner' ? 'news-events/partner' : 'news-events';
+            
+            // Ensure folder exists
+            if (!Storage::disk('public')->exists($folder)) {
+                Storage::disk('public')->makeDirectory($folder);
+                \Log::error('🔧 SIMPLE UPDATE - Created folder: ' . $folder);
+            }
+            
             $path = $file->store($folder, 'public');
             
             \Log::error('🔧 SIMPLE UPDATE - Path result: ' . ($path ?: 'FALSE'));
