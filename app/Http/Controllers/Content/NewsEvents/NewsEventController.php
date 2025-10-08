@@ -43,7 +43,12 @@ class NewsEventController extends Controller
             $file = $request->file('featured_image');
             $folder = $type === 'partner' ? 'content/partner' : 'content';
             $path = $file->store($folder, 'public');
-            $validated['featured_image'] = $path;
+            
+            \Log::error('🔧 SIMPLE UPLOAD - Path result: ' . ($path ?: 'FALSE'));
+            
+            if ($path) {
+                $validated['featured_image'] = $path;
+            }
         }
 
         // Set published_at if publishing
@@ -102,7 +107,12 @@ class NewsEventController extends Controller
             $file = $request->file('featured_image');
             $folder = $type === 'partner' ? 'content/partner' : 'content';
             $path = $file->store($folder, 'public');
-            $validated['featured_image'] = $path;
+            
+            \Log::error('🔧 SIMPLE UPDATE - Path result: ' . ($path ?: 'FALSE'));
+            
+            if ($path) {
+                $validated['featured_image'] = $path;
+            }
         }
 
         // Set published_at if publishing for the first time
