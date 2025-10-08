@@ -62,8 +62,14 @@ class NewsEventController extends Controller
                 'type' => $request->file('featured_image')->getMimeType()
             ]);
             if ($imagePath = $this->handleFileUpload($request, $type)) {
-                $validated['featured_image'] = $imagePath;
-                \Log::error('🔧 NewsEventController::store - File stored', ['path' => $imagePath]);
+                // Validate that the path is a proper storage path, not a temporary path
+                if (str_starts_with($imagePath, 'content/') || str_starts_with($imagePath, 'content/partner/')) {
+                    $validated['featured_image'] = $imagePath;
+                    \Log::error('🔧 NewsEventController::store - File stored', ['path' => $imagePath]);
+                } else {
+                    \Log::error('🔧 NewsEventController::store - Invalid storage path', ['path' => $imagePath]);
+                    unset($validated['featured_image']);
+                }
             } else {
                 \Log::error('🔧 NewsEventController::store - File upload failed');
             }
@@ -146,8 +152,14 @@ class NewsEventController extends Controller
                 Storage::disk('public')->delete($content->featured_image);
             }
             if ($imagePath = $this->handleFileUpload($request, $type)) {
-                $validated['featured_image'] = $imagePath;
-                \Log::info('🔧 NewsEventController::update - File stored', ['path' => $imagePath]);
+                // Validate that the path is a proper storage path, not a temporary path
+                if (str_starts_with($imagePath, 'content/') || str_starts_with($imagePath, 'content/partner/')) {
+                    $validated['featured_image'] = $imagePath;
+                    \Log::error('🔧 NewsEventController::update - File stored', ['path' => $imagePath]);
+                } else {
+                    \Log::error('🔧 NewsEventController::update - Invalid storage path', ['path' => $imagePath]);
+                    unset($validated['featured_image']);
+                }
             } else {
                 \Log::error('🔧 NewsEventController::update - File upload failed');
             }

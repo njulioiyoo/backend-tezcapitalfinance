@@ -148,7 +148,8 @@ const openEditDialog = (item: NewsEvent) => {
     form.excerpt_en = item.excerpt_en || '';
     form.content_id = item.content_id || '';
     form.content_en = item.content_en || '';
-    form.featured_image = item.featured_image || null;
+    // Only set featured_image if it's a valid storage path (not temporary path)
+    form.featured_image = (item.featured_image && !item.featured_image.startsWith('/tmp/')) ? item.featured_image : null;
     form.featured_image_file = null;
     form.author = item.author;
     form.location_id = item.location_id || '';
@@ -229,6 +230,28 @@ const handleFileUpload = (event: Event) => {
         };
         reader.readAsDataURL(file);
     }
+};
+
+const getImagePreviewUrl = (imagePath: string | null): string => {
+    if (!imagePath) return '';
+    
+    // If it's a data URL (base64), return as is
+    if (imagePath.startsWith('data:')) {
+        return imagePath;
+    }
+    
+    // If it's a temporary path or invalid path, return empty
+    if (imagePath.startsWith('/tmp/') || imagePath.includes('php')) {
+        return '';
+    }
+    
+    // If it already has /storage/ prefix, return as is
+    if (imagePath.startsWith('/storage/')) {
+        return imagePath;
+    }
+    
+    // Otherwise, add /storage/ prefix
+    return `/storage/${imagePath}`;
 };
 
 const clearFeaturedImage = () => {
@@ -599,7 +622,7 @@ watch(() => form.type, (newType) => {
                                         <div v-if="form.featured_image" class="space-y-4">
                                             <div class="flex items-center justify-center">
                                                 <img 
-                                                    :src="form.featured_image.startsWith('data:') ? form.featured_image : `/storage/${form.featured_image}`"
+                                                    :src="getImagePreviewUrl(form.featured_image)"
                                                     alt="Featured Image Preview" 
                                                     class="max-h-32 rounded-lg border bg-white object-contain"
                                                 />
