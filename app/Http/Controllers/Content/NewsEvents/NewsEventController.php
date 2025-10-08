@@ -63,19 +63,36 @@ class NewsEventController extends Controller
             \Log::error('🔧 NEW CODE - File upload starting');
             
             $file = $request->file('featured_image');
-            $folder = $type === 'partner' ? 'content/partner' : 'content';
+            $folder = $type === 'partner' ? 'news-events/partner' : 'news-events';
             
-            \Log::error('🔧 NEW CODE - About to store: folder=' . $folder);
+            \Log::error('🔧 NEW CODE - File info: ' . json_encode([
+                'original_name' => $file->getClientOriginalName(),
+                'size' => $file->getSize(),
+                'mime_type' => $file->getMimeType(),
+                'is_valid' => $file->isValid(),
+                'error' => $file->getError(),
+                'folder' => $folder
+            ]));
             
-            $path = $file->store($folder, 'public');
+            // Check if storage disk exists
+            \Log::error('🔧 NEW CODE - Storage disk check: ' . json_encode([
+                'disk_exists' => Storage::disk('public')->exists('.'),
+                'disk_path' => Storage::disk('public')->path('.'),
+                'folder_path' => Storage::disk('public')->path($folder)
+            ]));
             
-            \Log::error('🔧 NEW CODE - Store result: ' . ($path ?: 'FALSE'));
-            
-            if ($path) {
-                $validated['featured_image'] = $path;
-                \Log::error('🔧 NEW CODE - Set featured_image to: ' . $path);
-            } else {
-                \Log::error('🔧 NEW CODE - Path is FALSE, not setting featured_image');
+            try {
+                $path = $file->store($folder, 'public');
+                \Log::error('🔧 NEW CODE - Store result: ' . ($path ?: 'FALSE'));
+                
+                if ($path) {
+                    $validated['featured_image'] = $path;
+                    \Log::error('🔧 NEW CODE - Set featured_image to: ' . $path);
+                } else {
+                    \Log::error('🔧 NEW CODE - Path is FALSE, not setting featured_image');
+                }
+            } catch (\Exception $e) {
+                \Log::error('🔧 NEW CODE - Store exception: ' . $e->getMessage());
             }
         } else {
             \Log::error('🔧 NEW CODE - No file received');
@@ -135,7 +152,7 @@ class NewsEventController extends Controller
             }
             
             $file = $request->file('featured_image');
-            $folder = $type === 'partner' ? 'content/partner' : 'content';
+            $folder = $type === 'partner' ? 'news-events/partner' : 'news-events';
             $path = $file->store($folder, 'public');
             
             \Log::error('🔧 SIMPLE UPDATE - Path result: ' . ($path ?: 'FALSE'));
