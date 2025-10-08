@@ -63,7 +63,7 @@ class NewsEventController extends Controller
             \Log::error('🔧 NEW CODE - File upload starting');
             
             $file = $request->file('featured_image');
-            $folder = $type === 'partner' ? 'news-events/partner' : 'news-events';
+            $folder = $type === 'partner' ? 'team-members' : 'team-members';
             
             \Log::error('🔧 NEW CODE - File info: ' . json_encode([
                 'original_name' => $file->getClientOriginalName(),
@@ -78,7 +78,11 @@ class NewsEventController extends Controller
             \Log::error('🔧 NEW CODE - Storage disk check: ' . json_encode([
                 'disk_exists' => Storage::disk('public')->exists('.'),
                 'disk_path' => Storage::disk('public')->path('.'),
-                'folder_path' => Storage::disk('public')->path($folder)
+                'folder_path' => Storage::disk('public')->path($folder),
+                'folder_exists' => Storage::disk('public')->exists($folder),
+                'is_writable' => is_writable(Storage::disk('public')->path('.')),
+                'disk_free_space' => disk_free_space(Storage::disk('public')->path('.')),
+                'disk_total_space' => disk_total_space(Storage::disk('public')->path('.'))
             ]));
             
             // Ensure folder exists
@@ -178,7 +182,7 @@ class NewsEventController extends Controller
             }
             
             $file = $request->file('featured_image');
-            $folder = $type === 'partner' ? 'news-events/partner' : 'news-events';
+            $folder = $type === 'partner' ? 'team-members' : 'team-members';
             
             // Ensure folder exists
             if (!Storage::disk('public')->exists($folder)) {
