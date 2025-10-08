@@ -92,12 +92,24 @@ const loadTeamMembers = async (params = {}) => {
 
 const openDialog = (teamMember: TeamMember | null = null) => {
     if (teamMember) {
+        console.log('🔧 openDialog - teamMember data:', teamMember);
         editingTeamMember.value = teamMember;
-        Object.assign(teamMemberForm, {
-            ...teamMember,
-            featured_image: teamMember.featured_image ? `/storage/${teamMember.featured_image}` : null,
-            featured_image_file: null,
-        });
+        
+        // Explicitly assign each field to ensure they're set correctly
+        teamMemberForm.id = teamMember.id;
+        teamMemberForm.title_id = teamMember.title_id || '';
+        teamMemberForm.title_en = teamMember.title_en || '';
+        teamMemberForm.category = teamMember.category || '';
+        teamMemberForm.department_id = teamMember.department_id || '';
+        teamMemberForm.department_en = teamMember.department_en || '';
+        teamMemberForm.featured_image = teamMember.featured_image ? teamMember.featured_image : null;
+        teamMemberForm.featured_image_file = null;
+        teamMemberForm.is_published = teamMember.is_published;
+        teamMemberForm.is_featured = teamMember.is_featured;
+        teamMemberForm.sort_order = teamMember.sort_order || 0;
+        teamMemberForm.status = teamMember.status || 'published';
+        
+        console.log('🔧 openDialog - teamMemberForm after assignment:', teamMemberForm);
     } else {
         resetForm();
         editingTeamMember.value = null;
@@ -132,6 +144,8 @@ import { toast } from '@/components/ui/toast';
 
 const saveTeamMember = async () => {
     try {
+        console.log('🔧 saveTeamMember - teamMemberForm before submit:', teamMemberForm);
+        
         const formData = new FormData();
         
         // Add form data
@@ -150,17 +164,33 @@ const saveTeamMember = async () => {
             formData.append('featured_image', teamMemberForm.featured_image_file);
         }
 
+        // For PUT requests with file uploads, use POST with _method field (Laravel workaround)
         if (editingTeamMember.value) {
-            await axios.put(`/content/team-members/${editingTeamMember.value.id}`, formData, {
+            formData.append('_method', 'PUT');
+        }
+
+        // Debug FormData
+        console.log('🔧 FormData entries:');
+        for (let pair of formData.entries()) {
+            console.log(pair[0] + ': ' + pair[1]);
+        }
+
+        if (editingTeamMember.value) {
+            console.log('🔧 Updating team member ID:', editingTeamMember.value.id);
+            // Use POST with _method=PUT for file uploads (Laravel limitation with PUT + multipart/form-data)
+            await axios.post(`/content/team-members/${editingTeamMember.value.id}`, formData, {
                 headers: {
-                    'Content-Type': 'multipart/form-data'
+                    'Content-Type': 'multipart/form-data',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
                 }
             });
             toast({ title: 'Success', description: 'Team member updated successfully.', variant: 'success' });
         } else {
+            console.log('🔧 Creating new team member');
             await axios.post('/content/team-members', formData, {
                 headers: {
-                    'Content-Type': 'multipart/form-data'
+                    'Content-Type': 'multipart/form-data',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
                 }
             });
             toast({ title: 'Success', description: 'Team member created successfully.', variant: 'success' });
@@ -169,13 +199,21 @@ const saveTeamMember = async () => {
         closeDialog();
         loadTeamMembers();
     } catch (error) {
+        console.error('🔧 Error saving team member:', error);
+        console.error('🔧 Error response:', error.response);
         if (error.response && error.response.data && error.response.data.errors) {
+            console.error('🔧 Validation errors:', error.response.data.errors);
+            
+            // Log each validation error in detail
+            Object.entries(error.response.data.errors).forEach(([field, messages]) => {
+                console.error(`🔧 ${field}:`, messages);
+            });
+            
             const firstError = Object.values(error.response.data.errors)[0][0];
             toast({ title: 'Validation Error', description: firstError, variant: 'error' });
         } else {
             toast({ title: 'Error', description: 'An unexpected error occurred.', variant: 'error' });
         }
-        console.error('Error saving team member:', error);
     }
 };
 
@@ -248,12 +286,23 @@ const clearProfileImage = () => {
     }
 };
 
-const getImageUrl = (imagePath: string | null) => {
-    if (!imagePath) {
+const getImageUrl = (member: TeamMember) => {
+    if (!member.featured_image) {
         return '/img/placeholder.png'; // Default placeholder
     }
-    // Assuming images are stored in /storage/app/public/team-members
-    // And accessible via /storage/team-members from web root
+    
+    // Handle case where featured_image might be an object or already have full path
+    let imagePath = member.featured_image;
+    if (typeof imagePath === 'object') {
+        imagePath = imagePath.path || imagePath.url || '';
+    }
+    
+    // If already has full URL or starts with /storage/, return as is
+    if (imagePath.startsWith('http') || imagePath.startsWith('/storage/')) {
+        return imagePath;
+    }
+    
+    // Otherwise, prepend /storage/
     return `/storage/${imagePath}`;
 };
 
@@ -584,7 +633,7 @@ onMounted(() => {
                             <div v-if="teamMemberForm.featured_image" class="space-y-4">
                                 <div class="flex items-center justify-center">
                                     <img 
-                                        :src="teamMemberForm.featured_image.startsWith('data:') ? teamMemberForm.featured_image : `/storage/${teamMemberForm.featured_image}`"
+                                        :src="teamMemberForm.featured_image.startsWith('data:') ? teamMemberForm.featured_image : (teamMemberForm.featured_image.startsWith('/storage/') ? teamMemberForm.featured_image : `/storage/${teamMemberForm.featured_image}`)"
                                         alt="Profile Photo Preview" 
                                         class="max-h-32 rounded-lg border bg-white object-contain"
                                     />

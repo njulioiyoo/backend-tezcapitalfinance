@@ -136,6 +136,11 @@ class TeamMemberController extends Controller
 
         // Handle file upload
         if ($request->hasFile('featured_image')) {
+            // Delete old image if exists
+            if ($teamMember->featured_image) {
+                \Storage::disk('public')->delete($teamMember->featured_image);
+            }
+            
             $file = $request->file('featured_image');
             $path = $file->store('team-members', 'public');
             $data['featured_image'] = $path;
@@ -158,6 +163,12 @@ class TeamMemberController extends Controller
     public function destroy($id)
     {
         $teamMember = Content::where('type', 'team-member')->findOrFail($id);
+        
+        // Delete associated image if exists
+        if ($teamMember->featured_image) {
+            \Storage::disk('public')->delete($teamMember->featured_image);
+        }
+        
         $teamMember->delete();
 
         return response()->json([
@@ -189,6 +200,13 @@ class TeamMemberController extends Controller
 
         switch ($action) {
             case 'delete':
+                // Delete associated images first
+                $teamMembersToDelete = $teamMembers->get();
+                foreach ($teamMembersToDelete as $member) {
+                    if ($member->featured_image) {
+                        \Storage::disk('public')->delete($member->featured_image);
+                    }
+                }
                 $teamMembers->delete();
                 $message = 'Team members deleted successfully';
                 break;
