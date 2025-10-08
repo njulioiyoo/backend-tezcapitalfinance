@@ -61,9 +61,29 @@ class NewsEventController extends Controller
         // Handle file upload (exactly like ConfigurationController)
         if ($request->hasFile('featured_image')) {
             $file = $request->file('featured_image');
+            \Log::error('🔧 CONFIG STYLE - File info: ' . json_encode([
+                'original_name' => $file->getClientOriginalName(),
+                'size' => $file->getSize(),
+                'mime_type' => $file->getMimeType(),
+                'is_valid' => $file->isValid(),
+                'error' => $file->getError(),
+                'temp_path' => $file->getRealPath()
+            ]));
+            
             $path = $file->store('team-members', 'public');
-            $validated['featured_image'] = $path;
-            \Log::error('🔧 CONFIG STYLE - Upload success: ' . $path);
+            \Log::error('🔧 CONFIG STYLE - Store result: ' . json_encode([
+                'path' => $path,
+                'path_type' => gettype($path),
+                'path_length' => strlen($path ?: ''),
+                'path_is_empty' => empty($path)
+            ]));
+            
+            if ($path) {
+                $validated['featured_image'] = $path;
+                \Log::error('🔧 CONFIG STYLE - Upload success: ' . $path);
+            } else {
+                \Log::error('🔧 CONFIG STYLE - Upload failed: path is empty');
+            }
         }
 
         // Set published_at if publishing
