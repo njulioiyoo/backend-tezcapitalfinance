@@ -54,24 +54,31 @@ class NewsEventController extends Controller
             throw $e;
         }
 
-        // Handle file upload
+        // Handle file upload (using direct method like TeamMemberController)
         if ($request->hasFile('featured_image')) {
             \Log::error('🔧 NewsEventController::store - File received', [
                 'filename' => $request->file('featured_image')->getClientOriginalName(),
                 'size' => $request->file('featured_image')->getSize(),
                 'type' => $request->file('featured_image')->getMimeType()
             ]);
-            if ($imagePath = $this->handleFileUpload($request, $type)) {
-                // Validate that the path is a proper storage path, not a temporary path
-                if (str_starts_with($imagePath, 'content/') || str_starts_with($imagePath, 'content/partner/')) {
-                    $validated['featured_image'] = $imagePath;
-                    \Log::error('🔧 NewsEventController::store - File stored', ['path' => $imagePath]);
-                } else {
-                    \Log::error('🔧 NewsEventController::store - Invalid storage path', ['path' => $imagePath]);
-                    unset($validated['featured_image']);
-                }
-            } else {
-                \Log::error('🔧 NewsEventController::store - File upload failed');
+            
+            try {
+                $file = $request->file('featured_image');
+                $folder = $type === 'partner' ? 'content/partner' : 'content';
+                $path = $file->store($folder, 'public');
+                
+                \Log::error('🔧 NewsEventController::store - File stored directly', [
+                    'path' => $path,
+                    'full_path' => storage_path('app/public/' . $path)
+                ]);
+                
+                $validated['featured_image'] = $path;
+            } catch (\Exception $e) {
+                \Log::error('🔧 NewsEventController::store - File upload failed', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                unset($validated['featured_image']);
             }
         } else {
             \Log::error('🔧 NewsEventController::store - No file received');
@@ -142,29 +149,38 @@ class NewsEventController extends Controller
         $validated = $request->validated();
 
         if ($request->hasFile('featured_image')) {
-            \Log::info('🔧 NewsEventController::update - File received', [
+            \Log::error('🔧 NewsEventController::update - File received', [
                 'content_id' => $content->id,
                 'filename' => $request->file('featured_image')->getClientOriginalName(),
                 'size' => $request->file('featured_image')->getSize(),
                 'type' => $request->file('featured_image')->getMimeType()
             ]);
+            
+            // Delete old image if exists
             if ($content->featured_image) {
                 Storage::disk('public')->delete($content->featured_image);
             }
-            if ($imagePath = $this->handleFileUpload($request, $type)) {
-                // Validate that the path is a proper storage path, not a temporary path
-                if (str_starts_with($imagePath, 'content/') || str_starts_with($imagePath, 'content/partner/')) {
-                    $validated['featured_image'] = $imagePath;
-                    \Log::error('🔧 NewsEventController::update - File stored', ['path' => $imagePath]);
-                } else {
-                    \Log::error('🔧 NewsEventController::update - Invalid storage path', ['path' => $imagePath]);
-                    unset($validated['featured_image']);
-                }
-            } else {
-                \Log::error('🔧 NewsEventController::update - File upload failed');
+            
+            try {
+                $file = $request->file('featured_image');
+                $folder = $type === 'partner' ? 'content/partner' : 'content';
+                $path = $file->store($folder, 'public');
+                
+                \Log::error('🔧 NewsEventController::update - File stored directly', [
+                    'path' => $path,
+                    'full_path' => storage_path('app/public/' . $path)
+                ]);
+                
+                $validated['featured_image'] = $path;
+            } catch (\Exception $e) {
+                \Log::error('🔧 NewsEventController::update - File upload failed', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                unset($validated['featured_image']);
             }
         } else {
-            \Log::info('🔧 NewsEventController::update - No file received');
+            \Log::error('🔧 NewsEventController::update - No file received');
         }
 
         // Set published_at if publishing for the first time
@@ -296,6 +312,12 @@ class NewsEventController extends Controller
         
         // Transform data for frontend
         $newsEvents->getCollection()->transform(function ($content) {
+            \Log::error('🔧 Content featured_image from DB:', [
+                'id' => $content->id,
+                'title' => $content->title_id,
+                'featured_image' => $content->featured_image
+            ]);
+            
             return [
                 'id' => $content->id,
                 'type' => $content->type,

@@ -148,8 +148,8 @@ const openEditDialog = (item: NewsEvent) => {
     form.excerpt_en = item.excerpt_en || '';
     form.content_id = item.content_id || '';
     form.content_en = item.content_en || '';
-    // Only set featured_image if it's a valid storage path (not temporary path)
-    form.featured_image = (item.featured_image && !item.featured_image.startsWith('/tmp/')) ? item.featured_image : null;
+    // Set featured_image, but filter out only temporary paths
+    form.featured_image = (item.featured_image && !item.featured_image.startsWith('/tmp/') && !item.featured_image.includes('php')) ? item.featured_image : null;
     form.featured_image_file = null;
     form.author = item.author;
     form.location_id = item.location_id || '';
@@ -250,7 +250,12 @@ const getImagePreviewUrl = (imagePath: string | null): string => {
         return imagePath;
     }
     
-    // Otherwise, add /storage/ prefix
+    // If it's a valid storage path (content/...), add /storage/ prefix
+    if (imagePath.startsWith('content/')) {
+        return `/storage/${imagePath}`;
+    }
+    
+    // For other valid paths, add /storage/ prefix
     return `/storage/${imagePath}`;
 };
 
