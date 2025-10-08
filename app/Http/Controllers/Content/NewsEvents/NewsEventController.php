@@ -88,14 +88,34 @@ class NewsEventController extends Controller
             }
             
             try {
+                // Try alternative storage methods
+                \Log::error('🔧 NEW CODE - Trying store method...');
                 $path = $file->store($folder, 'public');
                 \Log::error('🔧 NEW CODE - Store result: ' . ($path ?: 'FALSE'));
+                
+                if (!$path) {
+                    \Log::error('🔧 NEW CODE - Store failed, trying putFileAs...');
+                    $filename = time() . '_' . $file->getClientOriginalName();
+                    $path = $file->storeAs($folder, $filename, 'public');
+                    \Log::error('🔧 NEW CODE - StoreAs result: ' . ($path ?: 'FALSE'));
+                }
+                
+                if (!$path) {
+                    \Log::error('🔧 NEW CODE - Both methods failed, trying direct storage...');
+                    $filename = time() . '_' . $file->getClientOriginalName();
+                    $fullPath = Storage::disk('public')->path($folder . '/' . $filename);
+                    $success = Storage::disk('public')->put($folder . '/' . $filename, file_get_contents($file->getRealPath()));
+                    \Log::error('🔧 NEW CODE - Direct put result: ' . ($success ? 'SUCCESS' : 'FAILED'));
+                    if ($success) {
+                        $path = $folder . '/' . $filename;
+                    }
+                }
                 
                 if ($path) {
                     $validated['featured_image'] = $path;
                     \Log::error('🔧 NEW CODE - Set featured_image to: ' . $path);
                 } else {
-                    \Log::error('🔧 NEW CODE - Path is FALSE, not setting featured_image');
+                    \Log::error('🔧 NEW CODE - All methods failed, not setting featured_image');
                 }
             } catch (\Exception $e) {
                 \Log::error('🔧 NEW CODE - Store exception: ' . $e->getMessage());
