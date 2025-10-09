@@ -77,6 +77,7 @@ class ContentRequest extends FormRequest
             'event' => ['nullable', Rule::in(array_keys(Content::getEventCategories()))],
             'partner' => ['nullable', Rule::in(array_keys(Content::getPartnerCategories()))],
             'service' => ['nullable', Rule::in(array_keys(Content::getServiceCategories()))],
+            'workplace' => ['nullable', Rule::in(array_keys(Content::getWorkplaceCategories()))],
             default => ['nullable', Rule::in(array_keys(Content::getNewsCategories()))],
         };
     }

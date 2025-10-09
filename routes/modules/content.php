@@ -66,5 +66,17 @@ Route::prefix('content')->name('content.')->middleware(['auth', 'verified'])->gr
         Route::delete('/{id}', [\App\Http\Controllers\Content\TeamMemberController::class, 'destroy'])->middleware('permission:team-members.delete')->name('destroy');
         Route::post('/bulk-action', [\App\Http\Controllers\Content\TeamMemberController::class, 'bulkAction'])->middleware('permission:team-members.delete')->name('bulk-action');
     });
+    
+    // Workplace sub-routes  
+    Route::prefix('workplace')->name('workplace.')->middleware('permission:workplace.view')->group(function () {
+        Route::get('/', [ContentController::class, 'index'])->defaults('type', 'workplace')->name('index');
+        Route::get('/create', [ContentController::class, 'create'])->defaults('type', 'workplace')->middleware('permission:workplace.create')->name('create');
+        Route::post('/', [ContentController::class, 'store'])->middleware('permission:workplace.create')->name('store');
+        Route::get('/{content}', [ContentController::class, 'show'])->name('show');
+        Route::get('/{content}/edit', [ContentController::class, 'edit'])->middleware('permission:workplace.edit')->name('edit');
+        Route::put('/{content}', [ContentController::class, 'update'])->middleware('permission:workplace.edit')->name('update');
+        Route::delete('/{id}', [ContentController::class, 'destroy'])->middleware('permission:workplace.delete')->name('destroy');
+        Route::post('/bulk-action', [ContentController::class, 'bulkAction'])->middleware('permission:workplace.delete')->name('bulk-action');
+    });
 });
 

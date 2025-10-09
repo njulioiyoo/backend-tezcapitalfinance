@@ -25,6 +25,8 @@ trait ContentHelpers
                 $type = 'partner';
             } elseif (str_contains($routeName, 'services')) {
                 $type = 'service';
+            } elseif (str_contains($routeName, 'workplace')) {
+                $type = 'workplace';
             } else {
                 $type = 'news';
             }
@@ -117,6 +119,7 @@ trait ContentHelpers
             'event' => Content::getEventCategories(),
             'partner' => Content::getPartnerCategories(),
             'service' => Content::getServiceCategories(),
+            'workplace' => Content::getWorkplaceCategories(),
             default => Content::getNewsCategories(),
         };
     }
@@ -149,6 +152,7 @@ trait ContentHelpers
         return match($type) {
             'partner' => 'content/partners/Partners',
             'service' => 'content/services/Services',
+            'workplace' => 'content/workplace/Workplace',
             default => 'content/ContentBasic'
         };
     }
@@ -161,6 +165,7 @@ trait ContentHelpers
         return match($type) {
             'service' => 'content.services.index',
             'partner' => 'content.partners.index',
+            'workplace' => 'content.workplace.index',
             default => 'content.news-events.index'
         };
     }
@@ -175,7 +180,11 @@ trait ContentHelpers
             return null;
         }
 
-        $folder = $type === 'partner' ? 'content/partner' : 'content';
+        $folder = match($type) {
+            'partner' => 'content/partner',
+            'workplace' => 'content/workplace',
+            default => 'content'
+        };
         
         try {
             \Log::error('🔧 ContentHelpers::handleFileUpload - Starting upload', [

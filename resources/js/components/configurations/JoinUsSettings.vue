@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import { Save, Loader2, Upload, X, Image } from 'lucide-vue-next';
 
 interface Configuration {
@@ -38,6 +39,7 @@ const form = reactive({
     ceo_message_content_en: '',
     ceo_image: '',
     career_application_email: '',
+    button_join_us_enabled: true,
 });
 
 const ceoImageFile = ref<File | null>(null);
@@ -54,6 +56,7 @@ watch(() => props.configurations, (newConfigs) => {
         form.ceo_message_content_en = newConfigs.ceo_message_content_en?.value || '';
         form.ceo_image = newConfigs.ceo_image?.value || '/img/profile/1.png';
         form.career_application_email = newConfigs.career_application_email?.value || 'hr@tez-capital.com';
+        form.button_join_us_enabled = newConfigs.button_join_us_enabled?.value ?? true;
         ceoImagePreview.value = newConfigs.ceo_image?.value || '';
     }
 }, { immediate: true, deep: true });
@@ -67,6 +70,7 @@ const handleBulkSave = () => {
         { key: 'ceo_message_content_id', value: form.ceo_message_content_id, type: 'textarea' },
         { key: 'ceo_message_content_en', value: form.ceo_message_content_en, type: 'textarea' },
         { key: 'career_application_email', value: form.career_application_email, type: 'email' },
+        { key: 'button_join_us_enabled', value: form.button_join_us_enabled, type: 'boolean' },
     ];
     
     if (ceoImageFile.value) {
@@ -259,6 +263,35 @@ const clearCeoImage = () => {
                             CEO image displayed in the message section (recommended size: 400x400px)
                         </p>
                     </div>
+                </div>
+            </CardContent>
+        </Card>
+
+        <!-- Button Settings -->
+        <Card>
+            <CardHeader>
+                <CardTitle class="flex items-center gap-2">
+                    Button Settings
+                </CardTitle>
+                <CardDescription>
+                    Configure visibility of Join Us button in website header
+                </CardDescription>
+            </CardHeader>
+            <CardContent class="space-y-6">
+                <div class="flex items-center justify-between p-4 rounded-lg border">
+                    <div class="space-y-1">
+                        <Label for="button_join_us_enabled" class="text-sm font-medium">
+                            Show Join Us Button
+                        </Label>
+                        <p class="text-sm text-muted-foreground">
+                            Enable or disable the Join Us button in the website header (both desktop and mobile)
+                        </p>
+                    </div>
+                    <Switch
+                        id="button_join_us_enabled"
+                        v-model:checked="form.button_join_us_enabled"
+                        :disabled="isLoading"
+                    />
                 </div>
             </CardContent>
         </Card>

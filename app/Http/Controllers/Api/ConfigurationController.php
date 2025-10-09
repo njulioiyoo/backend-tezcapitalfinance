@@ -110,7 +110,8 @@ class ConfigurationController extends Controller
                         'ceo_message_title_en',
                         'ceo_message_content_id',
                         'ceo_message_content_en',
-                        'ceo_image'
+                        'ceo_image',
+                        'button_join_us_enabled'
                     ];
                     foreach ($allowedJoinUsKeys as $key) {
                         if (isset($data['join_us'][$key])) {

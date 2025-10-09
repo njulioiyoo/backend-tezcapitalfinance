@@ -70,6 +70,14 @@ Through our comprehensive range of services, we aim to be your trusted partner i
                 'description' => 'CEO image URL',
                 'is_public' => true,
             ],
+            [
+                'key' => 'button_join_us_enabled',
+                'value' => true,
+                'type' => Configuration::TYPE_BOOLEAN,
+                'group' => Configuration::GROUP_JOIN_US,
+                'description' => 'Enable/disable Join Us button in header',
+                'is_public' => true,
+            ],
         ];
 
         foreach ($configurations as $config) {

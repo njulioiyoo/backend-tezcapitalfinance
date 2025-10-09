@@ -302,6 +302,7 @@ class Content extends Model implements Auditable
             'service' => 'Service',
             'career' => 'Career',
             'team-member' => 'Team Member',
+            'workplace' => 'Workplace',
         ];
     }
 
@@ -385,6 +386,19 @@ class Content extends Model implements Auditable
         ];
     }
 
+    public static function getWorkplaceCategories()
+    {
+        return [
+            'environment' => 'Working Environment',
+            'benefits' => 'Employee Benefits',
+            'culture' => 'Company Culture',
+            'life' => 'Life at Company',
+            'facilities' => 'Facilities',
+            'development' => 'Career Development',
+            'other' => 'Other',
+        ];
+    }
+
     public static function getStatuses()
     {
         return [
@@ -405,6 +419,7 @@ class Content extends Model implements Auditable
             'service' => self::getServiceCategories(),
             'career' => self::getCareerCategories(),
             'team-member' => self::getTeamMemberCategories(),
+            'workplace' => self::getWorkplaceCategories(),
             default => [],
         };
     }
@@ -455,6 +470,18 @@ class Content extends Model implements Auditable
     public function isCareer()
     {
         return $this->type === 'career';
+    }
+
+    // Check if content is workplace
+    public function isWorkplace()
+    {
+        return $this->type === 'workplace';
+    }
+
+    // Scope for workplace
+    public function scopeWorkplace($query)
+    {
+        return $query->where('type', 'workplace');
     }
 
     /**

@@ -54,6 +54,9 @@ Route::prefix('v1')->group(function () {
     Route::get('services/{id}', [ApiServiceController::class, 'show'])->name('api.services.show');
     Route::get('services/slug/{slug}', [ApiServiceController::class, 'showBySlug'])->name('api.services.show-by-slug');
     
+    // Workplace API
+    Route::get('workplace', [ContentController::class, 'workplaceApi'])->name('api.workplace.index');
+    
     // Careers API
     Route::prefix('careers')->name('api.careers.')->group(function () {
         Route::get('/', [ApiCareerController::class, 'index'])->name('index');

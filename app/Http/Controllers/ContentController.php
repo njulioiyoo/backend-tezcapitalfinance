@@ -38,6 +38,7 @@ class ContentController extends Controller
             ->paginate(15)
             ->withQueryString();
 
+
         $categories = $this->getCategoriesForType($type);
         $component = $this->getComponentForType($type);
         
@@ -200,32 +201,36 @@ class ContentController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Request $request, Content $content)
+    public function destroy(Request $request, $id)
     {
-        // Delete image if exists
-        if ($content->featured_image) {
-            Storage::disk('public')->delete($content->featured_image);
+        $content = Content::find($id);
+        if (!$content) {
+            return redirect()->back()->with('error', 'Record not found');
         }
-
-        // Delete gallery images if exists
-        if ($content->gallery) {
-            foreach ($content->gallery as $image) {
-                Storage::disk('public')->delete($image);
+        
+        try {
+            // Delete image if exists
+            if ($content->featured_image) {
+                Storage::disk('public')->delete($content->featured_image);
             }
+
+            // Delete gallery images if exists
+            if ($content->gallery) {
+                foreach ($content->gallery as $image) {
+                    Storage::disk('public')->delete($image);
+                }
+            }
+
+            $type = $content->type;
+            $content->delete();
+
+            $routeName = $this->getRouteNameForType($type);
+            return redirect()->route($routeName)->with('success', ucfirst($type) . ' deleted successfully');
+            
+        } catch (\Exception $e) {
+            \Log::error('Error deleting content: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'An error occurred while deleting the record');
         }
-
-        $type = $content->type;
-        $content->delete();
-
-        // Return success response for AJAX/Inertia requests
-        if ($request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest' || $request->header('X-Inertia')) {
-            return response()->json([
-                'message' => ucfirst($type) . ' deleted successfully'
-            ], 200);
-        }
-
-        $routeName = $this->getRouteNameForType($type);
-        return redirect()->route($routeName)->with('success', ucfirst($type) . ' deleted successfully');
     }
 
     /**
@@ -297,6 +302,65 @@ class ContentController extends Controller
         }
 
         return response()->json(['message' => $message]);
+    }
+
+    /**
+     * API endpoint for workplace content
+     */
+    public function workplaceApi(Request $request): JsonResponse
+    {
+        try {
+            $startTime = microtime(true);
+            
+            $query = Content::workplace()->published();
+
+            if ($request->filled('category')) {
+                $query->byCategory($request->get('category'));
+            }
+
+            if ($request->filled('featured')) {
+                $query->featured();
+            }
+
+            if ($request->filled('search')) {
+                $search = $request->get('search');
+                $query->where(function ($q) use ($search) {
+                    $q->where('title_id', 'like', "%{$search}%")
+                        ->orWhere('title_en', 'like', "%{$search}%")
+                        ->orWhere('content_id', 'like', "%{$search}%")
+                        ->orWhere('content_en', 'like', "%{$search}%")
+                        ->orWhere('excerpt_id', 'like', "%{$search}%")
+                        ->orWhere('excerpt_en', 'like', "%{$search}%");
+                });
+            }
+
+            $content = $query->orderBy('is_featured', 'desc')
+                ->orderBy('sort_order', 'asc')
+                ->orderBy('published_at', 'desc')
+                ->paginate(6);
+
+            // Transform the data to include full image URLs
+            $content->getCollection()->transform(function ($item) {
+                $item->featured_image_url = $item->featured_image ? config('app.url') . '/storage/' . $item->featured_image : null;
+                return $item;
+            });
+
+            $endTime = microtime(true);
+            $responseTime = round(($endTime - $startTime) * 1000, 2);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Workplace data retrieved successfully',
+                'data' => $content,
+                'categories' => Content::getWorkplaceCategories(),
+                'response_time_ms' => $responseTime
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve workplace data: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
