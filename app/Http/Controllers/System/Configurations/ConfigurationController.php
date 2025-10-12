@@ -38,6 +38,7 @@ class ConfigurationController extends Controller
             Configuration::GROUP_ABOUT,
             Configuration::GROUP_BANNERS,
             Configuration::GROUP_OJK,
+            Configuration::GROUP_JOIN_US,
         ];
 
         $configurations = Configuration::whereIn('group', $relevantGroups)

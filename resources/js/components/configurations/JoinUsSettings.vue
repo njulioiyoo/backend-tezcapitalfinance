@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue';
+import { ref, reactive, watch, nextTick } from 'vue';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +24,11 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+
+// Debug props on mount
+watch(() => props.configurations, (newConfigs) => {
+    console.log('🔧 JoinUsSettings - Props changed:', newConfigs);
+}, { immediate: true });
 const emit = defineEmits<{
     save: [group: string, key: string, value: any, type: string];
     update: [configId: number, group: string, key: string, value: any, type: string];
@@ -39,7 +44,7 @@ const form = reactive({
     ceo_message_content_en: '',
     ceo_image: '',
     career_application_email: '',
-    button_join_us_enabled: true,
+    button_join_us_enabled: false, // Default to false
 });
 
 const ceoImageFile = ref<File | null>(null);
@@ -47,7 +52,10 @@ const ceoImagePreview = ref<string>('');
 
 // Watch for configuration changes and update form
 watch(() => props.configurations, (newConfigs) => {
-    if (newConfigs) {
+    console.log('🔧 JoinUsSettings - Watch triggered with:', newConfigs);
+    // Only update if we have actual configuration data (not empty object)
+    if (newConfigs && Object.keys(newConfigs).length > 0) {
+        
         form.hero_title_id = newConfigs.hero_title_id?.value || 'Bagian dari TEZ Capital';
         form.hero_title_en = newConfigs.hero_title_en?.value || 'Be Part of TEZ Capital';
         form.ceo_message_title_id = newConfigs.ceo_message_title_id?.value || 'Pesan dari CEO';
@@ -56,31 +64,78 @@ watch(() => props.configurations, (newConfigs) => {
         form.ceo_message_content_en = newConfigs.ceo_message_content_en?.value || '';
         form.ceo_image = newConfigs.ceo_image?.value || '/img/profile/1.png';
         form.career_application_email = newConfigs.career_application_email?.value || 'hr@tez-capital.com';
-        form.button_join_us_enabled = newConfigs.button_join_us_enabled?.value ?? true;
+        
+        // Simple boolean handling like LanguageSettings
+        const dbValue = newConfigs.button_join_us_enabled?.value;
+        console.log('🔧 JoinUsSettings - DB Value:', dbValue, 'Type:', typeof dbValue);
+        
+        // Simple assignment with fallback (like LanguageSettings)
+        form.button_join_us_enabled = dbValue || false;
+        
+        console.log('🔧 JoinUsSettings - Form Value:', form.button_join_us_enabled, 'Type:', typeof form.button_join_us_enabled);
+        
         ceoImagePreview.value = newConfigs.ceo_image?.value || '';
+        
+        // Force DOM update
+        nextTick(() => {
+            console.log('🔧 JoinUsSettings - After nextTick, form.button_join_us_enabled:', form.button_join_us_enabled);
+        });
     }
 }, { immediate: true, deep: true });
 
 const handleBulkSave = () => {
-    const changes = [
-        { key: 'hero_title_id', value: form.hero_title_id, type: 'text' },
-        { key: 'hero_title_en', value: form.hero_title_en, type: 'text' },
-        { key: 'ceo_message_title_id', value: form.ceo_message_title_id, type: 'text' },
-        { key: 'ceo_message_title_en', value: form.ceo_message_title_en, type: 'text' },
-        { key: 'ceo_message_content_id', value: form.ceo_message_content_id, type: 'textarea' },
-        { key: 'ceo_message_content_en', value: form.ceo_message_content_en, type: 'textarea' },
-        { key: 'career_application_email', value: form.career_application_email, type: 'email' },
-        { key: 'button_join_us_enabled', value: form.button_join_us_enabled, type: 'boolean' },
-    ];
+    const changes = [];
+
+    // Check for changes and collect them (like LanguageSettings)
+    if (props.configurations.hero_title_id?.value !== form.hero_title_id) {
+        changes.push({ key: 'hero_title_id', value: form.hero_title_id, type: 'text' });
+    }
+
+    if (props.configurations.hero_title_en?.value !== form.hero_title_en) {
+        changes.push({ key: 'hero_title_en', value: form.hero_title_en, type: 'text' });
+    }
+
+    if (props.configurations.ceo_message_title_id?.value !== form.ceo_message_title_id) {
+        changes.push({ key: 'ceo_message_title_id', value: form.ceo_message_title_id, type: 'text' });
+    }
+
+    if (props.configurations.ceo_message_title_en?.value !== form.ceo_message_title_en) {
+        changes.push({ key: 'ceo_message_title_en', value: form.ceo_message_title_en, type: 'text' });
+    }
+
+    if (props.configurations.ceo_message_content_id?.value !== form.ceo_message_content_id) {
+        changes.push({ key: 'ceo_message_content_id', value: form.ceo_message_content_id, type: 'textarea' });
+    }
+
+    if (props.configurations.ceo_message_content_en?.value !== form.ceo_message_content_en) {
+        changes.push({ key: 'ceo_message_content_en', value: form.ceo_message_content_en, type: 'textarea' });
+    }
+
+    if (props.configurations.career_application_email?.value !== form.career_application_email) {
+        changes.push({ key: 'career_application_email', value: form.career_application_email, type: 'email' });
+    }
+
+    // Simple boolean comparison like LanguageSettings
+    const currentButtonValue = props.configurations.button_join_us_enabled?.value || false;
+    
+    console.log('🔧 JoinUsSettings - Save: Current DB:', currentButtonValue, 'Form:', form.button_join_us_enabled, 'Changed:', currentButtonValue !== form.button_join_us_enabled);
+    if (currentButtonValue !== form.button_join_us_enabled) {
+        changes.push({ key: 'button_join_us_enabled', value: form.button_join_us_enabled, type: 'boolean' });
+        console.log('🔧 JoinUsSettings - Saving value:', form.button_join_us_enabled);
+    }
     
     if (ceoImageFile.value) {
         changes.push({ key: 'ceo_image', value: ceoImageFile.value, type: 'file' });
     }
     
-    emit('bulkSave', 'join_us', changes);
-    
-    // Clear file ref after successful save initiation
-    ceoImageFile.value = null;
+    // Only save if there are changes
+    if (changes.length > 0) {
+        console.log('🔧 JoinUsSettings - Emitting bulkSave with changes:', changes);
+        emit('bulkSave', 'join_us', changes);
+        
+        // Clear file ref after successful save initiation
+        ceoImageFile.value = null;
+    }
 };
 
 // Image upload handling

@@ -49,6 +49,12 @@ const {
     updateConfiguration
 } = useConfigurations();
 
+// Debug configurations
+watch(() => configurations.value, (newConfigs) => {
+    console.log('🔧 Configurations Page - Configurations changed:', newConfigs);
+    console.log('🔧 Configurations Page - Join Us group:', newConfigs.join_us);
+}, { immediate: true, deep: true });
+
 
 
 onMounted(() => {

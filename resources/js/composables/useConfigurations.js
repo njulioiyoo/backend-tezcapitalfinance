@@ -87,6 +87,8 @@ export function useConfigurations() {
             }
             
             const data = await response.json();
+            console.log('🔧 useConfigurations - Loaded data:', data.data);
+            console.log('🔧 useConfigurations - Join Us config:', data.data.join_us);
             configurations.value = data.data;
         } catch (error) {
             // Error loading configurations
@@ -291,37 +293,8 @@ export function useConfigurations() {
                 // All non-file data, use bulk update
                 const result = await saveBulkNonFileConfigurations(group, changes);
                 
-                // Update local state with server response data for accuracy
-                if (result && result.data) {
-                    // Updating local state with server response
-                    for (const config of result.data) {
-                        if (!configurations.value[config.group]) {
-                            configurations.value[config.group] = {};
-                        }
-                        
-                        // Updating configuration
-                        
-                        // Force Vue reactivity by creating new object reference
-                        configurations.value[config.group] = {
-                            ...configurations.value[config.group],
-                            [config.key]: {
-                                value: config.value,
-                                type: config.type,
-                                description: config.description,
-                                is_public: config.is_public
-                            }
-                        };
-                    }
-                    
-                    // Local state updated
-                    
-                    // Force Vue to update DOM
-                    await nextTick();
-                } else {
-                    // Fallback: reload all configurations if no response data
-                    // No response data, reloading configurations
-                    await loadConfigurations();
-                }
+                // Always reload configurations to ensure we have the latest state
+                await loadConfigurations();
             }
             
             toast({
