@@ -10,7 +10,7 @@ use Illuminate\Http\JsonResponse;
 class TeamMemberController extends Controller
 {
     /**
-     * Process team member data to include full URLs for images
+     * Process team member data to include full URLs for images and add testimonial fields
      */
     private function processTeamMemberData($teamMembers)
     {
@@ -21,11 +21,23 @@ class TeamMemberController extends Controller
                 if ($member->featured_image) {
                     $member->featured_image = $baseUrl . '/storage/' . $member->featured_image;
                 }
+                
+                // Add testimonial and position data for better frontend handling
+                $member->testimonial = $member->testimonial_id ?? $member->excerpt_id;
+                $member->testimonial_en = $member->testimonial_en ?? $member->excerpt_en;
+                $member->position = $member->position_id ?? $member->department_id;
+                $member->position_en = $member->position_en ?? $member->department_en;
             }
         } else {
             if ($teamMembers->featured_image) {
                 $teamMembers->featured_image = $baseUrl . '/storage/' . $teamMembers->featured_image;
             }
+            
+            // Add testimonial and position data for better frontend handling
+            $teamMembers->testimonial = $teamMembers->testimonial_id ?? $teamMembers->excerpt_id;
+            $teamMembers->testimonial_en = $teamMembers->testimonial_en ?? $teamMembers->excerpt_en;
+            $teamMembers->position = $teamMembers->position_id ?? $teamMembers->department_id;
+            $teamMembers->position_en = $teamMembers->position_en ?? $teamMembers->department_en;
         }
         
         return $teamMembers;

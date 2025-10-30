@@ -92,6 +92,7 @@ Route::prefix('v1')->group(function () {
     
     Route::prefix('configurations')->name('api.configurations.')->group(function () {
         Route::get('/', [ApiConfigurationController::class, 'index'])->name('index');
+        Route::get('/public', [ApiConfigurationController::class, 'public'])->name('public');
         Route::get('/key/{key}', [ApiConfigurationController::class, 'show'])->name('show');
     });
     
@@ -102,6 +103,12 @@ Route::prefix('v1')->group(function () {
         Route::get('annual', [ReportController::class, 'annual'])->name('annual');
         Route::get('{id}', [ReportController::class, 'show'])->name('show');
         Route::get('{id}/download', [ReportController::class, 'download'])->name('download');
+    });
+    
+    // Master Data API (Public - for frontend dropdowns)
+    Route::prefix('master')->name('api.master.')->group(function () {
+        Route::get('departments/active', [\App\Http\Controllers\Master\DepartmentController::class, 'getActive'])->name('departments.active');
+        Route::get('locations/active', [\App\Http\Controllers\Master\LocationController::class, 'getActive'])->name('locations.active');
     });
 });
 

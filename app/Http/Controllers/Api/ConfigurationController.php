@@ -111,7 +111,20 @@ class ConfigurationController extends Controller
                         'ceo_message_content_id',
                         'ceo_message_content_en',
                         'ceo_image',
-                        'button_join_us_enabled'
+                        'button_join_us_enabled',
+                        // Workplace configurations
+                        'workplace_working_environment_title_id',
+                        'workplace_working_environment_title_en',
+                        'workplace_working_environment_description_id',
+                        'workplace_working_environment_description_en',
+                        'workplace_working_environment_image',
+                        'workplace_working_environment_slug',
+                        'workplace_employee_benefits_title_id',
+                        'workplace_employee_benefits_title_en',
+                        'workplace_employee_benefits_description_id',
+                        'workplace_employee_benefits_description_en',
+                        'workplace_employee_benefits_image',
+                        'workplace_employee_benefits_slug'
                     ];
                     foreach ($allowedJoinUsKeys as $key) {
                         if (isset($data['join_us'][$key])) {

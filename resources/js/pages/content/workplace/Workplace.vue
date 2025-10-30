@@ -21,6 +21,7 @@ interface Workplace {
     id: number;
     type: string;
     category: string;
+    slug: string;
     title_id: string;
     title_en: string;
     excerpt_id: string;
@@ -277,13 +278,11 @@ const handleSubmit = async () => {
             }
         });
         
-        // Add file if exists (new upload)
+        // Add file only if there's a new upload
         if (imageFile.value) {
             formData.append('featured_image', imageFile.value);
-        } else if (editingWorkplace.value && editingWorkplace.value.featured_image && !editingWorkplace.value.featured_image.startsWith('data:')) {
-            // For existing workplaces with existing image path, include the existing path
-            formData.append('featured_image', editingWorkplace.value.featured_image);
         }
+        // Don't send existing image path as featured_image - let backend keep existing image if no new upload
         
         // Add method for Laravel method spoofing
         if (method === 'PUT') {

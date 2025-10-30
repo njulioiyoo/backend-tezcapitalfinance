@@ -148,8 +148,9 @@ class ContentController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(ContentRequest $request, Content $content)
+    public function update(ContentRequest $request, $id)
     {
+        $content = Content::findOrFail($id);
         $type = $content->type;
         $requestData = $this->convertBooleanFormData($request);
         $request->merge($requestData);
@@ -162,6 +163,9 @@ class ContentController extends Controller
             if ($imagePath = $this->handleFileUpload($request, $type)) {
                 $validated['featured_image'] = $imagePath;
             }
+        } else {
+            // Don't update featured_image field if no new file upload
+            unset($validated['featured_image']);
         }
 
         // Set published_at if publishing

@@ -175,8 +175,11 @@ class ContentRequest extends FormRequest
         } elseif ($type === 'partner' && !$isUpdate) {
             $rules['featured_image'] = 'required|image|mimes:jpeg,png,jpg,gif,webp,svg|max:5120';
         } else {
-            // For news-events and other types, make it nullable but validate when present
-            $rules['featured_image'] = 'nullable|image|mimes:jpeg,png,jpg,gif,webp,svg|max:5120';
+            // For updates, don't validate featured_image field unless there's a file upload
+            // This allows form submission without image validation errors
+            if (!$isUpdate) {
+                $rules['featured_image'] = 'nullable|image|mimes:jpeg,png,jpg,gif,webp,svg|max:5120';
+            }
         }
 
         return $rules;

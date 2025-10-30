@@ -45,10 +45,37 @@ const form = reactive({
     ceo_image: '',
     career_application_email: '',
     button_join_us_enabled: false, // Default to false
+    
+    // Explore Our Workplace - Working Environment
+    workplace_working_environment_title_id: '',
+    workplace_working_environment_title_en: '',
+    workplace_working_environment_description_id: '',
+    workplace_working_environment_description_en: '',
+    workplace_working_environment_image: '',
+    workplace_working_environment_slug: '',
+    
+    // Explore Our Workplace - Employee Benefits  
+    workplace_employee_benefits_title_id: '',
+    workplace_employee_benefits_title_en: '',
+    workplace_employee_benefits_description_id: '',
+    workplace_employee_benefits_description_en: '',
+    workplace_employee_benefits_image: '',
+    workplace_employee_benefits_slug: '',
 });
 
 const ceoImageFile = ref<File | null>(null);
 const ceoImagePreview = ref<string>('');
+
+// Workplace image uploads
+const workingEnvironmentImageFile = ref<File | null>(null);
+const workingEnvironmentImagePreview = ref<string>('');
+const employeeBenefitsImageFile = ref<File | null>(null);
+const employeeBenefitsImagePreview = ref<string>('');
+
+// Template refs
+const ceoImageInput = ref<HTMLInputElement | null>(null);
+const workingEnvironmentImageInput = ref<HTMLInputElement | null>(null);
+const employeeBenefitsImageInput = ref<HTMLInputElement | null>(null);
 
 // Watch for configuration changes and update form
 watch(() => props.configurations, (newConfigs) => {
@@ -75,6 +102,25 @@ watch(() => props.configurations, (newConfigs) => {
         console.log('🔧 JoinUsSettings - Form Value:', form.button_join_us_enabled, 'Type:', typeof form.button_join_us_enabled);
         
         ceoImagePreview.value = newConfigs.ceo_image?.value || '';
+        
+        // Workplace configurations
+        form.workplace_working_environment_title_id = newConfigs.workplace_working_environment_title_id?.value || 'Lingkungan Kerja';
+        form.workplace_working_environment_title_en = newConfigs.workplace_working_environment_title_en?.value || 'Working Environment';
+        form.workplace_working_environment_description_id = newConfigs.workplace_working_environment_description_id?.value || '';
+        form.workplace_working_environment_description_en = newConfigs.workplace_working_environment_description_en?.value || '';
+        form.workplace_working_environment_image = newConfigs.workplace_working_environment_image?.value || '/img/workplace/working-environment.jpg';
+        form.workplace_working_environment_slug = newConfigs.workplace_working_environment_slug?.value || '#working-environment';
+        
+        form.workplace_employee_benefits_title_id = newConfigs.workplace_employee_benefits_title_id?.value || 'Benefit Karyawan';
+        form.workplace_employee_benefits_title_en = newConfigs.workplace_employee_benefits_title_en?.value || 'Employee Benefits';
+        form.workplace_employee_benefits_description_id = newConfigs.workplace_employee_benefits_description_id?.value || '';
+        form.workplace_employee_benefits_description_en = newConfigs.workplace_employee_benefits_description_en?.value || '';
+        form.workplace_employee_benefits_image = newConfigs.workplace_employee_benefits_image?.value || '/img/workplace/employee-benefits.jpg';
+        form.workplace_employee_benefits_slug = newConfigs.workplace_employee_benefits_slug?.value || '#employee-benefits';
+        
+        // Set image previews
+        workingEnvironmentImagePreview.value = newConfigs.workplace_working_environment_image?.value || '';
+        employeeBenefitsImagePreview.value = newConfigs.workplace_employee_benefits_image?.value || '';
         
         // Force DOM update
         nextTick(() => {
@@ -128,13 +174,55 @@ const handleBulkSave = () => {
         changes.push({ key: 'ceo_image', value: ceoImageFile.value, type: 'file' });
     }
     
+    // Workplace - Working Environment changes
+    if (props.configurations.workplace_working_environment_title_id?.value !== form.workplace_working_environment_title_id) {
+        changes.push({ key: 'workplace_working_environment_title_id', value: form.workplace_working_environment_title_id, type: 'text' });
+    }
+    if (props.configurations.workplace_working_environment_title_en?.value !== form.workplace_working_environment_title_en) {
+        changes.push({ key: 'workplace_working_environment_title_en', value: form.workplace_working_environment_title_en, type: 'text' });
+    }
+    if (props.configurations.workplace_working_environment_description_id?.value !== form.workplace_working_environment_description_id) {
+        changes.push({ key: 'workplace_working_environment_description_id', value: form.workplace_working_environment_description_id, type: 'textarea' });
+    }
+    if (props.configurations.workplace_working_environment_description_en?.value !== form.workplace_working_environment_description_en) {
+        changes.push({ key: 'workplace_working_environment_description_en', value: form.workplace_working_environment_description_en, type: 'textarea' });
+    }
+    if (props.configurations.workplace_working_environment_slug?.value !== form.workplace_working_environment_slug) {
+        changes.push({ key: 'workplace_working_environment_slug', value: form.workplace_working_environment_slug, type: 'text' });
+    }
+    if (workingEnvironmentImageFile.value) {
+        changes.push({ key: 'workplace_working_environment_image', value: workingEnvironmentImageFile.value, type: 'file' });
+    }
+    
+    // Workplace - Employee Benefits changes
+    if (props.configurations.workplace_employee_benefits_title_id?.value !== form.workplace_employee_benefits_title_id) {
+        changes.push({ key: 'workplace_employee_benefits_title_id', value: form.workplace_employee_benefits_title_id, type: 'text' });
+    }
+    if (props.configurations.workplace_employee_benefits_title_en?.value !== form.workplace_employee_benefits_title_en) {
+        changes.push({ key: 'workplace_employee_benefits_title_en', value: form.workplace_employee_benefits_title_en, type: 'text' });
+    }
+    if (props.configurations.workplace_employee_benefits_description_id?.value !== form.workplace_employee_benefits_description_id) {
+        changes.push({ key: 'workplace_employee_benefits_description_id', value: form.workplace_employee_benefits_description_id, type: 'textarea' });
+    }
+    if (props.configurations.workplace_employee_benefits_description_en?.value !== form.workplace_employee_benefits_description_en) {
+        changes.push({ key: 'workplace_employee_benefits_description_en', value: form.workplace_employee_benefits_description_en, type: 'textarea' });
+    }
+    if (props.configurations.workplace_employee_benefits_slug?.value !== form.workplace_employee_benefits_slug) {
+        changes.push({ key: 'workplace_employee_benefits_slug', value: form.workplace_employee_benefits_slug, type: 'text' });
+    }
+    if (employeeBenefitsImageFile.value) {
+        changes.push({ key: 'workplace_employee_benefits_image', value: employeeBenefitsImageFile.value, type: 'file' });
+    }
+    
     // Only save if there are changes
     if (changes.length > 0) {
         console.log('🔧 JoinUsSettings - Emitting bulkSave with changes:', changes);
         emit('bulkSave', 'join_us', changes);
         
-        // Clear file ref after successful save initiation
+        // Clear file refs after successful save initiation
         ceoImageFile.value = null;
+        workingEnvironmentImageFile.value = null;
+        employeeBenefitsImageFile.value = null;
     }
 };
 
@@ -155,6 +243,44 @@ const handleCeoImageUpload = (event: Event) => {
 const clearCeoImage = () => {
     ceoImageFile.value = null;
     ceoImagePreview.value = '';
+};
+
+// Working Environment image upload handling
+const handleWorkingEnvironmentImageUpload = (event: Event) => {
+    const target = event.target as HTMLInputElement;
+    const file = target.files?.[0];
+    if (file) {
+        workingEnvironmentImageFile.value = file;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            workingEnvironmentImagePreview.value = e.target?.result as string;
+        };
+        reader.readAsDataURL(file);
+    }
+};
+
+const clearWorkingEnvironmentImage = () => {
+    workingEnvironmentImageFile.value = null;
+    workingEnvironmentImagePreview.value = '';
+};
+
+// Employee Benefits image upload handling
+const handleEmployeeBenefitsImageUpload = (event: Event) => {
+    const target = event.target as HTMLInputElement;
+    const file = target.files?.[0];
+    if (file) {
+        employeeBenefitsImageFile.value = file;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            employeeBenefitsImagePreview.value = e.target?.result as string;
+        };
+        reader.readAsDataURL(file);
+    }
+};
+
+const clearEmployeeBenefitsImage = () => {
+    employeeBenefitsImageFile.value = null;
+    employeeBenefitsImagePreview.value = '';
 };
 </script>
 
@@ -290,7 +416,7 @@ const clearCeoImage = () => {
                                         <X class="w-4 h-4 mr-2" />
                                         Remove
                                     </Button>
-                                    <Button size="sm" variant="outline" @click="$refs.ceoImageInput.click()">
+                                    <Button size="sm" variant="outline" @click="ceoImageInput?.click()">
                                         <Upload class="w-4 h-4 mr-2" />
                                         Change
                                     </Button>
@@ -299,7 +425,7 @@ const clearCeoImage = () => {
                             <div v-else class="text-center">
                                 <Image class="mx-auto h-12 w-12 text-muted-foreground" />
                                 <div class="mt-2">
-                                    <Button variant="outline" @click="$refs.ceoImageInput.click()">
+                                    <Button variant="outline" @click="ceoImageInput?.click()">
                                         <Upload class="w-4 h-4 mr-2" />
                                         Upload CEO Image
                                     </Button>
@@ -374,6 +500,243 @@ const clearCeoImage = () => {
                     <p class="text-sm text-muted-foreground">
                         Email address where career applications will be sent. This email will be used when users submit job applications through the career detail pages.
                     </p>
+                </div>
+            </CardContent>
+        </Card>
+
+        <!-- Explore Our Workplace Settings -->
+        <Card>
+            <CardHeader>
+                <CardTitle class="flex items-center gap-2">
+                    Explore Our Workplace Settings
+                </CardTitle>
+                <CardDescription>
+                    Configure the static cards for Working Environment and Employee Benefits section
+                </CardDescription>
+            </CardHeader>
+            <CardContent class="space-y-8">
+                <!-- Working Environment Card -->
+                <div class="space-y-6 p-6 border rounded-lg">
+                    <h3 class="text-lg font-semibold">Working Environment Card</h3>
+                    
+                    <!-- Titles -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-2">
+                            <Label for="workplace_working_environment_title_id">Title (Indonesian) *</Label>
+                            <Input
+                                id="workplace_working_environment_title_id"
+                                v-model="form.workplace_working_environment_title_id"
+                                placeholder="Lingkungan Kerja"
+                                :disabled="isLoading"
+                            />
+                        </div>
+                        
+                        <div class="space-y-2">
+                            <Label for="workplace_working_environment_title_en">Title (English) *</Label>
+                            <Input
+                                id="workplace_working_environment_title_en"
+                                v-model="form.workplace_working_environment_title_en"
+                                placeholder="Working Environment"
+                                :disabled="isLoading"
+                            />
+                        </div>
+                    </div>
+
+                    <!-- Descriptions -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-2">
+                            <Label for="workplace_working_environment_description_id">Description (Indonesian) *</Label>
+                            <Textarea
+                                id="workplace_working_environment_description_id"
+                                v-model="form.workplace_working_environment_description_id"
+                                placeholder="Deskripsi tentang lingkungan kerja..."
+                                rows="4"
+                                :disabled="isLoading"
+                            />
+                        </div>
+                        
+                        <div class="space-y-2">
+                            <Label for="workplace_working_environment_description_en">Description (English) *</Label>
+                            <Textarea
+                                id="workplace_working_environment_description_en"
+                                v-model="form.workplace_working_environment_description_en"
+                                placeholder="Description about working environment..."
+                                rows="4"
+                                :disabled="isLoading"
+                            />
+                        </div>
+                    </div>
+
+                    <!-- Slug -->
+                    <div class="space-y-2">
+                        <Label for="workplace_working_environment_slug">Link/Slug *</Label>
+                        <Input
+                            id="workplace_working_environment_slug"
+                            v-model="form.workplace_working_environment_slug"
+                            placeholder="#working-environment"
+                            :disabled="isLoading"
+                        />
+                        <p class="text-sm text-muted-foreground">
+                            Link URL or anchor when the card is clicked
+                        </p>
+                    </div>
+
+                    <!-- Image -->
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <Label>Working Environment Image</Label>
+                            <div class="border-2 border-dashed border-input rounded-lg p-6 dark:border-input">
+                                <div v-if="workingEnvironmentImagePreview" class="space-y-4">
+                                    <div class="flex items-center justify-center">
+                                        <img 
+                                            :src="workingEnvironmentImagePreview.startsWith('data:') || workingEnvironmentImagePreview.startsWith('http') ? workingEnvironmentImagePreview : `/storage/${workingEnvironmentImagePreview}`" 
+                                            alt="Working Environment Image Preview" 
+                                            class="max-h-48 max-w-64 object-contain rounded-lg"
+                                        />
+                                    </div>
+                                    <div class="flex justify-center gap-2">
+                                        <Button size="sm" variant="outline" @click="clearWorkingEnvironmentImage">
+                                            <X class="w-4 h-4 mr-2" />
+                                            Remove
+                                        </Button>
+                                        <Button size="sm" variant="outline" @click="workingEnvironmentImageInput?.click()">
+                                            <Upload class="w-4 h-4 mr-2" />
+                                            Change
+                                        </Button>
+                                    </div>
+                                </div>
+                                <div v-else class="text-center">
+                                    <Image class="mx-auto h-12 w-12 text-muted-foreground" />
+                                    <div class="mt-2">
+                                        <Button variant="outline" @click="workingEnvironmentImageInput?.click()">
+                                            <Upload class="w-4 h-4 mr-2" />
+                                            Upload Image
+                                        </Button>
+                                    </div>
+                                    <p class="text-sm text-muted-foreground mt-2">PNG, JPG up to 5MB</p>
+                                </div>
+                                <input
+                                    ref="workingEnvironmentImageInput"
+                                    type="file"
+                                    accept="image/*"
+                                    class="hidden"
+                                    @change="handleWorkingEnvironmentImageUpload"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Employee Benefits Card -->
+                <div class="space-y-6 p-6 border rounded-lg">
+                    <h3 class="text-lg font-semibold">Employee Benefits Card</h3>
+                    
+                    <!-- Titles -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-2">
+                            <Label for="workplace_employee_benefits_title_id">Title (Indonesian) *</Label>
+                            <Input
+                                id="workplace_employee_benefits_title_id"
+                                v-model="form.workplace_employee_benefits_title_id"
+                                placeholder="Benefit Karyawan"
+                                :disabled="isLoading"
+                            />
+                        </div>
+                        
+                        <div class="space-y-2">
+                            <Label for="workplace_employee_benefits_title_en">Title (English) *</Label>
+                            <Input
+                                id="workplace_employee_benefits_title_en"
+                                v-model="form.workplace_employee_benefits_title_en"
+                                placeholder="Employee Benefits"
+                                :disabled="isLoading"
+                            />
+                        </div>
+                    </div>
+
+                    <!-- Descriptions -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-2">
+                            <Label for="workplace_employee_benefits_description_id">Description (Indonesian) *</Label>
+                            <Textarea
+                                id="workplace_employee_benefits_description_id"
+                                v-model="form.workplace_employee_benefits_description_id"
+                                placeholder="Deskripsi tentang benefit karyawan..."
+                                rows="4"
+                                :disabled="isLoading"
+                            />
+                        </div>
+                        
+                        <div class="space-y-2">
+                            <Label for="workplace_employee_benefits_description_en">Description (English) *</Label>
+                            <Textarea
+                                id="workplace_employee_benefits_description_en"
+                                v-model="form.workplace_employee_benefits_description_en"
+                                placeholder="Description about employee benefits..."
+                                rows="4"
+                                :disabled="isLoading"
+                            />
+                        </div>
+                    </div>
+
+                    <!-- Slug -->
+                    <div class="space-y-2">
+                        <Label for="workplace_employee_benefits_slug">Link/Slug *</Label>
+                        <Input
+                            id="workplace_employee_benefits_slug"
+                            v-model="form.workplace_employee_benefits_slug"
+                            placeholder="#employee-benefits"
+                            :disabled="isLoading"
+                        />
+                        <p class="text-sm text-muted-foreground">
+                            Link URL or anchor when the card is clicked
+                        </p>
+                    </div>
+
+                    <!-- Image -->
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <Label>Employee Benefits Image</Label>
+                            <div class="border-2 border-dashed border-input rounded-lg p-6 dark:border-input">
+                                <div v-if="employeeBenefitsImagePreview" class="space-y-4">
+                                    <div class="flex items-center justify-center">
+                                        <img 
+                                            :src="employeeBenefitsImagePreview.startsWith('data:') || employeeBenefitsImagePreview.startsWith('http') ? employeeBenefitsImagePreview : `/storage/${employeeBenefitsImagePreview}`" 
+                                            alt="Employee Benefits Image Preview" 
+                                            class="max-h-48 max-w-64 object-contain rounded-lg"
+                                        />
+                                    </div>
+                                    <div class="flex justify-center gap-2">
+                                        <Button size="sm" variant="outline" @click="clearEmployeeBenefitsImage">
+                                            <X class="w-4 h-4 mr-2" />
+                                            Remove
+                                        </Button>
+                                        <Button size="sm" variant="outline" @click="employeeBenefitsImageInput?.click()">
+                                            <Upload class="w-4 h-4 mr-2" />
+                                            Change
+                                        </Button>
+                                    </div>
+                                </div>
+                                <div v-else class="text-center">
+                                    <Image class="mx-auto h-12 w-12 text-muted-foreground" />
+                                    <div class="mt-2">
+                                        <Button variant="outline" @click="employeeBenefitsImageInput?.click()">
+                                            <Upload class="w-4 h-4 mr-2" />
+                                            Upload Image
+                                        </Button>
+                                    </div>
+                                    <p class="text-sm text-muted-foreground mt-2">PNG, JPG up to 5MB</p>
+                                </div>
+                                <input
+                                    ref="employeeBenefitsImageInput"
+                                    type="file"
+                                    accept="image/*"
+                                    class="hidden"
+                                    @change="handleEmployeeBenefitsImageUpload"
+                                />
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </CardContent>
         </Card>

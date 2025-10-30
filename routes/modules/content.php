@@ -74,7 +74,7 @@ Route::prefix('content')->name('content.')->middleware(['auth', 'verified'])->gr
         Route::post('/', [ContentController::class, 'store'])->middleware('permission:workplace.create')->name('store');
         Route::get('/{content}', [ContentController::class, 'show'])->name('show');
         Route::get('/{content}/edit', [ContentController::class, 'edit'])->middleware('permission:workplace.edit')->name('edit');
-        Route::put('/{content}', [ContentController::class, 'update'])->middleware('permission:workplace.edit')->name('update');
+        Route::put('/{id}', [ContentController::class, 'update'])->middleware('permission:workplace.edit')->name('update');
         Route::delete('/{id}', [ContentController::class, 'destroy'])->middleware('permission:workplace.delete')->name('destroy');
         Route::post('/bulk-action', [ContentController::class, 'bulkAction'])->middleware('permission:workplace.delete')->name('bulk-action');
     });

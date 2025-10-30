@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Content;
+use App\Models\Department;
+use App\Models\Location;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
@@ -86,11 +88,16 @@ class CareerController extends Controller
             $endTime = microtime(true);
             $responseTime = round(($endTime - $startTime) * 1000, 2);
 
+            // Get active departments and locations
+            $departments = Department::active()->ordered()->pluck('name_id')->toArray();
+            $locations = Location::active()->ordered()->pluck('name_id')->toArray();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Careers data retrieved successfully',
                 'data' => $careers,
-                'departments' => ['Finance', 'People & Operation', 'Technology', 'Marketing', 'Sales'],
+                'departments' => $departments,
+                'locations' => $locations,
                 'response_time_ms' => $responseTime
             ]);
         } catch (\Exception $e) {
@@ -153,11 +160,16 @@ class CareerController extends Controller
             $endTime = microtime(true);
             $responseTime = round(($endTime - $startTime) * 1000, 2);
 
+            // Get active departments and locations
+            $departments = Department::active()->ordered()->pluck('name_id')->toArray();
+            $locations = Location::active()->ordered()->pluck('name_id')->toArray();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Career detail retrieved successfully',
                 'data' => $career,
-                'departments' => ['Finance', 'People & Operation', 'Technology', 'Marketing', 'Sales'],
+                'departments' => $departments,
+                'locations' => $locations,
                 'response_time_ms' => $responseTime
             ]);
         } catch (\Exception $e) {
@@ -366,11 +378,16 @@ class CareerController extends Controller
             $endTime = microtime(true);
             $responseTime = round(($endTime - $startTime) * 1000, 2);
 
+            // Get active departments and locations
+            $departments = Department::active()->ordered()->pluck('name_id')->toArray();
+            $locations = Location::active()->ordered()->pluck('name_id')->toArray();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Career search completed successfully',
                 'data' => $careers,
-                'departments' => ['Finance', 'People & Operation', 'Technology', 'Marketing', 'Sales'],
+                'departments' => $departments,
+                'locations' => $locations,
                 'response_time_ms' => $responseTime
             ]);
         } catch (\Exception $e) {

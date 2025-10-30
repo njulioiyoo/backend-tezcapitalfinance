@@ -24,6 +24,10 @@ class Content extends Model implements Auditable
         'excerpt_en',
         'content_id',
         'content_en',
+        'testimonial_id',
+        'testimonial_en',
+        'position_id',
+        'position_en',
         'featured_image',
         'gallery',
         'interest_list',
@@ -239,6 +243,16 @@ class Content extends Model implements Auditable
     public function getLocalizedMetaDescription($language = 'id')
     {
         return $language === 'en' ? $this->meta_description_en : $this->meta_description_id;
+    }
+
+    public function getLocalizedTestimonial($language = 'id')
+    {
+        return $language === 'en' ? $this->testimonial_en : $this->testimonial_id;
+    }
+
+    public function getLocalizedPosition($language = 'id')
+    {
+        return $language === 'en' ? $this->position_en : $this->position_id;
     }
 
     // Analytics methods
@@ -482,6 +496,18 @@ class Content extends Model implements Auditable
     public function scopeWorkplace($query)
     {
         return $query->where('type', 'workplace');
+    }
+
+    // Scope for team members
+    public function scopeTeamMembers($query)
+    {
+        return $query->where('type', 'team-member');
+    }
+
+    // Check if content is team member
+    public function isTeamMember()
+    {
+        return $this->type === 'team-member';
     }
 
     /**

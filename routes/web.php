@@ -82,4 +82,5 @@ require __DIR__.'/modules/auth.php';
 require __DIR__.'/modules/settings.php';
 require __DIR__.'/modules/system.php';
 require __DIR__.'/modules/content.php';
+require __DIR__.'/modules/master.php';
 require __DIR__.'/modules/reports.php';
