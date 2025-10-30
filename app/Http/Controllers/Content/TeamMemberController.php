@@ -38,8 +38,8 @@ class TeamMemberController extends Controller
             $query->where('status', $request->status);
         }
 
-        if ($request->filled('department')) {
-            $query->where('department_id', $request->department);
+        if ($request->filled('position')) {
+            $query->where('position_id', $request->position);
         }
 
         // Pagination
@@ -54,9 +54,11 @@ class TeamMemberController extends Controller
         $validator = Validator::make($request->all(), [
             'title_id' => 'required|string|max:255',
             'title_en' => 'nullable|string|max:255',
+            'testimonial_id' => 'nullable|string',
+            'testimonial_en' => 'nullable|string',
+            'position_id' => 'required|string|max:255',
+            'position_en' => 'nullable|string|max:255',
             'category' => 'required|string|max:255',
-            'department_id' => 'required|string|max:255',
-            'department_en' => 'nullable|string|max:255',
             'featured_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             'is_published' => 'boolean',
             'is_featured' => 'boolean',
@@ -113,9 +115,11 @@ class TeamMemberController extends Controller
         $validator = Validator::make($request->all(), [
             'title_id' => 'required|string|max:255',
             'title_en' => 'nullable|string|max:255',
+            'testimonial_id' => 'nullable|string',
+            'testimonial_en' => 'nullable|string',
+            'position_id' => 'required|string|max:255',
+            'position_en' => 'nullable|string|max:255',
             'category' => 'required|string|max:255',
-            'department_id' => 'required|string|max:255',
-            'department_en' => 'nullable|string|max:255',
             'featured_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             'is_published' => 'boolean',
             'is_featured' => 'boolean',

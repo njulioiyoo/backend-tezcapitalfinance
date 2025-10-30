@@ -23,8 +23,10 @@ interface TeamMember {
     slug: string;
     title_id: string;
     title_en?: string;
-    department_id: string;
-    department_en?: string;
+    testimonial_id?: string;
+    testimonial_en?: string;
+    position_id: string;
+    position_en?: string;
     featured_image?: string;
     featured_image_url?: string;
     is_published: boolean;
@@ -55,7 +57,7 @@ const confirmDialog = ref({
 const filters = reactive({
     search: '',
     category: '',
-    department: '',
+    position: '',
     status: '',
     per_page: 10,
     page: 1
@@ -65,9 +67,11 @@ const teamMemberForm = reactive({
     id: null,
     title_id: '',
     title_en: '',
+    testimonial_id: '',
+    testimonial_en: '',
+    position_id: '',
+    position_en: '',
     category: '',
-    department_id: '',
-    department_en: '',
     featured_image: null as string | null,
     featured_image_file: null as File | null,
     is_published: true,
@@ -99,9 +103,11 @@ const openDialog = (teamMember: TeamMember | null = null) => {
         teamMemberForm.id = teamMember.id;
         teamMemberForm.title_id = teamMember.title_id || '';
         teamMemberForm.title_en = teamMember.title_en || '';
+        teamMemberForm.testimonial_id = teamMember.testimonial_id || '';
+        teamMemberForm.testimonial_en = teamMember.testimonial_en || '';
+        teamMemberForm.position_id = teamMember.position_id || '';
+        teamMemberForm.position_en = teamMember.position_en || '';
         teamMemberForm.category = teamMember.category || '';
-        teamMemberForm.department_id = teamMember.department_id || '';
-        teamMemberForm.department_en = teamMember.department_en || '';
         teamMemberForm.featured_image = teamMember.featured_image ? teamMember.featured_image : null;
         teamMemberForm.featured_image_file = null;
         teamMemberForm.is_published = teamMember.is_published;
@@ -128,9 +134,11 @@ const resetForm = () => {
         id: null,
         title_id: '',
         title_en: '',
+        testimonial_id: '',
+        testimonial_en: '',
+        position_id: '',
+        position_en: '',
         category: '',
-        department_id: '',
-        department_en: '',
         featured_image: null,
         featured_image_file: null,
         is_published: true,
@@ -151,9 +159,11 @@ const saveTeamMember = async () => {
         // Add form data
         formData.append('title_id', teamMemberForm.title_id);
         formData.append('title_en', teamMemberForm.title_en || '');
+        formData.append('testimonial_id', teamMemberForm.testimonial_id || '');
+        formData.append('testimonial_en', teamMemberForm.testimonial_en || '');
+        formData.append('position_id', teamMemberForm.position_id);
+        formData.append('position_en', teamMemberForm.position_en || '');
         formData.append('category', teamMemberForm.category);
-        formData.append('department_id', teamMemberForm.department_id);
-        formData.append('department_en', teamMemberForm.department_en || '');
         formData.append('is_published', teamMemberForm.is_published ? '1' : '0');
         formData.append('is_featured', teamMemberForm.is_featured ? '1' : '0');
         formData.append('sort_order', teamMemberForm.sort_order.toString());
@@ -393,18 +403,18 @@ onMounted(() => {
                                 </Select>
                             </div>
                             <div class="space-y-2">
-                                <Label>Department</Label>
-                                <Select v-model="filters.department">
+                                <Label>Position</Label>
+                                <Select v-model="filters.position">
                                     <SelectTrigger>
-                                        <SelectValue placeholder="All Departments" />
+                                        <SelectValue placeholder="All Positions" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="">All Departments</SelectItem>
-                                        <SelectItem value="Finance">Finance</SelectItem>
-                                        <SelectItem value="People & Operation">People & Operation</SelectItem>
-                                        <SelectItem value="Technology">Technology</SelectItem>
-                                        <SelectItem value="Marketing">Marketing</SelectItem>
-                                        <SelectItem value="Sales">Sales</SelectItem>
+                                        <SelectItem value="">All Positions</SelectItem>
+                                        <SelectItem value="CEO">CEO</SelectItem>
+                                        <SelectItem value="Chairman & Founder">Chairman & Founder</SelectItem>
+                                        <SelectItem value="Chief Technology Officer">Chief Technology Officer</SelectItem>
+                                        <SelectItem value="Chief Marketing Officer">Chief Marketing Officer</SelectItem>
+                                        <SelectItem value="Chief Financial Officer">Chief Financial Officer</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -453,7 +463,7 @@ onMounted(() => {
                                     <tr class="border-b">
                                         <th class="text-left p-4 font-medium">Photo</th>
                                         <th class="text-left p-4 font-medium">Name</th>
-                                        <th class="text-left p-4 font-medium">Department</th>
+                                        <th class="text-left p-4 font-medium">Position</th>
                                         <th class="text-left p-4 font-medium">Category</th>
                                         <th class="text-left p-4 font-medium">Status</th>
                                         <th class="text-left p-4 font-medium">Featured</th>
@@ -483,7 +493,7 @@ onMounted(() => {
                                             </div>
                                         </td>
                                         <td class="p-4">
-                                            <Badge variant="secondary">{{ member.department_id || '-' }}</Badge>
+                                            <Badge variant="secondary">{{ member.position_id || '-' }}</Badge>
                                         </td>
                                         <td class="p-4">
                                             <Badge variant="outline">{{ member.category || '-' }}</Badge>
@@ -582,23 +592,23 @@ onMounted(() => {
                         </div>
                     </div>
 
-                    <!-- Department -->
+                    <!-- Position -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="space-y-2">
-                            <Label for="department_id">Department (Indonesian) *</Label>
+                            <Label for="position_id">Position (Indonesian) *</Label>
                             <Input
-                                id="department_id"
-                                v-model="teamMemberForm.department_id"
+                                id="position_id"
+                                v-model="teamMemberForm.position_id"
                                 placeholder="e.g., Chairman & Founder"
                                 required
                             />
                         </div>
                         
                         <div class="space-y-2">
-                            <Label for="department_en">Department (English)</Label>
+                            <Label for="position_en">Position (English)</Label>
                             <Input
-                                id="department_en"
-                                v-model="teamMemberForm.department_en"
+                                id="position_en"
+                                v-model="teamMemberForm.position_en"
                                 placeholder="e.g., Chairman & Founder"
                             />
                         </div>
@@ -624,6 +634,30 @@ onMounted(() => {
                                 <SelectItem value="other">Other</SelectItem>
                             </SelectContent>
                         </Select>
+                    </div>
+
+
+                    <!-- Testimonial -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <Label for="testimonial_id">Testimonial (Indonesian)</Label>
+                            <Textarea
+                                id="testimonial_id"
+                                v-model="teamMemberForm.testimonial_id"
+                                placeholder="Enter testimonial or quote in Indonesian..."
+                                rows="3"
+                            />
+                        </div>
+                        
+                        <div class="space-y-2">
+                            <Label for="testimonial_en">Testimonial (English)</Label>
+                            <Textarea
+                                id="testimonial_en"
+                                v-model="teamMemberForm.testimonial_en"
+                                placeholder="Enter testimonial or quote in English..."
+                                rows="3"
+                            />
+                        </div>
                     </div>
 
                     <!-- Profile Photo Upload -->
