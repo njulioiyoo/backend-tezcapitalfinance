@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ref, reactive, computed } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
 import { route } from 'ziggy-js';
 import { type BreadcrumbItem } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -57,11 +57,19 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Our Partners', href: '/content/partners' },
 ];
 
+// Local state for data and loading
+const partnersData = ref(props.contents);
+const loading = ref(false);
+
 // Local state for filters
-const search = ref(props.filters.search || '');
-const selectedCategory = ref(props.filters.category || '');
-const selectedStatus = ref(props.filters.status || '');
-const showFeaturedOnly = ref(props.filters.featured || false);
+const filters = reactive({
+    search: '',
+    category: '',
+    status: '',
+    featured: false,
+    per_page: 12,
+    page: 1
+});
 
 // Modal state
 const dialogOpen = ref(false);
@@ -128,28 +136,63 @@ const getCategoryVariant = (category: string) => {
     }
 };
 
+// Get CSRF token
+const getCsrfToken = () => {
+    const tokenFromMeta = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    if (tokenFromMeta) return tokenFromMeta;
+    
+    const tokenFromCookie = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('XSRF-TOKEN='))
+        ?.split('=')[1];
+    
+    if (tokenFromCookie) {
+        try {
+            return decodeURIComponent(tokenFromCookie);
+        } catch (e) {
+            // Failed to decode CSRF token from cookie
+        }
+    }
+    return '';
+};
+
+// Load partners with router.get (Inertia way)
+const loadPartners = () => {
+    const params = {
+        page: filters.page,
+        preserveState: true,
+        preserveScroll: true,
+        only: ['contents'],
+        onStart: () => loading.value = true,
+        onFinish: () => loading.value = false,
+        onSuccess: (page) => {
+            partnersData.value = page.props.contents;
+        }
+    };
+    
+    if (filters.search) params.search = filters.search;
+    if (filters.category) params.category = filters.category;
+    if (filters.status) params.status = filters.status;
+    if (filters.featured) params.featured = 1;
+    
+    console.log('Loading partners with params:', params);
+    
+    router.get('/content/partners', params);
+};
+
 // Filter and search
 const applyFilters = () => {
-    const params = new URLSearchParams();
-    
-    if (search.value) params.set('search', search.value);
-    if (selectedCategory.value) params.set('category', selectedCategory.value);
-    if (selectedStatus.value) params.set('status', selectedStatus.value);
-    if (showFeaturedOnly.value) params.set('featured', '1');
-    
-    const queryString = params.toString();
-    const url = queryString ? `/content/partners?${queryString}` : '/content/partners';
-    
-    router.visit(url);
+    filters.page = 1;
+    loadPartners();
 };
 
 const clearFilters = () => {
-    search.value = '';
-    selectedCategory.value = '';
-    selectedStatus.value = '';
-    showFeaturedOnly.value = false;
-    
-    router.visit('/content/partners');
+    filters.search = '';
+    filters.category = '';
+    filters.status = '';
+    filters.featured = false;
+    filters.page = 1;
+    loadPartners();
 };
 
 // Modal functions  
@@ -229,10 +272,6 @@ const removeImage = () => {
     if (input) input.value = '';
 };
 
-// Get CSRF token
-const getCsrfToken = () => {
-    return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-};
 
 // Submit form
 const handleSubmit = async () => {
@@ -291,9 +330,7 @@ const handleSubmit = async () => {
                 variant: 'success'
             });
             dialogOpen.value = false;
-            setTimeout(() => {
-                window.location.reload();
-            }, 1000);
+            loadPartners();
         } else {
             toast({
                 title: 'Error',
@@ -348,9 +385,7 @@ const handleDelete = async () => {
                 variant: 'success'
             });
             confirmDialog.value.open = false;
-            setTimeout(() => {
-                window.location.reload();
-            }, 1000);
+            loadPartners();
         } else {
             toast({
                 title: 'Error',
@@ -370,17 +405,54 @@ const handleDelete = async () => {
 };
 
 // Toggle featured status
-const toggleFeatured = (partner: Partner) => {
-    router.put(route('content.partners.update', partner.id), {
-        ...partner,
-        is_featured: !partner.is_featured,
-    }, {
-        preserveScroll: true,
-    });
+const toggleFeatured = async (partner: Partner) => {
+    try {
+        const formData = new FormData();
+        formData.append('_method', 'PUT');
+        formData.append('is_featured', (!partner.is_featured).toString());
+        
+        const response = await fetch(route('content.partners.update', partner.id), {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': getCsrfToken(),
+            },
+            credentials: 'include',
+            body: formData,
+        });
+        
+        if (response.ok) {
+            toast({
+                title: 'Success',
+                description: `Partner ${!partner.is_featured ? 'featured' : 'unfeatured'} successfully`,
+                variant: 'success'
+            });
+            loadPartners();
+        }
+    } catch (error) {
+        toast({
+            title: 'Error',
+            description: 'Failed to update partner status',
+            variant: 'error'
+        });
+    }
 };
 
 const hasFilters = computed(() => {
-    return search.value || selectedCategory.value || selectedStatus.value || showFeaturedOnly.value;
+    return filters.search || filters.category || filters.status || filters.featured;
+});
+
+// Pagination function
+const goToPage = (page: number) => {
+    filters.page = page;
+    loadPartners();
+};
+
+// Initialize data
+onMounted(() => {
+    // Use initial data from props
+    partnersData.value = props.contents;
 });
 
 </script>
@@ -421,7 +493,7 @@ const hasFilters = computed(() => {
                     <div class="space-y-2">
                         <Label>Search</Label>
                         <Input
-                            v-model="search"
+                            v-model="filters.search"
                             placeholder="Search partners..."
                             @keyup.enter="applyFilters"
                         />
@@ -429,7 +501,7 @@ const hasFilters = computed(() => {
                     
                     <div class="space-y-2">
                         <Label>Category</Label>
-                        <Select v-model="selectedCategory">
+                        <Select v-model="filters.category">
                             <option value="">All Categories</option>
                             <option v-for="(label, value) in categories" :key="value" :value="value">
                                 {{ label }}
@@ -439,7 +511,7 @@ const hasFilters = computed(() => {
                     
                     <div class="space-y-2">
                         <Label>Status</Label>
-                        <Select v-model="selectedStatus">
+                        <Select v-model="filters.status">
                             <option value="">All Statuses</option>
                             <option v-for="(label, value) in statuses" :key="value" :value="value">
                                 {{ label }}
@@ -451,8 +523,8 @@ const hasFilters = computed(() => {
                         <Label>Featured Only</Label>
                         <div class="flex items-center space-x-2 h-10">
                             <Switch 
-                                :checked="showFeaturedOnly" 
-                                @update:checked="showFeaturedOnly = $event" 
+                                :checked="filters.featured" 
+                                @update:checked="filters.featured = $event" 
                             />
                             <span class="text-sm">Show featured partners only</span>
                         </div>
@@ -464,7 +536,7 @@ const hasFilters = computed(() => {
                         <Search class="w-4 h-4 mr-2" />
                         Apply Filters
                     </Button>
-                    <Button @click="clearFilters" variant="outline" size="sm" v-if="hasFilters">
+                    <Button @click="clearFilters" variant="outline" size="sm">
                         Clear Filters
                     </Button>
                 </div>
@@ -472,9 +544,12 @@ const hasFilters = computed(() => {
         </Card>
 
         <!-- Partners Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div v-if="loading" class="flex justify-center py-8">
+            <div class="text-muted-foreground">Loading partners...</div>
+        </div>
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             <div 
-                v-for="partner in contents.data"
+                v-for="partner in partnersData.data"
                 :key="partner.id"
                 class="group relative"
             >
@@ -567,7 +642,7 @@ const hasFilters = computed(() => {
         </div>
 
         <!-- Empty State -->
-        <Card v-if="!contents.data?.length" class="text-center py-16">
+        <Card v-if="!partnersData.data?.length && !loading" class="text-center py-16">
             <CardContent class="py-8">
                 <div class="mx-auto max-w-md">
                     <div class="text-gray-400 text-6xl mb-6">🤝</div>
@@ -590,19 +665,21 @@ const hasFilters = computed(() => {
         </Card>
 
         <!-- Pagination -->
-        <Card v-if="contents.links && contents.data?.length" class="mt-8">
+        <Card v-if="partnersData.links && partnersData.data?.length" class="mt-8">
             <CardContent class="py-4">
                 <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div class="text-sm text-gray-700 dark:text-gray-300">
-                        Showing <span class="font-medium">{{ contents.meta?.from || 0 }}</span> to <span class="font-medium">{{ contents.meta?.to || 0 }}</span> of <span class="font-medium">{{ contents.meta?.total || 0 }}</span> partners
+                        Showing <span class="font-medium">{{ partnersData.meta?.from || 0 }}</span> to <span class="font-medium">{{ partnersData.meta?.to || 0 }}</span> of <span class="font-medium">{{ partnersData.meta?.total || 0 }}</span> partners
                     </div>
                     <div class="flex gap-1">
-                        <template v-for="link in contents.links" :key="link.label">
-                            <Link 
+                        <template v-for="link in partnersData.links" :key="link.label">
+                            <Button 
                                 v-if="link.url"
-                                :href="link.url"
-                                class="px-3 py-2 text-sm border rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 dark:border-gray-700 transition-colors"
-                                :class="link.active ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 dark:border-gray-600'"
+                                @click="goToPage(new URL(link.url).searchParams.get('page'))"
+                                variant="outline"
+                                size="sm"
+                                :disabled="loading"
+                                :class="{ 'bg-primary text-primary-foreground': link.active }"
                                 v-html="link.label"
                             />
                             <span 

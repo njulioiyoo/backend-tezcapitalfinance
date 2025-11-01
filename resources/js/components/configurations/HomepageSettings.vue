@@ -530,7 +530,15 @@ const iconOptions = [
 </script>
 
 <template>
-    <div class="space-y-6">
+    <Card>
+        <CardHeader>
+            <CardTitle>Homepage Settings</CardTitle>
+            <CardDescription>
+                Configure homepage content, banners, and features
+            </CardDescription>
+        </CardHeader>
+        <CardContent>
+            <div class="space-y-6">
         <!-- Hero Section -->
         <Card>
             <CardHeader>
@@ -572,7 +580,6 @@ const iconOptions = [
             </Transition>
         </Card>
 
-        <!-- Six Reasons Section -->
         <Card>
             <CardHeader>
                 <CardTitle class="flex items-center justify-between">
@@ -741,7 +748,6 @@ const iconOptions = [
             </Transition>
         </Card>
 
-        <!-- Application Process Section -->
         <Card>
             <CardHeader>
                 <CardTitle class="flex items-center justify-between">
@@ -910,7 +916,6 @@ const iconOptions = [
             </Transition>
         </Card>
 
-        <!-- FAQ Section -->
         <Card>
             <CardHeader>
                 <CardTitle class="flex items-center justify-between">
@@ -1052,7 +1057,6 @@ const iconOptions = [
             </Transition>
         </Card>
 
-        <!-- Banner Slides -->
         <Card>
             <CardHeader>
                 <CardTitle class="flex items-center justify-between">
@@ -1167,7 +1171,6 @@ const iconOptions = [
             </Transition>
         </Card>
 
-        <!-- Features Section -->
         <Card>
             <CardHeader>
                 <CardTitle class="flex items-center justify-between">
@@ -1262,7 +1265,9 @@ const iconOptions = [
                 {{ isSaving ? 'Saving...' : 'Save Changes' }}
             </Button>
         </div>
-    </div>
+            </div>
+        </CardContent>
+    </Card>
 </template>
 
 <style scoped>

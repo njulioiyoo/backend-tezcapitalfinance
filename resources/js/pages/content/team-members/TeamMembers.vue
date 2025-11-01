@@ -45,6 +45,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const teamMembers = ref<{ data: TeamMember[], links: any[], meta: any }>({ data: [], links: [], meta: {} });
+const allPositions = ref<string[]>([]);
 const isLoading = ref(false);
 const dialogOpen = ref(false);
 const editingTeamMember = ref<TeamMember | null>(null);
@@ -91,6 +92,23 @@ const loadTeamMembers = async (params = {}) => {
         console.error('Error loading team members:', error);
     } finally {
         isLoading.value = false;
+    }
+};
+
+const loadAllPositions = async () => {
+    try {
+        const response = await axios.get('/content/team-members/data', { 
+            params: { per_page: 1000, no_pagination: true }
+        });
+        const positions = new Set<string>();
+        response.data.data?.forEach((member: TeamMember) => {
+            if (member.position_id && member.position_id.trim()) {
+                positions.add(member.position_id.trim());
+            }
+        });
+        allPositions.value = Array.from(positions).sort();
+    } catch (error) {
+        console.error('Error loading positions:', error);
     }
 };
 
@@ -208,6 +226,7 @@ const saveTeamMember = async () => {
         
         closeDialog();
         loadTeamMembers();
+        loadAllPositions();
     } catch (error) {
         console.error('🔧 Error saving team member:', error);
         console.error('🔧 Error response:', error.response);
@@ -233,6 +252,7 @@ const deleteTeamMember = async (teamMemberId: number) => {
         await axios.delete(`/content/team-members/${teamMemberId}`);
         confirmDialog.value.open = false;
         loadTeamMembers();
+        loadAllPositions();
         toast({ title: 'Success', description: 'Team member deleted successfully.', variant: 'success' });
     } catch (error) {
         console.error('Error deleting team member:', error);
@@ -316,16 +336,28 @@ const getImageUrl = (member: TeamMember) => {
     return `/storage/${imagePath}`;
 };
 
-watch(() => [filters.search, filters.category, filters.department, filters.status], 
-    () => {
-        filters.page = 1;
-        loadTeamMembers();
-    },
-    { deep: true }
-);
+const uniquePositions = computed(() => {
+    return allPositions.value;
+});
+
+const applyFilters = () => {
+    filters.page = 1;
+    loadTeamMembers();
+};
+
+const clearFilters = () => {
+    filters.search = '';
+    filters.category = '';
+    filters.position = '';
+    filters.status = '';
+    filters.page = 1;
+    loadTeamMembers();
+};
+
 
 onMounted(() => {
     loadTeamMembers();
+    loadAllPositions();
 });
 </script>
 
@@ -410,11 +442,13 @@ onMounted(() => {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="">All Positions</SelectItem>
-                                        <SelectItem value="CEO">CEO</SelectItem>
-                                        <SelectItem value="Chairman & Founder">Chairman & Founder</SelectItem>
-                                        <SelectItem value="Chief Technology Officer">Chief Technology Officer</SelectItem>
-                                        <SelectItem value="Chief Marketing Officer">Chief Marketing Officer</SelectItem>
-                                        <SelectItem value="Chief Financial Officer">Chief Financial Officer</SelectItem>
+                                        <SelectItem 
+                                            v-for="position in uniquePositions" 
+                                            :key="position" 
+                                            :value="position"
+                                        >
+                                            {{ position }}
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -432,6 +466,14 @@ onMounted(() => {
                                     </SelectContent>
                                 </Select>
                             </div>
+                        </div>
+
+                        <div class="flex gap-2 mt-4">
+                            <Button @click="applyFilters">
+                                <Search class="w-4 h-4 mr-2" />
+                                Apply Filters
+                            </Button>
+                            <Button variant="outline" @click="clearFilters">Clear Filters</Button>
                         </div>
                     </CardContent>
                 </Card>

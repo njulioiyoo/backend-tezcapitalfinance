@@ -78,6 +78,9 @@ const showDeleteConfirm = ref(false);
 const currentService = ref<Service | null>(null);
 const isSubmitting = ref(false);
 
+// Computed
+const hasCategoriesData = computed(() => Object.keys(props.categories).length > 0);
+
 // Search and filters
 const filters = reactive({
     search: props.filters.search || '',
@@ -1137,7 +1140,7 @@ const applyFilters = () => {
     const params = new URLSearchParams();
     
     if (filters.search) params.set('search', filters.search);
-    if (filters.category) params.set('category', filters.category);
+    if (filters.category && Object.keys(props.categories).length > 0) params.set('category', filters.category);
     if (filters.status) params.set('status', filters.status);
     
     const queryString = params.toString();
@@ -1189,7 +1192,7 @@ const clearFilters = () => {
                                 />
                             </div>
                             
-                            <div class="space-y-2">
+                            <div v-if="Object.keys(categories).length > 0" class="space-y-2">
                                 <Label>Category</Label>
                                 <Select v-model="filters.category">
                                     <option value="">All Categories</option>

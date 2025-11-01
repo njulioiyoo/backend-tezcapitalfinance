@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head } from '@inertiajs/vue3';
-import { ref, reactive } from 'vue';
+import { ref, reactive, computed } from 'vue';
 import { type BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
 import { toast } from '@/components/ui/toast';
-import { Plus, Edit, Trash2, Shield, Key } from 'lucide-vue-next';
+import { Plus, Edit, Trash2, Shield, Key, Search } from 'lucide-vue-next';
 
 interface Permission {
     id: number;
@@ -56,6 +56,27 @@ const permissionForm = reactive({
     name: '',
 });
 
+const permissionSearchQuery = ref('');
+const rolePermissionSearchQuery = ref('');
+
+const filteredPermissions = computed(() => {
+    if (!permissionSearchQuery.value) {
+        return props.permissions;
+    }
+    return props.permissions.filter(permission => 
+        permission.name.toLowerCase().includes(permissionSearchQuery.value.toLowerCase())
+    );
+});
+
+const filteredRolePermissions = computed(() => {
+    if (!rolePermissionSearchQuery.value) {
+        return props.permissions;
+    }
+    return props.permissions.filter(permission => 
+        permission.name.toLowerCase().includes(rolePermissionSearchQuery.value.toLowerCase())
+    );
+});
+
 const openRoleDialog = (role?: Role) => {
     if (role) {
         editingRole.value = role;
@@ -66,6 +87,7 @@ const openRoleDialog = (role?: Role) => {
         roleForm.name = '';
         roleForm.permissions = [];
     }
+    rolePermissionSearchQuery.value = ''; // Clear search when opening dialog
     roleDialogOpen.value = true;
 };
 
@@ -281,23 +303,77 @@ const confirmDelete = async () => {
                                             {{ editingRole ? 'Update role information' : 'Create a new role with permissions' }}
                                         </DialogDescription>
                                     </DialogHeader>
-                                    <div class="space-y-4">
-                                        <div>
-                                            <Label for="role-name">Role Name</Label>
-                                            <Input id="role-name" v-model="roleForm.name" placeholder="Enter role name" />
+                                    <div class="space-y-6">
+                                        <!-- Role Name Field -->
+                                        <div class="space-y-2">
+                                            <Label for="role-name" class="text-sm font-medium">Role Name</Label>
+                                            <Input 
+                                                id="role-name" 
+                                                v-model="roleForm.name" 
+                                                placeholder="Enter role name"
+                                                class="h-10"
+                                            />
+                                            <p class="text-xs text-muted-foreground">
+                                                Enter a descriptive name for this role
+                                            </p>
                                         </div>
-                                        <div>
-                                            <Label>Permissions</Label>
-                                            <div class="grid grid-cols-2 gap-2 mt-2">
-                                                <label v-for="permission in permissions" :key="permission.id" class="flex items-center space-x-2">
-                                                    <input 
-                                                        type="checkbox" 
-                                                        :value="permission.id"
-                                                        v-model="roleForm.permissions"
-                                                        class="rounded border-input bg-background text-primary focus:ring-ring/20 dark:bg-background dark:border-input dark:text-primary"
-                                                    />
-                                                    <span class="text-sm">{{ permission.name }}</span>
-                                                </label>
+                                        
+                                        <!-- Permissions Field -->
+                                        <div class="space-y-3">
+                                            <Label class="text-sm font-medium">Permissions</Label>
+                                            <p class="text-xs text-muted-foreground">
+                                                Select the permissions this role should have
+                                            </p>
+                                            
+                                            <!-- Permission Search -->
+                                            <div class="relative">
+                                                <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                                                <Input
+                                                    v-model="rolePermissionSearchQuery"
+                                                    placeholder="Search permissions..."
+                                                    class="pl-10 h-9"
+                                                />
+                                            </div>
+                                            
+                                            <div class="border rounded-lg p-4 max-h-64 overflow-y-auto">
+                                                <div v-if="filteredRolePermissions.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                    <label 
+                                                        v-for="permission in filteredRolePermissions" 
+                                                        :key="permission.id" 
+                                                        class="flex items-center space-x-3 p-2 rounded hover:bg-muted/50 cursor-pointer"
+                                                    >
+                                                        <input 
+                                                            type="checkbox" 
+                                                            :value="permission.id"
+                                                            v-model="roleForm.permissions"
+                                                            class="h-4 w-4 rounded border-input bg-background text-primary focus:ring-ring/20 dark:bg-background dark:border-input dark:text-primary"
+                                                        />
+                                                        <span class="text-sm font-medium">{{ permission.name }}</span>
+                                                    </label>
+                                                </div>
+                                                
+                                                <!-- No Results Message -->
+                                                <div v-else-if="rolePermissionSearchQuery" class="text-center py-6">
+                                                    <Search class="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                                                    <p class="text-sm text-muted-foreground">
+                                                        No permissions match "{{ rolePermissionSearchQuery }}"
+                                                    </p>
+                                                </div>
+                                                
+                                                <!-- No Permissions Available -->
+                                                <div v-else class="text-center py-4 text-sm text-muted-foreground">
+                                                    No permissions available
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Results Summary -->
+                                            <div class="flex justify-between text-xs text-muted-foreground">
+                                                <span>
+                                                    Showing {{ filteredRolePermissions.length }} of {{ permissions.length }} permissions
+                                                </span>
+                                                <span>
+                                                    Selected {{ roleForm.permissions.length }} permissions
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
@@ -376,8 +452,25 @@ const confirmDelete = async () => {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div v-for="permission in permissions" :key="permission.id" class="flex items-center justify-between p-3 border rounded-lg">
+                        <!-- Search Bar -->
+                        <div class="mb-4">
+                            <div class="relative">
+                                <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                                <Input
+                                    v-model="permissionSearchQuery"
+                                    placeholder="Search permissions..."
+                                    class="pl-10"
+                                />
+                            </div>
+                        </div>
+                        
+                        <!-- Results Count -->
+                        <div class="mb-4 text-sm text-muted-foreground">
+                            Showing {{ filteredPermissions.length }} of {{ permissions.length }} permissions
+                        </div>
+                        
+                        <div v-if="filteredPermissions.length > 0" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div v-for="permission in filteredPermissions" :key="permission.id" class="flex items-center justify-between p-3 border rounded-lg">
                                 <span class="font-medium">{{ permission.name }}</span>
                                 <div class="flex items-center gap-2">
                                     <Button @click="openPermissionDialog(permission)" variant="outline" size="sm">
@@ -388,6 +481,15 @@ const confirmDelete = async () => {
                                     </Button>
                                 </div>
                             </div>
+                        </div>
+                        
+                        <!-- No Results Message -->
+                        <div v-else class="text-center py-8">
+                            <Key class="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                            <h3 class="text-lg font-medium text-muted-foreground mb-2">No permissions found</h3>
+                            <p class="text-sm text-muted-foreground">
+                                {{ permissionSearchQuery ? `No permissions match "${permissionSearchQuery}"` : 'No permissions available' }}
+                            </p>
                         </div>
                     </CardContent>
                 </Card>

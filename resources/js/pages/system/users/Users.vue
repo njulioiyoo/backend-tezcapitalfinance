@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import { ref, reactive, computed, onMounted } from 'vue';
 import { type BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -70,6 +70,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 // State
 const loading = ref(false);
+const usersData = ref(props.users);
 const isDialogOpen = ref(false);
 const isViewDialogOpen = ref(false);
 const editingUser = ref<User | null>(null);
@@ -101,13 +102,13 @@ const errors = ref<Record<string, string>>({});
 
 // Computed
 const allSelected = computed(() => {
-    return props.users.data.length > 0 && 
-           selectedUsers.value.length === props.users.data.length;
+    return usersData.value.data.length > 0 && 
+           selectedUsers.value.length === usersData.value.data.length;
 });
 
 const someSelected = computed(() => {
     return selectedUsers.value.length > 0 && 
-           selectedUsers.value.length < props.users.data.length;
+           selectedUsers.value.length < usersData.value.data.length;
 });
 
 const canPerformBulkAction = computed(() => {
@@ -346,7 +347,7 @@ const toggleSelectAll = () => {
     if (allSelected.value) {
         selectedUsers.value = [];
     } else {
-        selectedUsers.value = props.users.data.map(user => user.id);
+        selectedUsers.value = usersData.value.data.map(user => user.id);
     }
 };
 
@@ -429,22 +430,43 @@ const performBulkAction = async () => {
     }
 };
 
+const loadUsers = async () => {
+    loading.value = true;
+    try {
+        const params = new URLSearchParams({
+            ...Object.fromEntries(
+                Object.entries(filters).filter(([_, value]) => value !== '')
+            )
+        });
+
+        const response = await fetch(`/api/system/users?${params}`, {
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': getCsrfToken(),
+            },
+            credentials: 'include',
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            // Update users data
+            usersData.value = data;
+        }
+    } catch (error) {
+        console.error('Error loading users:', error);
+    } finally {
+        loading.value = false;
+    }
+};
+
 const applyFilters = () => {
-    const params = new URLSearchParams();
-    
-    if (filters.search) params.set('search', filters.search);
-    if (filters.status) params.set('status', filters.status);
-    if (filters.role) params.set('role', filters.role);
-    
-    const queryString = params.toString();
-    const url = queryString ? `/users?${queryString}` : '/users';
-    
-    window.location.href = url;
+    loadUsers();
 };
 
 const clearFilters = () => {
     Object.assign(filters, { search: '', status: '', role: '' });
-    window.location.href = '/users';
+    loadUsers();
 };
 </script>
 
@@ -611,46 +633,84 @@ const clearFilters = () => {
                             <Filter class="w-4 h-4" />
                             Filters
                         </CardTitle>
+                        <CardDescription>
+                            Filter users by search, status, or role
+                        </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div class="flex flex-wrap gap-4">
-                            <div class="flex-1 min-w-[200px]">
-                                <Label for="search">Search</Label>
-                                <Input 
-                                    id="search" 
-                                    v-model="filters.search" 
-                                    placeholder="Search by name, email, or phone..."
-                                    @keyup.enter="applyFilters"
-                                />
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                <!-- Search Field -->
+                                <div class="space-y-2">
+                                    <Label for="search" class="text-sm font-medium">Search</Label>
+                                    <div class="relative">
+                                        <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                                        <Input 
+                                            id="search" 
+                                            v-model="filters.search" 
+                                            placeholder="Search by name, email, or phone..."
+                                            class="pl-10"
+                                            @keyup.enter="applyFilters"
+                                        />
+                                    </div>
+                                </div>
+                                
+                                <!-- Status Field -->
+                                <div class="space-y-2">
+                                    <Label for="status" class="text-sm font-medium">Status</Label>
+                                    <select 
+                                        id="status" 
+                                        v-model="filters.status" 
+                                        class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-background dark:text-foreground dark:border-input"
+                                    >
+                                        <option value="">All Status</option>
+                                        <option value="active">Active</option>
+                                        <option value="inactive">Inactive</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- Role Field -->
+                                <div class="space-y-2">
+                                    <Label for="role" class="text-sm font-medium">Role</Label>
+                                    <select 
+                                        id="role" 
+                                        v-model="filters.role" 
+                                        class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-background dark:text-foreground dark:border-input"
+                                    >
+                                        <option value="">All Roles</option>
+                                        <option v-for="role in roles" :key="role.id" :value="role.name">
+                                            {{ role.display_name || role.name }}
+                                        </option>
+                                    </select>
+                                </div>
+                                
+                                <!-- Actions -->
+                                <div class="space-y-2">
+                                    <Label class="text-sm font-medium">&nbsp;</Label>
+                                    <div class="flex gap-2">
+                                        <Button @click="applyFilters" class="flex-1">
+                                            <Search class="w-4 h-4 mr-2" />
+                                            Search
+                                        </Button>
+                                        <Button variant="outline" @click="clearFilters">
+                                            Clear
+                                        </Button>
+                                    </div>
+                                </div>
                             </div>
                             
-                            <div>
-                                <Label for="status">Status</Label>
-                                <select id="status" v-model="filters.status" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-background dark:text-foreground dark:border-input">
-                                    <option value="">All Status</option>
-                                    <option value="active">Active</option>
-                                    <option value="inactive">Inactive</option>
-                                </select>
-                            </div>
-                            
-                            <div>
-                                <Label for="role">Role</Label>
-                                <select id="role" v-model="filters.role" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-background dark:text-foreground dark:border-input">
-                                    <option value="">All Roles</option>
-                                    <option v-for="role in roles" :key="role.id" :value="role.name">
-                                        {{ role.display_name || role.name }}
-                                    </option>
-                                </select>
-                            </div>
-                            
-                            <div class="flex items-end gap-2">
-                                <Button @click="applyFilters">
-                                    <Search class="w-4 h-4 mr-2" />
-                                    Search
-                                </Button>
-                                <Button variant="outline" @click="clearFilters">
-                                    Clear
-                                </Button>
+                            <!-- Filter Results Info -->
+                            <div v-if="filters.search || filters.status || filters.role" class="text-sm text-muted-foreground border-t pt-4">
+                                <span class="font-medium">Active filters:</span>
+                                <span v-if="filters.search" class="ml-2 px-2 py-1 bg-muted rounded text-xs">
+                                    Search: "{{ filters.search }}"
+                                </span>
+                                <span v-if="filters.status" class="ml-2 px-2 py-1 bg-muted rounded text-xs">
+                                    Status: {{ filters.status }}
+                                </span>
+                                <span v-if="filters.role" class="ml-2 px-2 py-1 bg-muted rounded text-xs">
+                                    Role: {{ filters.role }}
+                                </span>
                             </div>
                         </div>
                     </CardContent>
@@ -698,13 +758,20 @@ const clearFilters = () => {
                 <!-- Users Table -->
                 <Card>
                     <CardHeader>
-                        <CardTitle class="flex items-center gap-2">
-                            <UsersIcon class="w-4 h-4" />
-                            Users
-                        </CardTitle>
-                        <CardDescription>
-                            Manage user accounts and permissions
-                        </CardDescription>
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <CardTitle class="flex items-center gap-2">
+                                    <UsersIcon class="w-4 h-4" />
+                                    Users
+                                </CardTitle>
+                                <CardDescription>
+                                    Manage user accounts and permissions
+                                </CardDescription>
+                            </div>
+                            <div class="text-sm text-muted-foreground">
+                                <span class="font-medium">{{ usersData.meta?.total || usersData.data.length }}</span> users found
+                            </div>
+                        </div>
                     </CardHeader>
                     <CardContent>
                         <div class="overflow-x-auto">
@@ -728,7 +795,7 @@ const clearFilters = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-for="user in users.data" :key="user.id" class="border-b hover:bg-accent/50">
+                                    <tr v-for="user in usersData.data" :key="user.id" class="border-b hover:bg-accent/50">
                                         <td class="px-3 py-2 w-12">
                                             <Checkbox 
                                                 :checked="selectedUsers.includes(user.id)"
@@ -802,15 +869,19 @@ const clearFilters = () => {
                                 </tbody>
                             </table>
                             
-                            <div v-if="users.data.length === 0" class="text-center py-8 text-muted-foreground">
+                            <div v-if="loading" class="text-center py-8 text-muted-foreground">
+                                <RefreshCw class="w-6 h-6 animate-spin mx-auto mb-2" />
+                                Loading users...
+                            </div>
+                            <div v-else-if="usersData.data.length === 0" class="text-center py-8 text-muted-foreground">
                                 No users found. Create your first user to get started.
                             </div>
                         </div>
                         
                         <!-- Pagination -->
-                        <div v-if="users.links" class="flex justify-center mt-4">
+                        <div v-if="usersData.links" class="flex justify-center mt-4">
                             <div class="flex gap-2">
-                                <template v-for="(link, index) in users.links" :key="index">
+                                <template v-for="(link, index) in usersData.links" :key="index">
                                     <Button
                                         v-if="link.url"
                                         :variant="link.active ? 'default' : 'outline'"

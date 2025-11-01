@@ -132,7 +132,15 @@ const formatWhatsAppLink = (number: string) => {
 </script>
 
 <template>
-    <div class="space-y-6">
+    <Card>
+        <CardHeader>
+            <CardTitle>Contact Settings</CardTitle>
+            <CardDescription>
+                Configure contact information and social media links
+            </CardDescription>
+        </CardHeader>
+        <CardContent>
+            <div class="space-y-6">
         <!-- Basic Contact Information -->
         <Card>
             <CardHeader>
@@ -352,5 +360,7 @@ const formatWhatsAppLink = (number: string) => {
                 {{ isSaving ? 'Saving...' : 'Save Changes' }}
             </Button>
         </div>
-    </div>
+            </div>
+        </CardContent>
+    </Card>
 </template>
