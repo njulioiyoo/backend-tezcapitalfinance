@@ -153,8 +153,46 @@ const resetForm = () => {
 };
 
 // Get CSRF token
-const getCsrfToken = () => {
-    return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+import { useCsrfToken } from '@/composables/useCsrfToken';
+const { getCsrfToken, refreshCsrfToken } = useCsrfToken();
+
+// Helper function to make requests with CSRF token retry
+const makeRequest = async (url: string, options: RequestInit, retryOnCsrf = true): Promise<Response> => {
+    const csrfToken = getCsrfToken();
+    if (!csrfToken) {
+        throw new Error('CSRF token not found. Please refresh the page.');
+    }
+    
+    const requestOptions = {
+        ...options,
+        headers: {
+            ...options.headers,
+            'X-CSRF-TOKEN': csrfToken,
+        },
+    };
+    
+    let response = await fetch(url, requestOptions);
+    
+    // If CSRF token mismatch and retry is enabled, try to refresh token and retry once
+    if (response.status === 419 && retryOnCsrf) {
+        try {
+            const newToken = await refreshCsrfToken();
+            if (newToken) {
+                const retryOptions = {
+                    ...requestOptions,
+                    headers: {
+                        ...requestOptions.headers,
+                        'X-CSRF-TOKEN': newToken,
+                    },
+                };
+                response = await fetch(url, retryOptions);
+            }
+        } catch (refreshError) {
+            console.warn('Failed to refresh CSRF token:', refreshError);
+        }
+    }
+    
+    return response;
 };
 
 // Submit form
@@ -187,12 +225,11 @@ const handleSubmit = async () => {
             formData.append('_method', 'PUT');
         }
         
-        const response = await fetch(url, {
+        const response = await makeRequest(url, {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': getCsrfToken(),
             },
             credentials: 'include',
             body: formData,
@@ -208,6 +245,16 @@ const handleSubmit = async () => {
             });
             dialogOpen.value = false;
             fetchLocations();
+        } else if (response.status === 419) {
+            toast({
+                title: 'Session Expired',
+                description: 'Your session has expired. Please refresh the page and try again.',
+                variant: 'error'
+            });
+            // Optionally refresh the page automatically after a delay
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
         } else {
             toast({
                 title: 'Error',
@@ -242,12 +289,11 @@ const handleDelete = async () => {
         const formData = new FormData();
         formData.append('_method', 'DELETE');
         
-        const response = await fetch(route('master.locations.destroy', confirmDialog.value.locationId), {
+        const response = await makeRequest(route('master.locations.destroy', confirmDialog.value.locationId), {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': getCsrfToken(),
             },
             credentials: 'include',
             body: formData,
@@ -263,6 +309,16 @@ const handleDelete = async () => {
             });
             confirmDialog.value.open = false;
             fetchLocations();
+        } else if (response.status === 419) {
+            toast({
+                title: 'Session Expired',
+                description: 'Your session has expired. Please refresh the page and try again.',
+                variant: 'error'
+            });
+            confirmDialog.value.open = false;
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
         } else {
             toast({
                 title: 'Error',

@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Save, Loader2, Upload, X, Image } from 'lucide-vue-next';
+import { Save, Loader2, Upload, X, Image, Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-vue-next';
 
 interface Configuration {
     [key: string]: {
@@ -25,10 +25,7 @@ interface Props {
 
 const props = defineProps<Props>();
 
-// Debug props on mount
-watch(() => props.configurations, (newConfigs) => {
-    console.log('🔧 JoinUsSettings - Props changed:', newConfigs);
-}, { immediate: true });
+// Debug props on mount (removed to reduce reactivity)
 const emit = defineEmits<{
     save: [group: string, key: string, value: any, type: string];
     update: [configId: number, group: string, key: string, value: any, type: string];
@@ -61,6 +58,9 @@ const form = reactive({
     workplace_employee_benefits_description_en: '',
     workplace_employee_benefits_image: '',
     workplace_employee_benefits_slug: '',
+    
+    // Employee Benefits Items
+    employee_benefits_items: [],
 });
 
 const ceoImageFile = ref<File | null>(null);
@@ -77,11 +77,49 @@ const ceoImageInput = ref<HTMLInputElement | null>(null);
 const workingEnvironmentImageInput = ref<HTMLInputElement | null>(null);
 const employeeBenefitsImageInput = ref<HTMLInputElement | null>(null);
 
+// Collapse states for all sections
+const isHeroExpanded = ref(false);
+const isCeoMessageExpanded = ref(false);
+const isButtonSettingsExpanded = ref(false);
+const isCareerApplicationExpanded = ref(false);
+const isWorkplaceExpanded = ref(false);
+const isEmployeeBenefitsExpanded = ref(false);
+
+// Track collapse state for each category
+const categoryCollapseStates = ref<Record<number, boolean>>({});
+
+// Track if employee benefits have been manually changed
+const employeeBenefitsChanged = ref(false);
+
+// Flag to prevent form updates when user is typing
+const isUserEditing = ref(false);
+
+// Debounced function to mark benefits as changed
+const markBenefitsChanged = () => {
+    isUserEditing.value = true;
+    employeeBenefitsChanged.value = true;
+};
+
+// Track uploaded icon files for employee benefits items
+const iconFiles = ref<Record<string, File>>({});
+
+// Value types for employee benefits
+const valueTypes = [
+    { value: '%', label: '%' },
+    { value: 'Days', label: 'Days' },
+    { value: 'Hours', label: 'Hours' },
+    { value: 'Months', label: 'Months' },
+    { value: 'Years', label: 'Years' },
+    { value: 'Times', label: 'Times' },
+    { value: 'Week', label: 'Week' },
+    { value: 'Weeks', label: 'Weeks' }
+];
+
+
 // Watch for configuration changes and update form
 watch(() => props.configurations, (newConfigs) => {
-    console.log('🔧 JoinUsSettings - Watch triggered with:', newConfigs);
-    // Only update if we have actual configuration data (not empty object)
-    if (newConfigs && Object.keys(newConfigs).length > 0) {
+    // Only update if we have actual configuration data (not empty object) and user is not editing
+    if (newConfigs && Object.keys(newConfigs).length > 0 && !isUserEditing.value) {
         
         form.hero_title_id = newConfigs.hero_title_id?.value || 'Bagian dari TEZ Capital';
         form.hero_title_en = newConfigs.hero_title_en?.value || 'Be Part of TEZ Capital';
@@ -94,12 +132,9 @@ watch(() => props.configurations, (newConfigs) => {
         
         // Simple boolean handling like LanguageSettings
         const dbValue = newConfigs.button_join_us_enabled?.value;
-        console.log('🔧 JoinUsSettings - DB Value:', dbValue, 'Type:', typeof dbValue);
         
         // Simple assignment with fallback (like LanguageSettings)
         form.button_join_us_enabled = dbValue || false;
-        
-        console.log('🔧 JoinUsSettings - Form Value:', form.button_join_us_enabled, 'Type:', typeof form.button_join_us_enabled);
         
         ceoImagePreview.value = newConfigs.ceo_image?.value || '';
         
@@ -122,12 +157,69 @@ watch(() => props.configurations, (newConfigs) => {
         workingEnvironmentImagePreview.value = newConfigs.workplace_working_environment_image?.value || '';
         employeeBenefitsImagePreview.value = newConfigs.workplace_employee_benefits_image?.value || '';
         
-        // Force DOM update
-        nextTick(() => {
-            console.log('🔧 JoinUsSettings - After nextTick, form.button_join_us_enabled:', form.button_join_us_enabled);
-        });
+        // Employee Benefits Items
+        if (newConfigs.employee_benefits_items?.value) {
+            try {
+                const items = typeof newConfigs.employee_benefits_items.value === 'string' 
+                    ? JSON.parse(newConfigs.employee_benefits_items.value)
+                    : newConfigs.employee_benefits_items.value;
+                form.employee_benefits_items = Array.isArray(items) ? items : [];
+                
+                // Initialize collapse states for loaded categories (preserve existing states)
+                const newStates: Record<number, boolean> = { ...categoryCollapseStates.value };
+                form.employee_benefits_items.forEach((_, index) => {
+                    if (newStates[index] === undefined) {
+                        newStates[index] = false; // Start collapsed by default for new categories
+                    }
+                });
+                categoryCollapseStates.value = newStates;
+            } catch (e) {
+                form.employee_benefits_items = [];
+                categoryCollapseStates.value = {};
+            }
+        } else {
+            // Default structure with 3 categories from screenshot
+            form.employee_benefits_items = [
+                {
+                    category_title_id: 'Informasi Dasar',
+                    category_title_en: 'Basic Information',
+                    items: [
+                        { title_id: 'Annual Holiday', title_en: 'Annual Holiday', icon: '', value: '12', value_type: 'Days', description_id: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.', description_en: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.' },
+                        { title_id: 'Paid Leave Utilization Rate', title_en: 'Paid Leave Utilization Rate', icon: '', value: '100', value_type: '%', description_id: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.', description_en: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.' },
+                        { title_id: 'Average Turnover Rate', title_en: 'Average Turnover Rate', icon: '', value: '10', value_type: '%', description_id: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.', description_en: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.' }
+                    ]
+                },
+                {
+                    category_title_id: 'Subsidi dan Tunjangan',
+                    category_title_en: 'Subsidies and Allowances',
+                    items: [
+                        { title_id: 'Transportation Allowance', title_en: 'Transportation Allowance', icon: '', value: '', value_type: '', description_id: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.', description_en: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.' },
+                        { title_id: 'Meal Allowance', title_en: 'Meal Allowance', icon: '', value: '', value_type: '', description_id: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.', description_en: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.' },
+                        { title_id: 'Health Insurance', title_en: 'Health Insurance', icon: '', value: '', value_type: '', description_id: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.', description_en: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.' }
+                    ]
+                },
+                {
+                    category_title_id: 'Pernikahan dan Kelahiran',
+                    category_title_en: 'Marriage and Childbirth',
+                    items: [
+                        { title_id: 'Wedding Gift Money', title_en: 'Wedding Gift Money', icon: '', value: '', value_type: '', description_id: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.', description_en: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.' },
+                        { title_id: 'Birth Gift Money', title_en: 'Birth Gift Money', icon: '', value: '', value_type: '', description_id: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.', description_en: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.' },
+                        { title_id: 'Maternity Leave', title_en: 'Maternity Leave', icon: '', value: '90', value_type: 'Days', description_id: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.', description_en: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.' }
+                    ]
+                }
+            ];
+            
+            // Initialize collapse states for default categories (preserve existing states)
+            const newStates: Record<number, boolean> = { ...categoryCollapseStates.value };
+            [0, 1, 2].forEach(index => {
+                if (newStates[index] === undefined) {
+                    newStates[index] = false; // Start collapsed by default
+                }
+            });
+            categoryCollapseStates.value = newStates;
+        }
     }
-}, { immediate: true, deep: true });
+}, { immediate: true });
 
 const handleBulkSave = () => {
     const changes = [];
@@ -164,10 +256,8 @@ const handleBulkSave = () => {
     // Simple boolean comparison like LanguageSettings
     const currentButtonValue = props.configurations.button_join_us_enabled?.value || false;
     
-    console.log('🔧 JoinUsSettings - Save: Current DB:', currentButtonValue, 'Form:', form.button_join_us_enabled, 'Changed:', currentButtonValue !== form.button_join_us_enabled);
     if (currentButtonValue !== form.button_join_us_enabled) {
         changes.push({ key: 'button_join_us_enabled', value: form.button_join_us_enabled, type: 'boolean' });
-        console.log('🔧 JoinUsSettings - Saving value:', form.button_join_us_enabled);
     }
     
     if (ceoImageFile.value) {
@@ -214,15 +304,59 @@ const handleBulkSave = () => {
         changes.push({ key: 'workplace_employee_benefits_image', value: employeeBenefitsImageFile.value, type: 'file' });
     }
     
+    // Employee Benefits Items changes - improved comparison
+    const currentItems = props.configurations.employee_benefits_items?.value || [];
+    let currentItemsParsed;
+    
+    // Parse current items properly
+    if (typeof currentItems === 'string') {
+        try {
+            currentItemsParsed = JSON.parse(currentItems);
+        } catch (e) {
+            currentItemsParsed = [];
+        }
+    } else {
+        currentItemsParsed = currentItems;
+    }
+    
+    // Normalize both to strings for comparison
+    const currentItemsString = JSON.stringify(currentItemsParsed);
+    const formItemsString = JSON.stringify(form.employee_benefits_items);
+    
+    if (currentItemsString !== formItemsString || employeeBenefitsChanged.value) {
+        changes.push({ key: 'employee_benefits_items', value: form.employee_benefits_items, type: 'json' });
+    }
+    
+    // Add icon files for employee benefits items
+    Object.keys(iconFiles.value).forEach(fileKey => {
+        const file = iconFiles.value[fileKey];
+        const [categoryIndex, itemIndex] = fileKey.split('-').map(Number);
+        changes.push({ 
+            key: `employee_benefits_icon_${categoryIndex}_${itemIndex}`, 
+            value: file, 
+            type: 'file',
+            metadata: {
+                arrayKey: 'employee_benefits_items',
+                categoryIndex: categoryIndex,
+                itemIndex: itemIndex,
+                arrayField: 'icon'
+            }
+        });
+    });
+    
     // Only save if there are changes
     if (changes.length > 0) {
-        console.log('🔧 JoinUsSettings - Emitting bulkSave with changes:', changes);
         emit('bulkSave', 'join_us', changes);
         
         // Clear file refs after successful save initiation
         ceoImageFile.value = null;
         workingEnvironmentImageFile.value = null;
         employeeBenefitsImageFile.value = null;
+        iconFiles.value = {}; // Clear icon files
+        
+        // Reset change flag and editing state
+        employeeBenefitsChanged.value = false;
+        isUserEditing.value = false;
     }
 };
 
@@ -282,6 +416,100 @@ const clearEmployeeBenefitsImage = () => {
     employeeBenefitsImageFile.value = null;
     employeeBenefitsImagePreview.value = '';
 };
+
+
+
+// Toggle collapse state for categories
+const toggleCategoryCollapse = (categoryIndex: number) => {
+    categoryCollapseStates.value[categoryIndex] = !categoryCollapseStates.value[categoryIndex];
+};
+
+// Employee Benefits Items Management
+const addCategory = () => {
+    const newIndex = form.employee_benefits_items.length;
+    form.employee_benefits_items.push({
+        category_title_id: '',
+        category_title_en: '',
+        items: []
+    });
+    // Set new category to expanded by default
+    categoryCollapseStates.value[newIndex] = true;
+    markBenefitsChanged();
+};
+
+const removeCategory = (index: number) => {
+    form.employee_benefits_items.splice(index, 1);
+    // Reorganize collapse states after removal
+    const newStates: Record<number, boolean> = {};
+    Object.keys(categoryCollapseStates.value).forEach((key) => {
+        const keyIndex = parseInt(key);
+        if (keyIndex < index) {
+            newStates[keyIndex] = categoryCollapseStates.value[keyIndex];
+        } else if (keyIndex > index) {
+            newStates[keyIndex - 1] = categoryCollapseStates.value[keyIndex];
+        }
+    });
+    categoryCollapseStates.value = newStates;
+    markBenefitsChanged();
+};
+
+const addItem = (categoryIndex: number) => {
+    const newItem = {
+        _id: Date.now() + Math.random(),
+        title_id: '',
+        title_en: '',
+        icon: '',
+        value: '',
+        value_type: '',
+        description_id: '',
+        description_en: ''
+    };
+    
+    form.employee_benefits_items[categoryIndex].items.push(newItem);
+    
+    // Ensure category is expanded
+    categoryCollapseStates.value[categoryIndex] = true;
+    
+    markBenefitsChanged();
+    
+    // Focus on the new item after DOM update
+    nextTick(() => {
+        const newItemIndex = form.employee_benefits_items[categoryIndex].items.length - 1;
+        const newItemElement = document.querySelector(`[data-item-key="item-${categoryIndex}-${newItemIndex}"]`);
+        if (newItemElement) {
+            newItemElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Focus on first input in the new item
+            const firstInput = newItemElement.querySelector('input, textarea') as HTMLElement;
+            if (firstInput) {
+                setTimeout(() => firstInput.focus(), 200);
+            }
+        }
+    });
+};
+
+const removeItem = (categoryIndex: number, itemIndex: number) => {
+    form.employee_benefits_items[categoryIndex].items.splice(itemIndex, 1);
+    markBenefitsChanged();
+};
+
+const handleIconUpload = (event: Event, categoryIndex: number, itemIndex: number) => {
+    const target = event.target as HTMLInputElement;
+    const file = target.files?.[0];
+    if (file) {
+        // Store the actual file for upload
+        const fileKey = `${categoryIndex}-${itemIndex}`;
+        iconFiles.value[fileKey] = file;
+        
+        // Create preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            // Store preview path temporarily (will be replaced with server path after upload)
+            form.employee_benefits_items[categoryIndex].items[itemIndex].icon = e.target?.result as string;
+            markBenefitsChanged();
+        };
+        reader.readAsDataURL(file);
+    }
+};
 </script>
 
 <template>
@@ -289,14 +517,26 @@ const clearEmployeeBenefitsImage = () => {
         <!-- Hero Section Settings -->
         <Card>
             <CardHeader>
-                <CardTitle class="flex items-center gap-2">
-                    Hero Section
-                </CardTitle>
-                <CardDescription>
-                    Configure the hero section content for the Join Us page
-                </CardDescription>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <CardTitle class="flex items-center gap-2">
+                            Hero Section
+                        </CardTitle>
+                        <CardDescription>
+                            Configure the hero section content for the Join Us page
+                        </CardDescription>
+                    </div>
+                    <Button 
+                        @click="isHeroExpanded = !isHeroExpanded"
+                        size="sm" 
+                        variant="ghost"
+                    >
+                        <ChevronDown v-if="!isHeroExpanded" class="w-4 h-4" />
+                        <ChevronUp v-else class="w-4 h-4" />
+                    </Button>
+                </div>
             </CardHeader>
-            <CardContent class="space-y-6">
+            <CardContent v-if="isHeroExpanded" class="space-y-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="space-y-2">
                         <Label for="hero_title_id">Hero Title (Indonesian) *</Label>
@@ -330,14 +570,26 @@ const clearEmployeeBenefitsImage = () => {
         <!-- CEO Message Settings -->
         <Card>
             <CardHeader>
-                <CardTitle class="flex items-center gap-2">
-                    CEO Message Section
-                </CardTitle>
-                <CardDescription>
-                    Configure the CEO message content and image
-                </CardDescription>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <CardTitle class="flex items-center gap-2">
+                            CEO Message Section
+                        </CardTitle>
+                        <CardDescription>
+                            Configure the CEO message content and image
+                        </CardDescription>
+                    </div>
+                    <Button 
+                        @click="isCeoMessageExpanded = !isCeoMessageExpanded"
+                        size="sm" 
+                        variant="ghost"
+                    >
+                        <ChevronDown v-if="!isCeoMessageExpanded" class="w-4 h-4" />
+                        <ChevronUp v-else class="w-4 h-4" />
+                    </Button>
+                </div>
             </CardHeader>
-            <CardContent class="space-y-6">
+            <CardContent v-if="isCeoMessageExpanded" class="space-y-6">
                 <!-- CEO Message Titles -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="space-y-2">
@@ -451,14 +703,26 @@ const clearEmployeeBenefitsImage = () => {
         <!-- Button Settings -->
         <Card>
             <CardHeader>
-                <CardTitle class="flex items-center gap-2">
-                    Button Settings
-                </CardTitle>
-                <CardDescription>
-                    Configure visibility of Join Us button in website header
-                </CardDescription>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <CardTitle class="flex items-center gap-2">
+                            Button Settings
+                        </CardTitle>
+                        <CardDescription>
+                            Configure visibility of Join Us button in website header
+                        </CardDescription>
+                    </div>
+                    <Button 
+                        @click="isButtonSettingsExpanded = !isButtonSettingsExpanded"
+                        size="sm" 
+                        variant="ghost"
+                    >
+                        <ChevronDown v-if="!isButtonSettingsExpanded" class="w-4 h-4" />
+                        <ChevronUp v-else class="w-4 h-4" />
+                    </Button>
+                </div>
             </CardHeader>
-            <CardContent class="space-y-6">
+            <CardContent v-if="isButtonSettingsExpanded" class="space-y-6">
                 <div class="flex items-center justify-between p-4 rounded-lg border">
                     <div class="space-y-1">
                         <Label for="button_join_us_enabled" class="text-sm font-medium">
@@ -480,14 +744,26 @@ const clearEmployeeBenefitsImage = () => {
         <!-- Career Application Settings -->
         <Card>
             <CardHeader>
-                <CardTitle class="flex items-center gap-2">
-                    Career Application Settings
-                </CardTitle>
-                <CardDescription>
-                    Configure email settings for career applications
-                </CardDescription>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <CardTitle class="flex items-center gap-2">
+                            Career Application Settings
+                        </CardTitle>
+                        <CardDescription>
+                            Configure email settings for career applications
+                        </CardDescription>
+                    </div>
+                    <Button 
+                        @click="isCareerApplicationExpanded = !isCareerApplicationExpanded"
+                        size="sm" 
+                        variant="ghost"
+                    >
+                        <ChevronDown v-if="!isCareerApplicationExpanded" class="w-4 h-4" />
+                        <ChevronUp v-else class="w-4 h-4" />
+                    </Button>
+                </div>
             </CardHeader>
-            <CardContent class="space-y-6">
+            <CardContent v-if="isCareerApplicationExpanded" class="space-y-6">
                 <div class="space-y-2">
                     <Label for="career_application_email">Application Destination Email *</Label>
                     <Input
@@ -507,14 +783,26 @@ const clearEmployeeBenefitsImage = () => {
         <!-- Explore Our Workplace Settings -->
         <Card>
             <CardHeader>
-                <CardTitle class="flex items-center gap-2">
-                    Explore Our Workplace Settings
-                </CardTitle>
-                <CardDescription>
-                    Configure the static cards for Working Environment and Employee Benefits section
-                </CardDescription>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <CardTitle class="flex items-center gap-2">
+                            Explore Our Workplace Settings
+                        </CardTitle>
+                        <CardDescription>
+                            Configure the static cards for Working Environment and Employee Benefits section
+                        </CardDescription>
+                    </div>
+                    <Button 
+                        @click="isWorkplaceExpanded = !isWorkplaceExpanded"
+                        size="sm" 
+                        variant="ghost"
+                    >
+                        <ChevronDown v-if="!isWorkplaceExpanded" class="w-4 h-4" />
+                        <ChevronUp v-else class="w-4 h-4" />
+                    </Button>
+                </div>
             </CardHeader>
-            <CardContent class="space-y-8">
+            <CardContent v-if="isWorkplaceExpanded" class="space-y-8">
                 <!-- Working Environment Card -->
                 <div class="space-y-6 p-6 border rounded-lg">
                     <h3 class="text-lg font-semibold">Working Environment Card</h3>
@@ -735,6 +1023,249 @@ const clearEmployeeBenefitsImage = () => {
                                     @change="handleEmployeeBenefitsImageUpload"
                                 />
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Employee Benefits Items Section -->
+                    <div class="space-y-6 p-6 border rounded-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-lg font-semibold">Employee Benefits Items</h3>
+                                <p class="text-sm text-muted-foreground mt-1">
+                                    Configure the detailed employee benefits that will be displayed on the Employee Benefits page.
+                                </p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <Button @click="addCategory" size="sm" variant="outline">
+                                    <Plus class="w-4 h-4 mr-2" />
+                                    Add Category
+                                </Button>
+                                <Button 
+                                    @click="isEmployeeBenefitsExpanded = !isEmployeeBenefitsExpanded"
+                                    size="sm" 
+                                    variant="ghost"
+                                >
+                                    <ChevronDown v-if="!isEmployeeBenefitsExpanded" class="w-4 h-4" />
+                                    <ChevronUp v-else class="w-4 h-4" />
+                                </Button>
+                            </div>
+                        </div>
+
+                        <!-- Categories -->
+                        <div v-if="isEmployeeBenefitsExpanded" class="space-y-6">
+                            <div 
+                                v-for="(category, categoryIndex) in form.employee_benefits_items" 
+                                :key="`category-${categoryIndex}-${category.category_title_id || categoryIndex}`"
+                                class="p-6 border rounded-lg space-y-4"
+                            >
+                                <!-- Category Header -->
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-2">
+                                        <h4 class="font-semibold text-md">{{ category.category_title_id || category.category_title_en || `Category ${categoryIndex + 1}` }}</h4>
+                                        <Button 
+                                            @click="toggleCategoryCollapse(categoryIndex)"
+                                            size="sm" 
+                                            variant="ghost"
+                                        >
+                                            <ChevronDown v-if="!categoryCollapseStates[categoryIndex]" class="w-4 h-4" />
+                                            <ChevronUp v-else class="w-4 h-4" />
+                                        </Button>
+                                    </div>
+                                    <Button 
+                                        @click="removeCategory(categoryIndex)" 
+                                        size="sm" 
+                                        variant="outline"
+                                        class="text-red-600 hover:text-red-700"
+                                    >
+                                        <Trash2 class="w-4 h-4" />
+                                    </Button>
+                                </div>
+
+                                <!-- Category Content (Collapsible) -->
+                                <div v-if="categoryCollapseStates[categoryIndex]" class="space-y-4">
+                                    <!-- Category Titles -->
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div class="space-y-2">
+                                        <Label>Category Title (Indonesian)</Label>
+                                        <Input
+                                            v-model="category.category_title_id"
+                                            placeholder="e.g., Informasi Dasar"
+                                            :disabled="isLoading"
+                                            @input="markBenefitsChanged"
+                                        />
+                                    </div>
+                                    <div class="space-y-2">
+                                        <Label>Category Title (English)</Label>
+                                        <Input
+                                            v-model="category.category_title_en"
+                                            placeholder="e.g., Basic Information"
+                                            :disabled="isLoading"
+                                            @input="markBenefitsChanged"
+                                        />
+                                    </div>
+                                </div>
+
+                                <!-- Category Items -->
+                                <div class="space-y-4">
+                                    <div class="flex items-center justify-between">
+                                        <h5 class="font-medium text-sm">Items in this category</h5>
+                                        <Button 
+                                            @click="addItem(categoryIndex)" 
+                                            size="sm" 
+                                            variant="outline"
+                                        >
+                                            <Plus class="w-4 h-4 mr-2" />
+                                            Add Item
+                                        </Button>
+                                    </div>
+
+                                    <div class="space-y-4">
+                                        <div 
+                                            v-for="(item, itemIndex) in category.items" 
+                                            :key="`item-${categoryIndex}-${itemIndex}-${item._id || itemIndex}`"
+                                            :data-item-key="`item-${categoryIndex}-${itemIndex}`"
+                                            class="p-4 border border-dashed rounded-lg space-y-4"
+                                        >
+                                            <!-- Item Header -->
+                                            <div class="flex items-center justify-between">
+                                                <span class="text-sm font-medium">Item {{ itemIndex + 1 }}</span>
+                                                <Button 
+                                                    @click="removeItem(categoryIndex, itemIndex)" 
+                                                    size="sm" 
+                                                    variant="ghost"
+                                                    class="text-red-600 hover:text-red-700"
+                                                >
+                                                    <Trash2 class="w-4 h-4" />
+                                                </Button>
+                                            </div>
+
+                                            <!-- Item Titles -->
+                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div class="space-y-2">
+                                                    <Label>Title (Indonesian)</Label>
+                                                    <Input
+                                                        v-model="item.title_id"
+                                                        placeholder="e.g., Annual Holiday"
+                                                        :disabled="isLoading"
+                                                        @input="markBenefitsChanged"
+                                                    />
+                                                </div>
+                                                <div class="space-y-2">
+                                                    <Label>Title (English)</Label>
+                                                    <Input
+                                                        v-model="item.title_en"
+                                                        placeholder="e.g., Annual Holiday"
+                                                        :disabled="isLoading"
+                                                        @input="markBenefitsChanged"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <!-- Icon & Percentage -->
+                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div class="space-y-2">
+                                                    <Label>Icon</Label>
+                                                    <div class="border-2 border-dashed border-input rounded-lg p-4">
+                                                        <div v-if="item.icon" class="space-y-3">
+                                                            <div class="flex items-center justify-center">
+                                                                <img 
+                                                                    :src="item.icon.startsWith('data:') || item.icon.startsWith('http') ? item.icon : `/storage/${item.icon}`" 
+                                                                    alt="Icon preview" 
+                                                                    class="w-16 h-16 object-contain rounded"
+                                                                />
+                                                            </div>
+                                                            <div class="flex justify-center gap-2">
+                                                                <Button size="sm" variant="outline" @click="() => { item.icon = ''; markBenefitsChanged(); }">
+                                                                    <X class="w-3 h-3 mr-1" />
+                                                                    Remove
+                                                                </Button>
+                                                                <Button size="sm" variant="outline" @click="document.getElementById(`icon-${categoryIndex}-${itemIndex}`)?.click()">
+                                                                    <Upload class="w-3 h-3 mr-1" />
+                                                                    Change
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                        <div v-else class="text-center">
+                                                            <Image class="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+                                                            <Button size="sm" variant="outline" @click="document.getElementById(`icon-${categoryIndex}-${itemIndex}`)?.click()">
+                                                                <Upload class="w-3 h-3 mr-1" />
+                                                                Upload Icon
+                                                            </Button>
+                                                            <p class="text-xs text-muted-foreground mt-1">PNG, JPG, SVG</p>
+                                                        </div>
+                                                        <input
+                                                            type="file"
+                                                            accept="image/*"
+                                                            @change="handleIconUpload($event, categoryIndex, itemIndex)"
+                                                            class="hidden"
+                                                            :id="`icon-${categoryIndex}-${itemIndex}`"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div class="space-y-2">
+                                                    <Label>Value (Optional)</Label>
+                                                    <div class="grid grid-cols-2 gap-2">
+                                                        <Input
+                                                            v-model="item.value"
+                                                            placeholder="e.g., 100, 12, 8"
+                                                            :disabled="isLoading"
+                                                            @input="markBenefitsChanged"
+                                                        />
+                                                        <div class="relative">
+                                                            <select
+                                                                v-model="item.value_type"
+                                                                :disabled="isLoading"
+                                                                @change="markBenefitsChanged"
+                                                                class="flex h-10 w-full rounded-md border border-input bg-background pl-3 pr-8 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none"
+                                                            >
+                                                                <option value="">Type</option>
+                                                                <option v-for="type in valueTypes" :key="type.value" :value="type.value">
+                                                                    {{ type.label }}
+                                                                </option>
+                                                            </select>
+                                                            <ChevronDown class="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Descriptions -->
+                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div class="space-y-2">
+                                                    <Label>Description (Indonesian)</Label>
+                                                    <Textarea
+                                                        v-model="item.description_id"
+                                                        placeholder="Description in Indonesian"
+                                                        rows="3"
+                                                        :disabled="isLoading"
+                                                        @input="markBenefitsChanged"
+                                                    />
+                                                </div>
+                                                <div class="space-y-2">
+                                                    <Label>Description (English)</Label>
+                                                    <Textarea
+                                                        v-model="item.description_en"
+                                                        placeholder="Description in English"
+                                                        rows="3"
+                                                        :disabled="isLoading"
+                                                        @input="markBenefitsChanged"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                </div> <!-- End Category Content (Collapsible) -->
+                            </div>
+                        </div>
+
+                        <!-- Add Category Button (if no categories exist) -->
+                        <div v-if="isEmployeeBenefitsExpanded && form.employee_benefits_items.length === 0" class="text-center py-8">
+                            <p class="text-muted-foreground mb-4">No employee benefit categories configured yet.</p>
+                            <Button @click="addCategory" variant="outline">
+                                <Plus class="w-4 h-4 mr-2" />
+                                Add First Category
+                            </Button>
                         </div>
                     </div>
                 </div>

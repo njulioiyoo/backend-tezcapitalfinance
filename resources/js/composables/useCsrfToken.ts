@@ -1,7 +1,7 @@
 import { usePage } from '@inertiajs/vue3';
 
 /**
- * Composable to get CSRF token with multiple fallback methods
+ * Composable to get CSRF token with multiple fallback methods and refresh capability
  */
 export function useCsrfToken() {
     const getCsrfToken = (): string => {
@@ -40,7 +40,41 @@ export function useCsrfToken() {
         return '';
     };
 
+    /**
+     * Refresh CSRF token by making a request to get a new one
+     */
+    const refreshCsrfToken = async (): Promise<string> => {
+        try {
+            const response = await fetch('/csrf-token', {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'include',
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                const newToken = data.csrf_token;
+                
+                // Update meta tag if it exists
+                const metaTag = document.querySelector('meta[name="csrf-token"]');
+                if (metaTag) {
+                    metaTag.setAttribute('content', newToken);
+                }
+                
+                return newToken;
+            }
+        } catch (error) {
+            console.warn('Failed to refresh CSRF token:', error);
+        }
+        
+        return getCsrfToken();
+    };
+
     return {
-        getCsrfToken
+        getCsrfToken,
+        refreshCsrfToken
     };
 }

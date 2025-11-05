@@ -10,6 +10,11 @@ Route::get('/', function () {
 
 Route::get('dashboard', [App\Http\Controllers\Content\NewsEvents\DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
 
+// CSRF token refresh route
+Route::get('csrf-token', function () {
+    return response()->json(['csrf_token' => csrf_token()]);
+})->middleware(['auth'])->name('csrf-token');
+
 // Legacy route redirects for backward compatibility
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('users', function () {

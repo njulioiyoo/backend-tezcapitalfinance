@@ -253,16 +253,32 @@ class ConfigurationController extends Controller
                         ]);
                     } else {
                         // This is an icon for array items
-                        $iconPaths[$metadata['arrayKey']][$metadata['arrayIndex']][$metadata['arrayField']] = $path;
-                        
-                        \Log::info('🖼️ Icon uploaded for array', [
-                            'arrayKey' => $metadata['arrayKey'],
-                            'index' => $metadata['arrayIndex'],
-                            'field' => $metadata['arrayField'],
-                            'path' => $path,
-                            'fileSize' => $file->getSize(),
-                            'fileName' => $file->getClientOriginalName()
-                        ]);
+                        if (isset($metadata['categoryIndex']) && isset($metadata['itemIndex'])) {
+                            // Handle nested array structure (categories with items)
+                            $iconPaths[$metadata['arrayKey']][$metadata['categoryIndex']]['items'][$metadata['itemIndex']][$metadata['arrayField']] = $path;
+                            
+                            \Log::info('🖼️ Icon uploaded for nested array', [
+                                'arrayKey' => $metadata['arrayKey'],
+                                'categoryIndex' => $metadata['categoryIndex'],
+                                'itemIndex' => $metadata['itemIndex'],
+                                'field' => $metadata['arrayField'],
+                                'path' => $path,
+                                'fileSize' => $file->getSize(),
+                                'fileName' => $file->getClientOriginalName()
+                            ]);
+                        } else {
+                            // Handle simple array structure
+                            $iconPaths[$metadata['arrayKey']][$metadata['arrayIndex']][$metadata['arrayField']] = $path;
+                            
+                            \Log::info('🖼️ Icon uploaded for array', [
+                                'arrayKey' => $metadata['arrayKey'],
+                                'index' => $metadata['arrayIndex'],
+                                'field' => $metadata['arrayField'],
+                                'path' => $path,
+                                'fileSize' => $file->getSize(),
+                                'fileName' => $file->getClientOriginalName()
+                            ]);
+                        }
                     }
                 } else {
                     // Regular file upload
@@ -333,10 +349,22 @@ class ConfigurationController extends Controller
             
             // For JSON arrays, update with uploaded icon paths
             if ($configData['type'] === 'json' && is_array($value) && isset($iconPaths[$configData['key']])) {
-                foreach ($iconPaths[$configData['key']] as $index => $fields) {
-                    if (isset($value[$index])) {
-                        foreach ($fields as $field => $path) {
-                            $value[$index][$field] = $path;
+                foreach ($iconPaths[$configData['key']] as $categoryIndex => $categoryData) {
+                    if (isset($categoryData['items'])) {
+                        // Handle nested structure (categories with items)
+                        foreach ($categoryData['items'] as $itemIndex => $itemFields) {
+                            if (isset($value[$categoryIndex]['items'][$itemIndex])) {
+                                foreach ($itemFields as $field => $path) {
+                                    $value[$categoryIndex]['items'][$itemIndex][$field] = $path;
+                                }
+                            }
+                        }
+                    } else {
+                        // Handle simple array structure
+                        if (isset($value[$categoryIndex])) {
+                            foreach ($categoryData as $field => $path) {
+                                $value[$categoryIndex][$field] = $path;
+                            }
                         }
                     }
                 }
