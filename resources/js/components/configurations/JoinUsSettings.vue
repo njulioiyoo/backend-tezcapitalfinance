@@ -328,10 +328,11 @@ const handleBulkSave = () => {
     }
     
     // Add icon files for employee benefits items
+    console.log('🖼️ Processing icon files:', iconFiles.value);
     Object.keys(iconFiles.value).forEach(fileKey => {
         const file = iconFiles.value[fileKey];
         const [categoryIndex, itemIndex] = fileKey.split('-').map(Number);
-        changes.push({ 
+        const change = { 
             key: `employee_benefits_icon_${categoryIndex}_${itemIndex}`, 
             value: file, 
             type: 'file',
@@ -341,11 +342,14 @@ const handleBulkSave = () => {
                 itemIndex: itemIndex,
                 arrayField: 'icon'
             }
-        });
+        };
+        console.log('📁 Adding icon file change:', change);
+        changes.push(change);
     });
     
     // Only save if there are changes
     if (changes.length > 0) {
+        console.log('🚀 Emitting bulkSave with changes:', changes);
         emit('bulkSave', 'join_us', changes);
         
         // Clear file refs after successful save initiation
@@ -1179,7 +1183,7 @@ const handleIconUpload = (event: Event, categoryIndex: number, itemIndex: number
                                                                     <X class="w-3 h-3 mr-1" />
                                                                     Remove
                                                                 </Button>
-                                                                <Button size="sm" variant="outline" @click="document.getElementById(`icon-${categoryIndex}-${itemIndex}`)?.click()">
+                                                                <Button size="sm" variant="outline" @click="(e) => e.target.closest('.border-dashed').querySelector('input[type=file]').click()">
                                                                     <Upload class="w-3 h-3 mr-1" />
                                                                     Change
                                                                 </Button>
@@ -1187,7 +1191,7 @@ const handleIconUpload = (event: Event, categoryIndex: number, itemIndex: number
                                                         </div>
                                                         <div v-else class="text-center">
                                                             <Image class="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-                                                            <Button size="sm" variant="outline" @click="document.getElementById(`icon-${categoryIndex}-${itemIndex}`)?.click()">
+                                                            <Button size="sm" variant="outline" @click="(e) => e.target.closest('.border-dashed').querySelector('input[type=file]').click()">
                                                                 <Upload class="w-3 h-3 mr-1" />
                                                                 Upload Icon
                                                             </Button>
@@ -1198,7 +1202,6 @@ const handleIconUpload = (event: Event, categoryIndex: number, itemIndex: number
                                                             accept="image/*"
                                                             @change="handleIconUpload($event, categoryIndex, itemIndex)"
                                                             class="hidden"
-                                                            :id="`icon-${categoryIndex}-${itemIndex}`"
                                                         />
                                                     </div>
                                                 </div>

@@ -237,7 +237,7 @@ class ConfigurationController extends Controller
                     $metadata = $fileField['metadata'];
                     
                     // Special handling for OJK images
-                    if ($metadata['originalKey'] === 'ojk_images') {
+                    if (isset($metadata['originalKey']) && $metadata['originalKey'] === 'ojk_images') {
                         $ojkImagePaths[$metadata['index']] = [
                             'url' => '/storage/' . $path,
                             'alt' => $metadata['alt'],
