@@ -123,6 +123,27 @@ class Configuration extends Model implements Auditable
                     }, $decoded);
                 }
                 
+                // Special handling for Employee Benefits items - convert icon paths to full URLs
+                if ($this->key === 'employee_benefits_items' && is_array($decoded)) {
+                    return array_map(function($category) {
+                        if (isset($category['items']) && is_array($category['items'])) {
+                            $category['items'] = array_map(function($item) {
+                                if (isset($item['icon']) && $item['icon']) {
+                                    // If icon doesn't start with http or /, it's a relative path in storage
+                                    if (!str_starts_with($item['icon'], 'http') && !str_starts_with($item['icon'], '/')) {
+                                        $item['icon'] = Storage::disk('public')->url($item['icon']);
+                                    } elseif (str_starts_with($item['icon'], '/storage/')) {
+                                        // Already has /storage/ prefix, ensure it's a full URL
+                                        $item['icon'] = config('app.url') . $item['icon'];
+                                    }
+                                }
+                                return $item;
+                            }, $category['items']);
+                        }
+                        return $category;
+                    }, $decoded);
+                }
+                
                 return $decoded;
             case self::TYPE_FILE:
                 return $this->value ? Storage::disk('public')->url($this->value) : null;
