@@ -9,12 +9,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Select } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
 import { toast } from '@/components/ui/toast';
 import RichTextEditor from '@/components/ui/RichTextEditor.vue';
+import PlaceholderPattern from '@/components/PlaceholderPattern.vue';
 import { Plus, Edit, Trash2, Calendar, FileText, Eye, EyeOff, Star, Search, Filter, Upload, Image, X } from 'lucide-vue-next';
 
 interface NewsEvent {
@@ -495,19 +496,29 @@ watch(() => form.type, (newType) => {
                                     <div class="space-y-2">
                                         <Label for="type">Type *</Label>
                                         <Select v-model="form.type">
-                                            <option value="">Select type</option>
-                                            <option v-for="(label, value) in types" :key="value" :value="value">
-                                                {{ label }}
-                                            </option>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select type" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="">Select type</SelectItem>
+                                                <SelectItem v-for="(label, value) in types" :key="value" :value="value">
+                                                    {{ label }}
+                                                </SelectItem>
+                                            </SelectContent>
                                         </Select>
                                     </div>
                                     <div class="space-y-2">
                                         <Label for="category">Category {{ categoryRequired ? '*' : '' }}</Label>
                                         <Select v-model="form.category" :disabled="isAnnouncement">
-                                            <option value="">{{ isAnnouncement ? 'Not applicable for announcements' : 'Select category' }}</option>
-                                            <option v-for="(label, value) in currentCategories" :key="value" :value="value">
-                                                {{ label }}
-                                            </option>
+                                            <SelectTrigger>
+                                                <SelectValue :placeholder="isAnnouncement ? 'Not applicable for announcements' : 'Select category'" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="">{{ isAnnouncement ? 'Not applicable for announcements' : 'Select category' }}</SelectItem>
+                                                <SelectItem v-for="(label, value) in currentCategories" :key="value" :value="value">
+                                                    {{ label }}
+                                                </SelectItem>
+                                            </SelectContent>
                                         </Select>
                                     </div>
                                 </div>
@@ -711,10 +722,15 @@ watch(() => form.type, (newType) => {
                                         <div class="space-y-2">
                                             <Label for="status">Status *</Label>
                                             <Select v-model="form.status">
-                                                <option value="">Select status</option>
-                                                <option v-for="(label, value) in statuses" :key="value" :value="value">
-                                                    {{ label }}
-                                                </option>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select status" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="">Select status</SelectItem>
+                                                    <SelectItem v-for="(label, value) in statuses" :key="value" :value="value">
+                                                        {{ label }}
+                                                    </SelectItem>
+                                                </SelectContent>
                                             </Select>
                                         </div>
                                         <div class="flex items-center space-x-4 pt-6">
@@ -775,14 +791,16 @@ watch(() => form.type, (newType) => {
                 </div>
 
                 <!-- Filters -->
-                <Card>
-                    <CardHeader>
-                        <CardTitle class="flex items-center gap-2">
-                            <Filter class="w-4 h-4" />
-                            Filters
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
+                <div class="relative overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
+                    <PlaceholderPattern />
+                    <Card class="relative z-10 border-0 shadow-none bg-transparent">
+                        <CardHeader>
+                            <CardTitle class="flex items-center gap-2">
+                                <Filter class="w-4 h-4" />
+                                Filters
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
                         <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                             <div class="space-y-2">
                                 <Label>Search</Label>
@@ -796,20 +814,30 @@ watch(() => form.type, (newType) => {
                             <div class="space-y-2">
                                 <Label>Type</Label>
                                 <Select v-model="filters.type">
-                                    <option value="">All Types</option>
-                                    <option v-for="(label, value) in types" :key="value" :value="value">
-                                        {{ label }}
-                                    </option>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="All Types" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="">All Types</SelectItem>
+                                        <SelectItem v-for="(label, value) in types" :key="value" :value="value">
+                                            {{ label }}
+                                        </SelectItem>
+                                    </SelectContent>
                                 </Select>
                             </div>
                             
                             <div class="space-y-2">
                                 <Label>Status</Label>
                                 <Select v-model="filters.status">
-                                    <option value="">All Statuses</option>
-                                    <option v-for="(label, value) in statuses" :key="value" :value="value">
-                                        {{ label }}
-                                    </option>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="All Statuses" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="">All Statuses</SelectItem>
+                                        <SelectItem v-for="(label, value) in statuses" :key="value" :value="value">
+                                            {{ label }}
+                                        </SelectItem>
+                                    </SelectContent>
                                 </Select>
                             </div>
                         </div>
@@ -821,18 +849,21 @@ watch(() => form.type, (newType) => {
                             </Button>
                             <Button variant="outline" @click="clearFilters">Clear Filters</Button>
                         </div>
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
+                </div>
 
                 <!-- Data Table -->
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Content List</CardTitle>
-                        <CardDescription>
-                            {{ newsEvents.meta?.total || 0 }} items total
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
+                <div class="relative overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
+                    <PlaceholderPattern />
+                    <Card class="relative z-10 border-0 shadow-none bg-transparent">
+                        <CardHeader>
+                            <CardTitle>Content List</CardTitle>
+                            <CardDescription>
+                                {{ newsEvents.meta?.total || 0 }} items total
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
                         <div class="overflow-x-auto">
                             <table class="w-full">
                                 <thead>
@@ -921,6 +952,7 @@ watch(() => form.type, (newType) => {
                     </CardContent>
                 </Card>
             </div>
+        </div>
         </div>
 
         <!-- Confirm Delete Dialog -->

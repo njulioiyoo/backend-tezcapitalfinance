@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
+import PlaceholderPattern from '@/components/PlaceholderPattern.vue';
 import RichTextEditor from '@/components/ui/RichTextEditor.vue';
 import axios from 'axios';
 
@@ -244,7 +245,9 @@ onMounted(() => {
                 </div>
 
                 <!-- Filters -->
-                <Card>
+                <div class="relative overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
+                    <PlaceholderPattern />
+                    <Card class="relative z-10 border-0 shadow-none bg-transparent">
                     <CardHeader>
                         <CardTitle class="flex items-center gap-2">
                             <Filter class="w-4 h-4" />
@@ -307,10 +310,13 @@ onMounted(() => {
                             </div>
                         </div>
                     </CardContent>
-                </Card>
+                    </Card>
+                </div>
 
                 <!-- Content Table -->
-                <Card>
+                <div class="relative overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
+                    <PlaceholderPattern />
+                    <Card class="relative z-10 border-0 shadow-none bg-transparent">
                     <CardHeader>
                         <CardTitle>Careers List</CardTitle>
                         <CardDescription>
@@ -409,7 +415,8 @@ onMounted(() => {
                             </div>
                         </div>
                     </CardContent>
-                </Card>
+                    </Card>
+                </div>
             </div>
         </div>
 

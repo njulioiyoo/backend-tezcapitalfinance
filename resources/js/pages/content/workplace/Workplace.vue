@@ -9,11 +9,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 // import { Switch } from '@/components/ui/switch'; // Disabled - causes auto-submit issue
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
+import PlaceholderPattern from '@/components/PlaceholderPattern.vue';
 import { toast } from '@/components/ui/toast';
 import { Search, Plus, Filter, Edit, Trash2, ExternalLink, Upload, Image, X, Save, Star } from 'lucide-vue-next';
 
@@ -400,7 +401,9 @@ const hasFilters = computed(() => {
                 </div>
 
                 <!-- Filters Section -->
-                <Card>
+                <div class="relative overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
+                    <PlaceholderPattern />
+                    <Card class="relative z-10 border-0 shadow-none bg-transparent">
                     <CardHeader>
                         <CardTitle class="flex items-center gap-2">
                             <Filter class="w-4 h-4" />
@@ -424,20 +427,30 @@ const hasFilters = computed(() => {
                     <div class="space-y-2">
                         <Label>Category</Label>
                         <Select v-model="selectedCategory">
-                            <option value="">All Categories</option>
-                            <option v-for="(label, value) in categories" :key="value" :value="value">
-                                {{ label }}
-                            </option>
+                            <SelectTrigger>
+                                <SelectValue placeholder="All Categories" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="">All Categories</SelectItem>
+                                <SelectItem v-for="(label, value) in categories" :key="value" :value="value">
+                                    {{ label }}
+                                </SelectItem>
+                            </SelectContent>
                         </Select>
                     </div>
                     
                     <div class="space-y-2">
                         <Label>Status</Label>
                         <Select v-model="selectedStatus">
-                            <option value="">All Statuses</option>
-                            <option v-for="(label, value) in statuses" :key="value" :value="value">
-                                {{ label }}
-                            </option>
+                            <SelectTrigger>
+                                <SelectValue placeholder="All Statuses" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="">All Statuses</SelectItem>
+                                <SelectItem v-for="(label, value) in statuses" :key="value" :value="value">
+                                    {{ label }}
+                                </SelectItem>
+                            </SelectContent>
                         </Select>
                     </div>
                     
@@ -465,16 +478,18 @@ const hasFilters = computed(() => {
                     </Button>
                 </div>
             </CardContent>
-        </Card>
+                    </Card>
+                </div>
 
         <!-- Partners Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             <div 
                 v-for="workplace in contents.data"
                 :key="workplace.id"
-                class="group relative"
+                class="group relative overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border"
             >
-                <Card class="h-full transition-all duration-200 hover:shadow-lg border border-gray-200 dark:border-gray-700">
+                <PlaceholderPattern />
+                <Card class="relative z-10 border-0 shadow-none bg-transparent h-full transition-all duration-200 hover:shadow-lg">
                     <CardContent class="p-6">
                         <!-- Partner Logo -->
                         <div class="aspect-video bg-gray-50 dark:bg-gray-800 rounded-lg mb-4 flex items-center justify-center overflow-hidden p-4">
@@ -552,7 +567,9 @@ const hasFilters = computed(() => {
         </div>
 
         <!-- Empty State -->
-        <Card v-if="!contents.data?.length" class="text-center py-16">
+        <div v-if="!contents.data?.length" class="relative overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
+            <PlaceholderPattern />
+            <Card class="relative z-10 border-0 shadow-none bg-transparent text-center py-16">
             <CardContent class="py-8">
                 <div class="mx-auto max-w-md">
                     <div class="text-gray-400 text-6xl mb-6">🤝</div>
@@ -572,10 +589,13 @@ const hasFilters = computed(() => {
                     </div>
                 </div>
             </CardContent>
-        </Card>
+            </Card>
+        </div>
 
         <!-- Pagination -->
-        <Card v-if="contents.links && contents.data?.length" class="mt-8">
+        <div v-if="contents.links && contents.data?.length" class="mt-8 relative overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
+            <PlaceholderPattern />
+            <Card class="relative z-10 border-0 shadow-none bg-transparent">
             <CardContent class="py-4">
                 <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div class="text-sm text-gray-700 dark:text-gray-300">
@@ -599,7 +619,8 @@ const hasFilters = computed(() => {
                     </div>
                 </div>
             </CardContent>
-        </Card>
+            </Card>
+        </div>
 
         <!-- Modal Dialog -->
         <Dialog v-model:open="dialogOpen">
@@ -653,18 +674,28 @@ const hasFilters = computed(() => {
                         <div class="space-y-2">
                             <Label for="category">Category</Label>
                             <Select v-model="form.category">
-                                <option v-for="(label, value) in categories" :key="value" :value="value">
-                                    {{ label }}
-                                </option>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select category" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem v-for="(label, value) in categories" :key="value" :value="value">
+                                        {{ label }}
+                                    </SelectItem>
+                                </SelectContent>
                             </Select>
                         </div>
                         
                         <div class="space-y-2">
                             <Label for="status">Status</Label>
                             <Select v-model="form.status">
-                                <option v-for="(label, value) in statuses" :key="value" :value="value">
-                                    {{ label }}
-                                </option>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem v-for="(label, value) in statuses" :key="value" :value="value">
+                                        {{ label }}
+                                    </SelectItem>
+                                </SelectContent>
                             </Select>
                         </div>
                     </div>

@@ -931,8 +931,12 @@ const handleIconUpload = (event: Event, categoryIndex: number, itemIndex: number
                                 id="workplace_employee_benefits_title_id"
                                 v-model="form.workplace_employee_benefits_title_id"
                                 placeholder="Benefit Karyawan"
+                                maxlength="45"
                                 :disabled="isLoading"
                             />
+                            <p class="text-xs text-muted-foreground">
+                                {{ form.workplace_employee_benefits_title_id?.length || 0 }}/45 characters
+                            </p>
                         </div>
                         
                         <div class="space-y-2">
@@ -941,8 +945,12 @@ const handleIconUpload = (event: Event, categoryIndex: number, itemIndex: number
                                 id="workplace_employee_benefits_title_en"
                                 v-model="form.workplace_employee_benefits_title_en"
                                 placeholder="Employee Benefits"
+                                maxlength="45"
                                 :disabled="isLoading"
                             />
+                            <p class="text-xs text-muted-foreground">
+                                {{ form.workplace_employee_benefits_title_en?.length || 0 }}/45 characters
+                            </p>
                         </div>
                     </div>
 
@@ -955,8 +963,12 @@ const handleIconUpload = (event: Event, categoryIndex: number, itemIndex: number
                                 v-model="form.workplace_employee_benefits_description_id"
                                 placeholder="Deskripsi tentang benefit karyawan..."
                                 rows="4"
+                                maxlength="260"
                                 :disabled="isLoading"
                             />
+                            <p class="text-xs text-muted-foreground">
+                                {{ form.workplace_employee_benefits_description_id?.length || 0 }}/260 characters
+                            </p>
                         </div>
                         
                         <div class="space-y-2">
@@ -966,8 +978,12 @@ const handleIconUpload = (event: Event, categoryIndex: number, itemIndex: number
                                 v-model="form.workplace_employee_benefits_description_en"
                                 placeholder="Description about employee benefits..."
                                 rows="4"
+                                maxlength="260"
                                 :disabled="isLoading"
                             />
+                            <p class="text-xs text-muted-foreground">
+                                {{ form.workplace_employee_benefits_description_en?.length || 0 }}/260 characters
+                            </p>
                         </div>
                     </div>
 
@@ -1150,18 +1166,26 @@ const handleIconUpload = (event: Event, categoryIndex: number, itemIndex: number
                                                     <Input
                                                         v-model="item.title_id"
                                                         placeholder="e.g., Annual Holiday"
+                                                        maxlength="25"
                                                         :disabled="isLoading"
                                                         @input="markBenefitsChanged"
                                                     />
+                                                    <p class="text-xs text-muted-foreground">
+                                                        {{ item.title_id?.length || 0 }}/25 characters
+                                                    </p>
                                                 </div>
                                                 <div class="space-y-2">
                                                     <Label>Title (English)</Label>
                                                     <Input
                                                         v-model="item.title_en"
                                                         placeholder="e.g., Annual Holiday"
+                                                        maxlength="25"
                                                         :disabled="isLoading"
                                                         @input="markBenefitsChanged"
                                                     />
+                                                    <p class="text-xs text-muted-foreground">
+                                                        {{ item.title_en?.length || 0 }}/25 characters
+                                                    </p>
                                                 </div>
                                             </div>
 
@@ -1240,9 +1264,13 @@ const handleIconUpload = (event: Event, categoryIndex: number, itemIndex: number
                                                         v-model="item.description_id"
                                                         placeholder="Description in Indonesian"
                                                         rows="3"
+                                                        maxlength="60"
                                                         :disabled="isLoading"
                                                         @input="markBenefitsChanged"
                                                     />
+                                                    <p class="text-xs text-muted-foreground">
+                                                        {{ item.description_id?.length || 0 }}/60 characters
+                                                    </p>
                                                 </div>
                                                 <div class="space-y-2">
                                                     <Label>Description (English)</Label>
@@ -1250,9 +1278,13 @@ const handleIconUpload = (event: Event, categoryIndex: number, itemIndex: number
                                                         v-model="item.description_en"
                                                         placeholder="Description in English"
                                                         rows="3"
+                                                        maxlength="60"
                                                         :disabled="isLoading"
                                                         @input="markBenefitsChanged"
                                                     />
+                                                    <p class="text-xs text-muted-foreground">
+                                                        {{ item.description_en?.length || 0 }}/60 characters
+                                                    </p>
                                                 </div>
                                             </div>
                                         </div>

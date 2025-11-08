@@ -10,9 +10,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
 import { toast } from '@/components/ui/toast';
+import PlaceholderPattern from '@/components/PlaceholderPattern.vue';
 import { Search, Plus, Filter, Edit, Trash2, Save } from 'lucide-vue-next';
 
 interface Department {
@@ -393,17 +395,19 @@ const handlePaginationClick = (url: string) => {
                 </div>
 
                 <!-- Filters Section -->
-                <Card>
-                    <CardHeader>
-                        <CardTitle class="flex items-center gap-2">
-                            <Filter class="w-4 h-4" />
-                            Filters
-                            <Badge v-if="hasFilters" variant="secondary" class="ml-2">
-                                Active
-                            </Badge>
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
+                <div class="relative overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
+                    <PlaceholderPattern />
+                    <Card class="relative z-10 border-0 shadow-none bg-transparent">
+                        <CardHeader>
+                            <CardTitle class="flex items-center gap-2">
+                                <Filter class="w-4 h-4" />
+                                Filters
+                                <Badge v-if="hasFilters" variant="secondary" class="ml-2">
+                                    Active
+                                </Badge>
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
                         <div class="grid md:grid-cols-3 gap-4">
                             <div class="space-y-2">
                                 <Label>Search</Label>
@@ -416,11 +420,16 @@ const handlePaginationClick = (url: string) => {
                             
                             <div class="space-y-2">
                                 <Label>Status</Label>
-                                <select v-model="selectedStatus" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                                    <option value="">All Status</option>
-                                    <option value="true">Active</option>
-                                    <option value="false">Inactive</option>
-                                </select>
+                                <Select v-model="selectedStatus">
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="All Status" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="">All Status</SelectItem>
+                                        <SelectItem value="true">Active</SelectItem>
+                                        <SelectItem value="false">Inactive</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
                         </div>
                         
@@ -433,12 +442,15 @@ const handlePaginationClick = (url: string) => {
                                 Clear Filters
                             </Button>
                         </div>
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
+                </div>
 
                 <!-- Departments Grid -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <Card v-for="department in departments.data" :key="department.id" class="group hover:shadow-lg transition-shadow">
+                    <div v-for="department in departments.data" :key="department.id" class="relative overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border group hover:shadow-lg transition-shadow">
+                        <PlaceholderPattern />
+                        <Card class="relative z-10 border-0 shadow-none bg-transparent">
                         <CardHeader class="pb-3">
                             <div class="flex items-start justify-between">
                                 <div class="space-y-1 flex-1">
@@ -486,62 +498,72 @@ const handlePaginationClick = (url: string) => {
                                 </div>
                             </div>
                         </CardContent>
-                    </Card>
+                        </Card>
+                    </div>
                     
                     <!-- Empty State -->
                     <div v-if="!departments.data?.length && !loading" class="col-span-full">
-                        <Card class="text-center py-12">
-                            <CardContent>
-                                <div class="text-6xl mb-4">📋</div>
-                                <h3 class="text-lg font-medium mb-2">No departments found</h3>
-                                <p class="text-muted-foreground mb-4">Get started by creating your first department.</p>
-                                <Button @click="openCreateDialog">
-                                    <Plus class="h-4 w-4 mr-2" />
-                                    Add Department
-                                </Button>
-                            </CardContent>
-                        </Card>
+                        <div class="relative overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
+                            <PlaceholderPattern />
+                            <Card class="relative z-10 border-0 shadow-none bg-transparent text-center py-12">
+                                <CardContent>
+                                    <div class="text-6xl mb-4">📋</div>
+                                    <h3 class="text-lg font-medium mb-2">No departments found</h3>
+                                    <p class="text-muted-foreground mb-4">Get started by creating your first department.</p>
+                                    <Button @click="openCreateDialog">
+                                        <Plus class="h-4 w-4 mr-2" />
+                                        Add Department
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        </div>
                     </div>
                     
                     <!-- Loading State -->
                     <div v-if="loading" class="col-span-full">
-                        <Card class="text-center py-12">
-                            <CardContent>
-                                <div class="text-muted-foreground">Loading...</div>
-                            </CardContent>
-                        </Card>
+                        <div class="relative overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
+                            <PlaceholderPattern />
+                            <Card class="relative z-10 border-0 shadow-none bg-transparent text-center py-12">
+                                <CardContent>
+                                    <div class="text-muted-foreground">Loading...</div>
+                                </CardContent>
+                            </Card>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Pagination -->
-                <Card v-if="departments.links && departments.data?.length">
-                    <CardContent class="py-4">
-                        <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-                            <div class="text-sm text-gray-700 dark:text-gray-300">
-                                Showing <span class="font-medium">{{ departments.meta?.from || 0 }}</span> to <span class="font-medium">{{ departments.meta?.to || 0 }}</span> of <span class="font-medium">{{ departments.meta?.total || 0 }}</span> departments
+                <div v-if="departments.links && departments.data?.length" class="relative overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
+                    <PlaceholderPattern />
+                    <Card class="relative z-10 border-0 shadow-none bg-transparent">
+                        <CardContent class="py-4">
+                            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                                <div class="text-sm text-gray-700 dark:text-gray-300">
+                                    Showing <span class="font-medium">{{ departments.meta?.from || 0 }}</span> to <span class="font-medium">{{ departments.meta?.to || 0 }}</span> of <span class="font-medium">{{ departments.meta?.total || 0 }}</span> departments
+                                </div>
+                                <nav v-if="departments.links && departments.links.length > 3" class="flex items-center gap-1">
+                                    <template v-for="(link, index) in departments.links" :key="index">
+                                        <button
+                                            v-if="link.url"
+                                            @click="handlePaginationClick(link.url)"
+                                            class="px-3 py-2 text-sm font-medium rounded-lg transition-colors"
+                                            :class="{
+                                                'bg-primary text-primary-foreground': link.active,
+                                                'hover:bg-muted': !link.active
+                                            }"
+                                            v-html="link.label"
+                                        />
+                                        <span
+                                            v-else
+                                            class="px-3 py-2 text-sm font-medium text-muted-foreground"
+                                            v-html="link.label"
+                                        />
+                                    </template>
+                                </nav>
                             </div>
-                            <nav v-if="departments.links && departments.links.length > 3" class="flex items-center gap-1">
-                                <template v-for="(link, index) in departments.links" :key="index">
-                                    <button
-                                        v-if="link.url"
-                                        @click="handlePaginationClick(link.url)"
-                                        class="px-3 py-2 text-sm font-medium rounded-lg transition-colors"
-                                        :class="{
-                                            'bg-primary text-primary-foreground': link.active,
-                                            'hover:bg-muted': !link.active
-                                        }"
-                                        v-html="link.label"
-                                    />
-                                    <span
-                                        v-else
-                                        class="px-3 py-2 text-sm font-medium text-muted-foreground"
-                                        v-html="link.label"
-                                    />
-                                </template>
-                            </nav>
-                        </div>
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
+                </div>
 
                 <!-- Modal Dialog -->
                 <Dialog v-model:open="dialogOpen">

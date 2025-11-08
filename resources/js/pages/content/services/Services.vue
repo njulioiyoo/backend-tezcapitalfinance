@@ -9,13 +9,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 // import { Switch } from '@/components/ui/switch'; // Disabled - causes auto-submit issue
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
 import RichTextEditor from '@/components/ui/RichTextEditor.vue';
+import PlaceholderPattern from '@/components/PlaceholderPattern.vue';
 import { toast } from '@/components/ui/toast';
 import { Search, Plus, Filter, Edit, Trash2, ExternalLink, Upload, Image, X, Save } from 'lucide-vue-next';
 
@@ -1174,14 +1175,16 @@ const clearFilters = () => {
                 </div>
 
                 <!-- Filters -->
-                <Card>
-                    <CardHeader>
-                        <CardTitle class="flex items-center gap-2">
-                            <Filter class="h-5 w-5" />
-                            Filters
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
+                <div class="relative overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
+                    <PlaceholderPattern />
+                    <Card class="relative z-10 border-0 shadow-none bg-transparent">
+                        <CardHeader>
+                            <CardTitle class="flex items-center gap-2">
+                                <Filter class="h-5 w-5" />
+                                Filters
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
                         <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                             <div class="space-y-2">
                                 <Label>Search</Label>
@@ -1195,20 +1198,30 @@ const clearFilters = () => {
                             <div v-if="Object.keys(categories).length > 0" class="space-y-2">
                                 <Label>Category</Label>
                                 <Select v-model="filters.category">
-                                    <option value="">All Categories</option>
-                                    <option v-for="(label, value) in categories" :key="value" :value="value">
-                                        {{ label }}
-                                    </option>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="All Categories" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="">All Categories</SelectItem>
+                                        <SelectItem v-for="(label, value) in categories" :key="value" :value="value">
+                                            {{ label }}
+                                        </SelectItem>
+                                    </SelectContent>
                                 </Select>
                             </div>
                             
                             <div class="space-y-2">
                                 <Label>Status</Label>
                                 <Select v-model="filters.status">
-                                    <option value="">All Statuses</option>
-                                    <option v-for="(label, value) in statuses" :key="value" :value="value">
-                                        {{ label }}
-                                    </option>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="All Statuses" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="">All Statuses</SelectItem>
+                                        <SelectItem v-for="(label, value) in statuses" :key="value" :value="value">
+                                            {{ label }}
+                                        </SelectItem>
+                                    </SelectContent>
                                 </Select>
                             </div>
                         </div>
@@ -1220,12 +1233,15 @@ const clearFilters = () => {
                             </Button>
                             <Button variant="outline" @click="clearFilters">Clear Filters</Button>
                         </div>
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
+                </div>
 
                 <!-- Services Grid -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <Card v-for="service in contents.data" :key="service.id" class="group hover:shadow-lg transition-shadow">
+                    <div v-for="service in contents.data" :key="service.id" class="relative overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border group hover:shadow-lg transition-shadow">
+                        <PlaceholderPattern />
+                        <Card class="relative z-10 border-0 shadow-none bg-transparent">
                     <CardHeader class="pb-3">
                         <div class="flex items-start justify-between">
                             <div class="space-y-1 flex-1">
@@ -1291,45 +1307,54 @@ const clearFilters = () => {
                             </div>
                         </div>
                     </CardContent>
-                </Card>
+                        </Card>
+                    </div>
                 
                 <!-- Empty State -->
                 <div v-if="!contents.data?.length" class="col-span-full">
-                    <Card class="text-center py-12">
-                        <CardContent>
-                            <Image class="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                            <h3 class="text-lg font-medium mb-2">No services found</h3>
-                            <p class="text-muted-foreground mb-4">Get started by creating your first service.</p>
-                            <Button @click="openCreateModal">
-                                <Plus class="h-4 w-4 mr-2" />
-                                Add Service
-                            </Button>
-                        </CardContent>
-                    </Card>
+                    <div class="relative overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
+                        <PlaceholderPattern />
+                        <Card class="relative z-10 border-0 shadow-none bg-transparent text-center py-12">
+                            <CardContent>
+                                <Image class="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                                <h3 class="text-lg font-medium mb-2">No services found</h3>
+                                <p class="text-muted-foreground mb-4">Get started by creating your first service.</p>
+                                <Button @click="openCreateModal">
+                                    <Plus class="h-4 w-4 mr-2" />
+                                    Add Service
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    </div>
                 </div>
                 </div>
 
                 <!-- Pagination -->
-                <div v-if="contents.links && contents.links.length > 3" class="flex justify-center">
-                <nav class="flex items-center gap-1">
-                    <template v-for="(link, index) in contents.links" :key="index">
-                        <Link
-                            v-if="link.url"
-                            :href="link.url"
-                            class="px-3 py-2 text-sm font-medium rounded-lg transition-colors"
-                            :class="{
-                                'bg-primary text-primary-foreground': link.active,
-                                'hover:bg-muted': !link.active
-                            }"
-                            v-html="link.label"
-                        />
-                        <span
-                            v-else
-                            class="px-3 py-2 text-sm font-medium text-muted-foreground"
-                            v-html="link.label"
-                        />
-                    </template>
-                </nav>
+                <div v-if="contents.links && contents.links.length > 3" class="relative overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
+                    <PlaceholderPattern />
+                    <Card class="relative z-10 border-0 shadow-none bg-transparent">
+                        <CardContent class="flex justify-center py-4">
+                            <nav class="flex items-center gap-1">
+                                <template v-for="(link, index) in contents.links" :key="index">
+                                    <Link
+                                        v-if="link.url"
+                                        :href="link.url"
+                                        class="px-3 py-2 text-sm font-medium rounded-lg transition-colors"
+                                        :class="{
+                                            'bg-primary text-primary-foreground': link.active,
+                                            'hover:bg-muted': !link.active
+                                        }"
+                                        v-html="link.label"
+                                    />
+                                    <span
+                                        v-else
+                                        class="px-3 py-2 text-sm font-medium text-muted-foreground"
+                                        v-html="link.label"
+                                    />
+                                </template>
+                            </nav>
+                        </CardContent>
+                    </Card>
                 </div>
 
         <!-- Create Modal -->

@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
+import PlaceholderPattern from '@/components/PlaceholderPattern.vue';
 import axios from 'axios';
 
 interface TeamMember {
@@ -396,14 +397,16 @@ onMounted(() => {
                 </div>
 
                 <!-- Filters -->
-                <Card>
-                    <CardHeader>
-                        <CardTitle class="flex items-center gap-2">
-                            <Filter class="w-4 h-4" />
-                            Filters
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
+                <div class="relative overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
+                    <PlaceholderPattern />
+                    <Card class="relative z-10 border-0 shadow-none bg-transparent">
+                        <CardHeader>
+                            <CardTitle class="flex items-center gap-2">
+                                <Filter class="w-4 h-4" />
+                                Filters
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
                         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div class="space-y-2">
                                 <Label>Search</Label>
@@ -475,18 +478,21 @@ onMounted(() => {
                             </Button>
                             <Button variant="outline" @click="clearFilters">Clear Filters</Button>
                         </div>
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
+                </div>
 
                 <!-- Content Table -->
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Team Members List</CardTitle>
-                        <CardDescription>
-                            Showing {{ teamMembers.meta?.from || 0 }}-{{ teamMembers.meta?.to || 0 }} of {{ teamMembers.meta?.total || 0 }} team members
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
+                <div class="relative overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
+                    <PlaceholderPattern />
+                    <Card class="relative z-10 border-0 shadow-none bg-transparent">
+                        <CardHeader>
+                            <CardTitle>Team Members List</CardTitle>
+                            <CardDescription>
+                                Showing {{ teamMembers.meta?.from || 0 }}-{{ teamMembers.meta?.to || 0 }} of {{ teamMembers.meta?.total || 0 }} team members
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
                         <div v-if="isLoading" class="flex justify-center py-8">
                             <div class="text-muted-foreground">Loading team members...</div>
                         </div>
@@ -594,8 +600,9 @@ onMounted(() => {
                                 </Button>
                             </div>
                         </div>
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
         </div>
 
@@ -688,7 +695,11 @@ onMounted(() => {
                                 v-model="teamMemberForm.testimonial_id"
                                 placeholder="Enter testimonial or quote in Indonesian..."
                                 rows="3"
+                                maxlength="101"
                             />
+                            <p class="text-xs text-muted-foreground">
+                                {{ teamMemberForm.testimonial_id?.length || 0 }}/101 characters
+                            </p>
                         </div>
                         
                         <div class="space-y-2">
@@ -698,7 +709,11 @@ onMounted(() => {
                                 v-model="teamMemberForm.testimonial_en"
                                 placeholder="Enter testimonial or quote in English..."
                                 rows="3"
+                                maxlength="101"
                             />
+                            <p class="text-xs text-muted-foreground">
+                                {{ teamMemberForm.testimonial_en?.length || 0 }}/101 characters
+                            </p>
                         </div>
                     </div>
 

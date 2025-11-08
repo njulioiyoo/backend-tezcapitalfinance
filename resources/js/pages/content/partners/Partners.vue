@@ -9,11 +9,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
+import PlaceholderPattern from '@/components/PlaceholderPattern.vue';
 import { toast } from '@/components/ui/toast';
 import { Search, Plus, Filter, Edit, Trash2, ExternalLink, Upload, Image, X, Save, Star } from 'lucide-vue-next';
 
@@ -478,17 +479,19 @@ onMounted(() => {
                 </div>
 
                 <!-- Filters Section -->
-                <Card>
-                    <CardHeader>
-                        <CardTitle class="flex items-center gap-2">
-                            <Filter class="w-4 h-4" />
-                            Filters
-                            <Badge v-if="hasFilters" variant="secondary" class="ml-2">
-                                Active
-                            </Badge>
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
+                <div class="relative overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
+                    <PlaceholderPattern />
+                    <Card class="relative z-10 border-0 shadow-none bg-transparent">
+                        <CardHeader>
+                            <CardTitle class="flex items-center gap-2">
+                                <Filter class="w-4 h-4" />
+                                Filters
+                                <Badge v-if="hasFilters" variant="secondary" class="ml-2">
+                                    Active
+                                </Badge>
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
                 <div class="grid md:grid-cols-4 gap-4">
                     <div class="space-y-2">
                         <Label>Search</Label>
@@ -502,20 +505,30 @@ onMounted(() => {
                     <div class="space-y-2">
                         <Label>Category</Label>
                         <Select v-model="filters.category">
-                            <option value="">All Categories</option>
-                            <option v-for="(label, value) in categories" :key="value" :value="value">
-                                {{ label }}
-                            </option>
+                            <SelectTrigger>
+                                <SelectValue placeholder="All Categories" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="">All Categories</SelectItem>
+                                <SelectItem v-for="(label, value) in categories" :key="value" :value="value">
+                                    {{ label }}
+                                </SelectItem>
+                            </SelectContent>
                         </Select>
                     </div>
                     
                     <div class="space-y-2">
                         <Label>Status</Label>
                         <Select v-model="filters.status">
-                            <option value="">All Statuses</option>
-                            <option v-for="(label, value) in statuses" :key="value" :value="value">
-                                {{ label }}
-                            </option>
+                            <SelectTrigger>
+                                <SelectValue placeholder="All Statuses" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="">All Statuses</SelectItem>
+                                <SelectItem v-for="(label, value) in statuses" :key="value" :value="value">
+                                    {{ label }}
+                                </SelectItem>
+                            </SelectContent>
                         </Select>
                     </div>
                     
@@ -540,20 +553,27 @@ onMounted(() => {
                         Clear Filters
                     </Button>
                 </div>
-            </CardContent>
-        </Card>
+                </CardContent>
+                    </Card>
+                </div>
 
         <!-- Partners Grid -->
-        <div v-if="loading" class="flex justify-center py-8">
-            <div class="text-muted-foreground">Loading partners...</div>
+        <div v-if="loading" class="relative overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
+            <PlaceholderPattern />
+            <Card class="relative z-10 border-0 shadow-none bg-transparent">
+                <CardContent class="flex justify-center py-8">
+                    <div class="text-muted-foreground">Loading partners...</div>
+                </CardContent>
+            </Card>
         </div>
         <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             <div 
                 v-for="partner in partnersData.data"
                 :key="partner.id"
-                class="group relative"
+                class="group relative overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border"
             >
-                <Card class="h-full transition-all duration-200 hover:shadow-lg border border-gray-200 dark:border-gray-700">
+                <PlaceholderPattern />
+                <Card class="relative z-10 border-0 shadow-none bg-transparent h-full transition-all duration-200 hover:shadow-lg">
                     <CardContent class="p-6">
                         <!-- Partner Logo -->
                         <div class="aspect-video bg-gray-50 dark:bg-gray-800 rounded-lg mb-4 flex items-center justify-center overflow-hidden p-4">
@@ -642,56 +662,62 @@ onMounted(() => {
         </div>
 
         <!-- Empty State -->
-        <Card v-if="!partnersData.data?.length && !loading" class="text-center py-16">
-            <CardContent class="py-8">
-                <div class="mx-auto max-w-md">
-                    <div class="text-gray-400 text-6xl mb-6">🤝</div>
-                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">No partners found</h3>
-                    <p class="text-gray-500 mb-8 text-base">
-                        {{ hasFilters ? 'No partners match your current filters.' : 'Get started by adding your first partner.' }}
-                    </p>
-                    <div class="flex gap-3 justify-center">
-                        <Button v-if="hasFilters" @click="clearFilters" variant="outline">
-                            <Filter class="w-4 h-4 mr-2" />
-                            Clear Filters
-                        </Button>
-                        <Button @click="openCreateDialog">
-                            <Plus class="w-4 h-4 mr-2" />
-                            Add First Partner
-                        </Button>
+        <div v-if="!partnersData.data?.length && !loading" class="relative overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
+            <PlaceholderPattern />
+            <Card class="relative z-10 border-0 shadow-none bg-transparent text-center py-16">
+                <CardContent class="py-8">
+                    <div class="mx-auto max-w-md">
+                        <div class="text-gray-400 text-6xl mb-6">🤝</div>
+                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">No partners found</h3>
+                        <p class="text-gray-500 mb-8 text-base">
+                            {{ hasFilters ? 'No partners match your current filters.' : 'Get started by adding your first partner.' }}
+                        </p>
+                        <div class="flex gap-3 justify-center">
+                            <Button v-if="hasFilters" @click="clearFilters" variant="outline">
+                                <Filter class="w-4 h-4 mr-2" />
+                                Clear Filters
+                            </Button>
+                            <Button @click="openCreateDialog">
+                                <Plus class="w-4 h-4 mr-2" />
+                                Add First Partner
+                            </Button>
+                        </div>
                     </div>
-                </div>
-            </CardContent>
-        </Card>
+                </CardContent>
+            </Card>
+        </div>
 
         <!-- Pagination -->
-        <Card v-if="partnersData.links && partnersData.data?.length" class="mt-8">
-            <CardContent class="py-4">
-                <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div class="text-sm text-gray-700 dark:text-gray-300">
-                        Showing <span class="font-medium">{{ partnersData.meta?.from || 0 }}</span> to <span class="font-medium">{{ partnersData.meta?.to || 0 }}</span> of <span class="font-medium">{{ partnersData.meta?.total || 0 }}</span> partners
+        <div v-if="partnersData.links && partnersData.data?.length" class="mt-8 relative overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
+            <PlaceholderPattern />
+            <Card class="relative z-10 border-0 shadow-none bg-transparent">
+                <CardContent class="py-4">
+                    <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div class="text-sm text-gray-700 dark:text-gray-300">
+                            Showing <span class="font-medium">{{ partnersData.meta?.from || 0 }}</span> to <span class="font-medium">{{ partnersData.meta?.to || 0 }}</span> of <span class="font-medium">{{ partnersData.meta?.total || 0 }}</span> partners
+                        </div>
+                        <div class="flex gap-1">
+                            <template v-for="link in partnersData.links" :key="link.label">
+                                <Button 
+                                    v-if="link.url"
+                                    @click="goToPage(new URL(link.url).searchParams.get('page'))"
+                                    variant="outline"
+                                    size="sm"
+                                    :disabled="loading"
+                                    :class="{ 'bg-primary text-primary-foreground': link.active }"
+                                    v-html="link.label"
+                                />
+                                <span 
+                                    v-else 
+                                    class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-400 dark:text-gray-500"
+                                    v-html="link.label"
+                                />
+                            </template>
+                        </div>
                     </div>
-                    <div class="flex gap-1">
-                        <template v-for="link in partnersData.links" :key="link.label">
-                            <Button 
-                                v-if="link.url"
-                                @click="goToPage(new URL(link.url).searchParams.get('page'))"
-                                variant="outline"
-                                size="sm"
-                                :disabled="loading"
-                                :class="{ 'bg-primary text-primary-foreground': link.active }"
-                                v-html="link.label"
-                            />
-                            <span 
-                                v-else 
-                                class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-400 dark:text-gray-500"
-                                v-html="link.label"
-                            />
-                        </template>
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
+                </CardContent>
+            </Card>
+        </div>
 
         <!-- Modal Dialog -->
         <Dialog v-model:open="dialogOpen">
@@ -790,18 +816,28 @@ onMounted(() => {
                         <div class="space-y-2">
                             <Label for="category">Category</Label>
                             <Select v-model="form.category">
-                                <option v-for="(label, value) in categories" :key="value" :value="value">
-                                    {{ label }}
-                                </option>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select category" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem v-for="(label, value) in categories" :key="value" :value="value">
+                                        {{ label }}
+                                    </SelectItem>
+                                </SelectContent>
                             </Select>
                         </div>
                         
                         <div class="space-y-2">
                             <Label for="status">Status</Label>
                             <Select v-model="form.status">
-                                <option v-for="(label, value) in statuses" :key="value" :value="value">
-                                    {{ label }}
-                                </option>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem v-for="(label, value) in statuses" :key="value" :value="value">
+                                        {{ label }}
+                                    </SelectItem>
+                                </SelectContent>
                             </Select>
                         </div>
                     </div>
