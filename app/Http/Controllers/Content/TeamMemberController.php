@@ -54,7 +54,7 @@ class TeamMemberController extends Controller
         $validator = Validator::make($request->all(), [
             'title_id' => 'required|string|max:255',
             'title_en' => 'nullable|string|max:255',
-            'testimonial_id' => 'nullable|string',
+            'testimonial_id' => 'required|string',
             'testimonial_en' => 'nullable|string',
             'position_id' => 'required|string|max:255',
             'position_en' => 'nullable|string|max:255',
@@ -115,7 +115,7 @@ class TeamMemberController extends Controller
         $validator = Validator::make($request->all(), [
             'title_id' => 'required|string|max:255',
             'title_en' => 'nullable|string|max:255',
-            'testimonial_id' => 'nullable|string',
+            'testimonial_id' => 'required|string',
             'testimonial_en' => 'nullable|string',
             'position_id' => 'required|string|max:255',
             'position_en' => 'nullable|string|max:255',

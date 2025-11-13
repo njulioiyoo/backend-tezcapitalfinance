@@ -44,7 +44,8 @@ const breadcrumbs: BreadcrumbItem[] = [
     { label: 'Careers Management', href: '/content/careers' }
 ];
 
-const careers = ref<{ data: Career[], links: any[], meta: any }>({ data: [], links: [], meta: {} });
+const careers = ref<{ data: Career[], links: any[], from?: number, to?: number, total?: number }>({ data: [], links: [], from: 0, to: 0, total: 0 });
+const allDepartments = ref<{id: number, name_id: string, name_en: string}[]>([]);
 const isLoading = ref(false);
 const dialogOpen = ref(false);
 const editingCareer = ref<Career | null>(null);
@@ -95,6 +96,15 @@ const loadCareers = async (params = {}) => {
         console.error('Error loading careers:', error);
     } finally {
         isLoading.value = false;
+    }
+};
+
+const loadAllDepartments = async () => {
+    try {
+        const response = await axios.get('/master/departments/data');
+        allDepartments.value = response.data.data || response.data || [];
+    } catch (error) {
+        console.error('Error loading departments:', error);
     }
 };
 
@@ -168,6 +178,7 @@ const saveCareer = async () => {
         
         closeDialog();
         loadCareers();
+        loadAllDepartments();
     } catch (error) {
         if (error.response && error.response.data && error.response.data.errors) {
             const firstError = Object.values(error.response.data.errors)[0][0];
@@ -185,6 +196,7 @@ const deleteCareer = async (careerId: number) => {
         await axios.delete(`/content/careers/${careerId}`);
         confirmDialog.value.open = false;
         loadCareers();
+        loadAllDepartments();
     } catch (error) {
         console.error('Error deleting career:', error);
     } finally {
@@ -207,6 +219,7 @@ watch(() => [filters.search, filters.department, filters.status, filters.locatio
 
 onMounted(() => {
     loadCareers();
+    loadAllDepartments();
 });
 </script>
 
@@ -272,11 +285,13 @@ onMounted(() => {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="">All Departments</SelectItem>
-                                        <SelectItem value="Finance">Finance</SelectItem>
-                                        <SelectItem value="People & Operation">People & Operation</SelectItem>
-                                        <SelectItem value="Technology">Technology</SelectItem>
-                                        <SelectItem value="Marketing">Marketing</SelectItem>
-                                        <SelectItem value="Sales">Sales</SelectItem>
+                                        <SelectItem 
+                                            v-for="department in allDepartments" 
+                                            :key="department.id" 
+                                            :value="department.name_id"
+                                        >
+                                            {{ department.name_id }}
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -320,7 +335,7 @@ onMounted(() => {
                     <CardHeader>
                         <CardTitle>Careers List</CardTitle>
                         <CardDescription>
-                            Showing {{ careers.meta?.from || 0 }}-{{ careers.meta?.to || 0 }} of {{ careers.meta?.total || 0 }} careers
+                            Showing {{ careers.from || 0 }}-{{ careers.to || 0 }} of {{ careers.total || 0 }} careers
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -462,11 +477,13 @@ onMounted(() => {
                                     <SelectValue placeholder="Select department" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="Finance">Finance</SelectItem>
-                                    <SelectItem value="People & Operation">People & Operation</SelectItem>
-                                    <SelectItem value="Technology">Technology</SelectItem>
-                                    <SelectItem value="Marketing">Marketing</SelectItem>
-                                    <SelectItem value="Sales">Sales</SelectItem>
+                                    <SelectItem 
+                                        v-for="department in allDepartments" 
+                                        :key="department.id" 
+                                        :value="department.name_id"
+                                    >
+                                        {{ department.name_id }}
+                                    </SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>

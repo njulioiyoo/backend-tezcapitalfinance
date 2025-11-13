@@ -566,7 +566,7 @@ const handlePaginationClick = (url: string) => {
                         <CardContent class="py-4">
                             <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
                                 <div class="text-sm text-gray-700 dark:text-gray-300">
-                                    Showing <span class="font-medium">{{ locations.meta?.from || 0 }}</span> to <span class="font-medium">{{ locations.meta?.to || 0 }}</span> of <span class="font-medium">{{ locations.meta?.total || 0 }}</span> locations
+                                    Showing <span class="font-medium">{{ locations.from || 0 }}</span> to <span class="font-medium">{{ locations.to || 0 }}</span> of <span class="font-medium">{{ locations.total || 0 }}</span> locations
                                 </div>
                                 <nav v-if="locations.links && locations.links.length > 3" class="flex items-center gap-1">
                                     <template v-for="(link, index) in locations.links" :key="index">

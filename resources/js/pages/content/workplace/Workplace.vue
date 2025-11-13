@@ -599,7 +599,7 @@ const hasFilters = computed(() => {
             <CardContent class="py-4">
                 <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div class="text-sm text-gray-700 dark:text-gray-300">
-                        Showing <span class="font-medium">{{ contents.meta?.from || 0 }}</span> to <span class="font-medium">{{ contents.meta?.to || 0 }}</span> of <span class="font-medium">{{ contents.meta?.total || 0 }}</span> workplaces
+                        Showing <span class="font-medium">{{ contents.from || 0 }}</span> to <span class="font-medium">{{ contents.to || 0 }}</span> of <span class="font-medium">{{ contents.total || 0 }}</span> workplaces
                     </div>
                     <div class="flex gap-1">
                         <template v-for="link in contents.links" :key="link.label">

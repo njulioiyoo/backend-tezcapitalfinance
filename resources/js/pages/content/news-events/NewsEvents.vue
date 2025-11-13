@@ -860,7 +860,7 @@ watch(() => form.type, (newType) => {
                         <CardHeader>
                             <CardTitle>Content List</CardTitle>
                             <CardDescription>
-                                {{ newsEvents.meta?.total || 0 }} items total
+                                {{ newsEvents.total || 0 }} items total
                             </CardDescription>
                         </CardHeader>
                         <CardContent>

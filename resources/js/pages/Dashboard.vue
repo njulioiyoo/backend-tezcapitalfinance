@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { onMounted, ref, computed } from 'vue';
 import { format } from 'date-fns';
-import { TrendingUp, TrendingDown, Users, Eye, Heart, Share2, Calendar, FileText, Star, Activity } from 'lucide-vue-next';
+import { TrendingUp, TrendingDown, Users, Eye, Heart, Share2, Calendar, FileText, Star, Activity, Building2, MapPin, UserCheck, Award, Briefcase } from 'lucide-vue-next';
 import PlaceholderPattern from '../components/PlaceholderPattern.vue';
 
 interface DashboardData {
@@ -157,6 +157,77 @@ const totalEngagement = computed(() => {
   return metrics.total_likes + metrics.total_shares;
 });
 
+
+// Chart Data Computed Properties
+const contentDistribution = computed(() => {
+  const stats = dashboardData.value;
+  const total = (stats.news_stats?.total || 0) + (stats.events_stats?.total || 0);
+  
+  if (total === 0) return [];
+  
+  return [
+    { name: 'News', value: stats.news_stats?.total || 0, percentage: Math.round(((stats.news_stats?.total || 0) / total) * 100), color: 'bg-blue-500' },
+    { name: 'Events', value: stats.events_stats?.total || 0, percentage: Math.round(((stats.events_stats?.total || 0) / total) * 100), color: 'bg-green-500' }
+  ];
+});
+
+const newsStatusDistribution = computed(() => {
+  const stats = dashboardData.value.news_stats;
+  return [
+    { name: 'Published', value: stats.published, color: 'bg-green-500' },
+    { name: 'Draft', value: stats.draft, color: 'bg-yellow-500' },
+    { name: 'Featured', value: stats.featured, color: 'bg-purple-500' }
+  ];
+});
+
+const eventsStatusDistribution = computed(() => {
+  const stats = dashboardData.value.events_stats;
+  return [
+    { name: 'Upcoming', value: stats.upcoming, color: 'bg-blue-500' },
+    { name: 'Ongoing', value: stats.ongoing, color: 'bg-green-500' },
+    { name: 'Past', value: stats.past, color: 'bg-gray-500' },
+    { name: 'Cancelled', value: stats.cancelled, color: 'bg-red-500' }
+  ];
+});
+
+const weeklyActivity = computed(() => {
+  const stats = dashboardData.value;
+  return [
+    { name: 'Today', news: stats.news_stats.today, events: 0, color: 'bg-blue-500' },
+    { name: 'This Week', news: stats.news_stats.this_week, events: 0, color: 'bg-green-500' },
+    { name: 'This Month', news: stats.news_stats.this_month, events: stats.events_stats.this_month, color: 'bg-purple-500' }
+  ];
+});
+
+const engagementMetrics = computed(() => {
+  const metrics = dashboardData.value.engagement_metrics;
+  const maxValue = Math.max(metrics.total_views, metrics.total_likes, metrics.total_shares);
+  
+  return [
+    { 
+      name: 'Views', 
+      value: metrics.total_views, 
+      percentage: maxValue > 0 ? (metrics.total_views / maxValue) * 100 : 0,
+      color: 'bg-blue-500',
+      icon: Eye
+    },
+    { 
+      name: 'Likes', 
+      value: metrics.total_likes, 
+      percentage: maxValue > 0 ? (metrics.total_likes / maxValue) * 100 : 0,
+      color: 'bg-red-500',
+      icon: Heart
+    },
+    { 
+      name: 'Shares', 
+      value: metrics.total_shares, 
+      percentage: maxValue > 0 ? (metrics.total_shares / maxValue) * 100 : 0,
+      color: 'bg-green-500',
+      icon: Share2
+    }
+  ];
+});
+
 onMounted(async () => {
   // Load initial data if not provided
   if (!props.initialData) {
@@ -251,6 +322,217 @@ onMounted(async () => {
                 </div>
             </div>
 
+            <!-- Charts Grid -->
+            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <!-- Content Distribution Pie Chart -->
+                <div class="relative overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
+                    <PlaceholderPattern />
+                    <Card class="relative z-10 border-0 shadow-none bg-transparent h-full">
+                        <CardHeader class="pb-3">
+                            <CardTitle class="text-lg">Content Distribution</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div v-if="contentDistribution.length > 0" class="space-y-3">
+                                <!-- Pie Chart -->
+                                <div class="flex items-center justify-center">
+                                    <div class="relative w-24 h-24">
+                                        <svg class="w-24 h-24 transform -rotate-90" viewBox="0 0 36 36">
+                                            <circle cx="18" cy="18" r="16" fill="none" class="stroke-muted" stroke-width="2" />
+                                            <template v-for="(item, index) in contentDistribution" :key="item.name">
+                                                <circle
+                                                    cx="18" cy="18" r="16" fill="none"
+                                                    :class="item.color.replace('bg-', 'stroke-')"
+                                                    stroke-width="3"
+                                                    :stroke-dasharray="`${item.percentage} ${100 - item.percentage}`"
+                                                    :stroke-dashoffset="contentDistribution.slice(0, index).reduce((sum, prev) => sum - prev.percentage, 0)"
+                                                />
+                                            </template>
+                                        </svg>
+                                        <div class="absolute inset-0 flex items-center justify-center">
+                                            <div class="text-center">
+                                                <div class="text-sm font-bold">{{ contentDistribution.reduce((sum, item) => sum + item.value, 0) }}</div>
+                                                <div class="text-xs text-muted-foreground">Total</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Legend -->
+                                <div class="space-y-1">
+                                    <div v-for="item in contentDistribution" :key="item.name" class="flex items-center justify-between">
+                                        <div class="flex items-center gap-2">
+                                            <div :class="['w-2 h-2 rounded-full', item.color]"></div>
+                                            <span class="text-xs font-medium">{{ item.name }}</span>
+                                        </div>
+                                        <span class="text-xs text-muted-foreground">{{ item.value }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                <!-- News Status Chart -->
+                <div class="relative overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
+                    <PlaceholderPattern />
+                    <Card class="relative z-10 border-0 shadow-none bg-transparent h-full">
+                        <CardHeader class="pb-3">
+                            <CardTitle class="text-lg">News Status</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div class="space-y-3">
+                                <div v-for="item in newsStatusDistribution" :key="item.name" class="space-y-2">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-sm font-medium">{{ item.name }}</span>
+                                        <span class="text-sm font-bold">{{ item.value }}</span>
+                                    </div>
+                                    <div class="w-full bg-muted rounded-full h-2">
+                                        <div :class="[item.color, 'h-2 rounded-full transition-all duration-500']" :style="{ width: `${Math.max(5, (item.value / Math.max(...newsStatusDistribution.map(i => i.value))) * 100)}%` }"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                <!-- Events Status Chart -->
+                <div class="relative overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
+                    <PlaceholderPattern />
+                    <Card class="relative z-10 border-0 shadow-none bg-transparent h-full">
+                        <CardHeader class="pb-3">
+                            <CardTitle class="text-lg">Events Status</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div class="space-y-3">
+                                <div v-for="item in eventsStatusDistribution" :key="item.name" class="space-y-2">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-sm font-medium">{{ item.name }}</span>
+                                        <span class="text-sm font-bold">{{ item.value }}</span>
+                                    </div>
+                                    <div class="w-full bg-muted rounded-full h-2">
+                                        <div :class="[item.color, 'h-2 rounded-full transition-all duration-500']" :style="{ width: `${Math.max(5, (item.value / Math.max(...eventsStatusDistribution.map(i => i.value))) * 100)}%` }"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                <!-- Weekly Activity Chart -->
+                <div class="relative overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
+                    <PlaceholderPattern />
+                    <Card class="relative z-10 border-0 shadow-none bg-transparent h-full">
+                        <CardHeader class="pb-3">
+                            <CardTitle class="text-lg">Activity Timeline</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div class="space-y-4">
+                                <div v-for="item in weeklyActivity" :key="item.name" class="space-y-2">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-sm font-medium">{{ item.name }}</span>
+                                        <span class="text-sm font-bold">{{ item.news + item.events }}</span>
+                                    </div>
+                                    <!-- Stacked Bar -->
+                                    <div class="w-full bg-muted rounded-full h-3 overflow-hidden">
+                                        <div class="flex h-full">
+                                            <div 
+                                                class="bg-blue-500 transition-all duration-500"
+                                                :style="{ width: `${Math.max(2, (item.news / Math.max(...weeklyActivity.map(i => i.news + i.events))) * 80)}%` }"
+                                            ></div>
+                                            <div 
+                                                class="bg-green-500 transition-all duration-500"
+                                                :style="{ width: `${Math.max(2, (item.events / Math.max(...weeklyActivity.map(i => i.news + i.events))) * 20)}%` }"
+                                            ></div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-4 text-xs text-muted-foreground">
+                                        <div class="flex items-center gap-1">
+                                            <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                            <span>{{ item.news }} News</span>
+                                        </div>
+                                        <div class="flex items-center gap-1">
+                                            <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                                            <span>{{ item.events }} Events</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                <!-- Engagement Metrics Chart -->
+                <div class="relative overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
+                    <PlaceholderPattern />
+                    <Card class="relative z-10 border-0 shadow-none bg-transparent h-full">
+                        <CardHeader class="pb-3">
+                            <CardTitle class="text-lg">Engagement Metrics</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div class="space-y-4">
+                                <div v-for="metric in engagementMetrics" :key="metric.name" class="space-y-2">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-2">
+                                            <component :is="metric.icon" class="w-4 h-4 text-muted-foreground" />
+                                            <span class="text-sm font-medium">{{ metric.name }}</span>
+                                        </div>
+                                        <span class="text-sm font-bold">{{ formatNumber(metric.value) }}</span>
+                                    </div>
+                                    <div class="w-full bg-muted rounded-full h-2">
+                                        <div :class="[metric.color, 'h-2 rounded-full transition-all duration-700']" :style="{ width: `${Math.max(5, metric.percentage)}%` }"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                <!-- Content Performance Chart -->
+                <div class="relative overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
+                    <PlaceholderPattern />
+                    <Card class="relative z-10 border-0 shadow-none bg-transparent h-full">
+                        <CardHeader class="pb-3">
+                            <CardTitle class="text-lg">Performance Metrics</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div class="space-y-4">
+                                <!-- Engagement Rate -->
+                                <div class="text-center">
+                                    <div class="relative w-20 h-20 mx-auto">
+                                        <svg class="w-20 h-20 transform -rotate-90" viewBox="0 0 36 36">
+                                            <circle cx="18" cy="18" r="16" fill="none" class="stroke-muted" stroke-width="3" />
+                                            <circle 
+                                                cx="18" cy="18" r="16" 
+                                                fill="none" 
+                                                class="stroke-primary" 
+                                                stroke-width="3"
+                                                :stroke-dasharray="`${dashboardData.engagement_metrics.engagement_rate} ${100 - dashboardData.engagement_metrics.engagement_rate}`"
+                                                stroke-linecap="round"
+                                            />
+                                        </svg>
+                                        <div class="absolute inset-0 flex items-center justify-center">
+                                            <span class="text-sm font-bold">{{ dashboardData.engagement_metrics.engagement_rate }}%</span>
+                                        </div>
+                                    </div>
+                                    <p class="text-xs text-muted-foreground mt-2">Engagement Rate</p>
+                                </div>
+                                
+                                <!-- Stats -->
+                                <div class="space-y-2">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-xs text-muted-foreground">Avg Views per Content</span>
+                                        <span class="text-xs font-bold">{{ dashboardData.engagement_metrics.avg_views_per_content }}</span>
+                                    </div>
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-xs text-muted-foreground">Total Content</span>
+                                        <span class="text-xs font-bold">{{ dashboardData.engagement_metrics.total_content }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
+
             <!-- Performance Insights -->
             <Card v-if="dashboardData.insights.length > 0">
                 <CardHeader>
@@ -280,6 +562,7 @@ onMounted(async () => {
                 <Tabs model-value="overview" class="relative z-10 space-y-4 p-6">
                 <TabsList>
                     <TabsTrigger value="overview">Overview</TabsTrigger>
+                    <TabsTrigger value="modules">Modules</TabsTrigger>
                     <TabsTrigger value="trending">Trending</TabsTrigger>
                     <TabsTrigger value="authors">Authors</TabsTrigger>
                     <TabsTrigger value="categories">Categories</TabsTrigger>
@@ -401,6 +684,96 @@ onMounted(async () => {
                             </div>
                         </CardContent>
                     </Card>
+                </TabsContent>
+
+                <TabsContent value="modules" class="space-y-4">
+                    <!-- Additional Charts for Modules Tab -->
+                    <div class="grid gap-4 md:grid-cols-2">
+                        <!-- Category Distribution -->
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Content Categories</CardTitle>
+                                <CardDescription>Distribution by category types</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div class="space-y-4">
+                                    <!-- News Categories -->
+                                    <div>
+                                        <h4 class="font-medium text-sm mb-2 text-blue-600">News Categories</h4>
+                                        <div class="space-y-2">
+                                            <div v-for="(count, category) in dashboardData.category_stats.news" :key="category" class="flex items-center justify-between">
+                                                <span class="text-xs">{{ category }}</span>
+                                                <div class="flex items-center gap-2">
+                                                    <div class="w-16 bg-muted rounded-full h-1.5">
+                                                        <div class="bg-blue-500 h-1.5 rounded-full transition-all duration-300" :style="{ width: `${Math.max(10, (count / Math.max(...Object.values(dashboardData.category_stats.news))) * 100)}%` }"></div>
+                                                    </div>
+                                                    <Badge variant="secondary" class="text-xs px-1.5 py-0.5">{{ count }}</Badge>
+                                                </div>
+                                            </div>
+                                            <div v-if="Object.keys(dashboardData.category_stats.news).length === 0" class="text-xs text-muted-foreground text-center py-2">
+                                                No categories found
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Events Categories -->
+                                    <div>
+                                        <h4 class="font-medium text-sm mb-2 text-green-600">Event Categories</h4>
+                                        <div class="space-y-2">
+                                            <div v-for="(count, category) in dashboardData.category_stats.events" :key="category" class="flex items-center justify-between">
+                                                <span class="text-xs">{{ category }}</span>
+                                                <div class="flex items-center gap-2">
+                                                    <div class="w-16 bg-muted rounded-full h-1.5">
+                                                        <div class="bg-green-500 h-1.5 rounded-full transition-all duration-300" :style="{ width: `${Math.max(10, (count / Math.max(...Object.values(dashboardData.category_stats.events))) * 100)}%` }"></div>
+                                                    </div>
+                                                    <Badge variant="secondary" class="text-xs px-1.5 py-0.5">{{ count }}</Badge>
+                                                </div>
+                                            </div>
+                                            <div v-if="Object.keys(dashboardData.category_stats.events).length === 0" class="text-xs text-muted-foreground text-center py-2">
+                                                No categories found
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                        
+                        <!-- Monthly Trends -->
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Monthly Trends</CardTitle>
+                                <CardDescription>Content publication trends</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div class="space-y-4">
+                                    <!-- Simple line chart simulation -->
+                                    <div v-if="dashboardData.monthly_stats.news.length > 0 || dashboardData.monthly_stats.events.length > 0" class="space-y-3">
+                                        <div class="flex items-end justify-between h-20">
+                                            <div v-for="(item, index) in dashboardData.monthly_stats.news.slice(0, 6)" :key="index" class="flex flex-col items-center gap-1 flex-1">
+                                                <div class="bg-blue-500 rounded-t transition-all duration-300" :style="{ height: `${Math.max(4, (item.count / Math.max(...dashboardData.monthly_stats.news.map(i => i.count))) * 60)}px`, width: '8px' }"></div>
+                                                <span class="text-xs text-muted-foreground transform rotate-45 origin-left">{{ item.period.slice(-2) }}</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="flex items-center gap-4 justify-center text-xs">
+                                            <div class="flex items-center gap-1">
+                                                <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                                <span>News</span>
+                                            </div>
+                                            <div class="flex items-center gap-1">
+                                                <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                                                <span>Events</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div v-else class="text-center py-8 text-muted-foreground text-sm">
+                                        No monthly data available
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
                 </TabsContent>
 
                 <TabsContent value="trending" class="space-y-4">

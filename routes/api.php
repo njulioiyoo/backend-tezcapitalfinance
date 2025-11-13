@@ -50,6 +50,10 @@ Route::prefix('v1')->group(function () {
     
     Route::get('news', [ContentController::class, 'newsApi'])->name('api.news.index');
     Route::get('news/{slug}', [ContentController::class, 'showNews'])->name('api.news.show');
+    
+    // Engagement tracking endpoints
+    Route::post('content/{id}/like', [ContentController::class, 'like'])->name('api.content.like');
+    Route::post('content/{id}/share', [ContentController::class, 'share'])->name('api.content.share');
     Route::get('services', [ApiServiceController::class, 'index'])->name('api.services.index');
     Route::get('services/{id}', [ApiServiceController::class, 'show'])->name('api.services.show');
     Route::get('services/slug/{slug}', [ApiServiceController::class, 'showBySlug'])->name('api.services.show-by-slug');

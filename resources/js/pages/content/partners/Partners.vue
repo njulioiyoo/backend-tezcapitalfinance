@@ -694,7 +694,7 @@ onMounted(() => {
                 <CardContent class="py-4">
                     <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
                         <div class="text-sm text-gray-700 dark:text-gray-300">
-                            Showing <span class="font-medium">{{ partnersData.meta?.from || 0 }}</span> to <span class="font-medium">{{ partnersData.meta?.to || 0 }}</span> of <span class="font-medium">{{ partnersData.meta?.total || 0 }}</span> partners
+                            Showing <span class="font-medium">{{ partnersData.from || 0 }}</span> to <span class="font-medium">{{ partnersData.to || 0 }}</span> of <span class="font-medium">{{ partnersData.total || 0 }}</span> partners
                         </div>
                         <div class="flex gap-1">
                             <template v-for="link in partnersData.links" :key="link.label">

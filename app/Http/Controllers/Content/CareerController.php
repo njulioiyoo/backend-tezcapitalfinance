@@ -25,12 +25,12 @@ class CareerController extends Controller
             $query->where(function($q) use ($search) {
                 $q->where('title_id', 'like', "%{$search}%")
                   ->orWhere('title_en', 'like', "%{$search}%")
-                  ->orWhere('category', 'like', "%{$search}%");
+                  ->orWhere('department_id', 'like', "%{$search}%");
             });
         }
 
-        if ($request->filled('category')) {
-            $query->where('category', $request->category);
+        if ($request->filled('department')) {
+            $query->where('department_id', $request->department);
         }
 
         if ($request->filled('status')) {
@@ -53,6 +53,7 @@ class CareerController extends Controller
         $validator = Validator::make($request->all(), [
             'title_id' => 'required|string|max:255',
             'title_en' => 'required|string|max:255',
+            'department_id' => 'required|string|max:255',
             'excerpt_id' => 'nullable|string',
             'excerpt_en' => 'nullable|string',
             'content_id' => 'required|string',
@@ -88,25 +89,20 @@ class CareerController extends Controller
         ], 201);
     }
 
-    public function show(Content $content)
+    public function show($id)
     {
-        if ($content->type !== 'career') {
-            return response()->json(['message' => 'Career not found'], 404);
-        }
-
+        $content = Content::careers()->findOrFail($id);
         return response()->json(['data' => $content]);
     }
 
-    public function update(Request $request, Content $content)
+    public function update(Request $request, $id)
     {
-        if ($content->type !== 'career') {
-            return response()->json(['message' => 'Career not found'], 404);
-        }
+        $content = Content::careers()->findOrFail($id);
 
         $validator = Validator::make($request->all(), [
             'title_id' => 'required|string|max:255',
             'title_en' => 'required|string|max:255',
-            'category' => 'required|string|max:255',
+            'department_id' => 'required|string|max:255',
             'excerpt_id' => 'nullable|string',
             'excerpt_en' => 'nullable|string',
             'content_id' => 'required|string',
@@ -141,12 +137,9 @@ class CareerController extends Controller
         ]);
     }
 
-    public function destroy(Content $content)
+    public function destroy($id)
     {
-        if ($content->type !== 'career') {
-            return response()->json(['message' => 'Career not found'], 404);
-        }
-
+        $content = Content::careers()->findOrFail($id);
         $content->delete();
 
         return response()->json([

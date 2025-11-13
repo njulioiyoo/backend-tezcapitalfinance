@@ -45,8 +45,9 @@ const breadcrumbs: BreadcrumbItem[] = [
     { label: 'Team Members Management', href: '/content/team-members' }
 ];
 
-const teamMembers = ref<{ data: TeamMember[], links: any[], meta: any }>({ data: [], links: [], meta: {} });
+const teamMembers = ref<{ data: TeamMember[], links: any[], from?: number, to?: number, total?: number }>({ data: [], links: [], from: 0, to: 0, total: 0 });
 const allPositions = ref<string[]>([]);
+const allDepartments = ref<{id: number, name_id: string, name_en: string}[]>([]);
 const isLoading = ref(false);
 const dialogOpen = ref(false);
 const editingTeamMember = ref<TeamMember | null>(null);
@@ -90,7 +91,8 @@ const loadTeamMembers = async (params = {}) => {
         });
         teamMembers.value = response.data;
     } catch (error) {
-        console.error('Error loading team members:', error);
+        console.error('🔧 Error loading team members:', error);
+        console.error('🔧 Error response:', error.response);
     } finally {
         isLoading.value = false;
     }
@@ -110,6 +112,16 @@ const loadAllPositions = async () => {
         allPositions.value = Array.from(positions).sort();
     } catch (error) {
         console.error('Error loading positions:', error);
+    }
+};
+
+const loadAllDepartments = async () => {
+    try {
+        const response = await axios.get('/master/departments/data');
+        console.log('🔧 Departments response:', response.data);
+        allDepartments.value = response.data.data || response.data || [];
+    } catch (error) {
+        console.error('Error loading departments:', error);
     }
 };
 
@@ -200,7 +212,7 @@ const saveTeamMember = async () => {
 
         // Debug FormData
         console.log('🔧 FormData entries:');
-        for (let pair of formData.entries()) {
+        for (const pair of formData.entries()) {
             console.log(pair[0] + ': ' + pair[1]);
         }
 
@@ -228,6 +240,7 @@ const saveTeamMember = async () => {
         closeDialog();
         loadTeamMembers();
         loadAllPositions();
+        loadAllDepartments();
     } catch (error) {
         console.error('🔧 Error saving team member:', error);
         console.error('🔧 Error response:', error.response);
@@ -254,6 +267,7 @@ const deleteTeamMember = async (teamMemberId: number) => {
         confirmDialog.value.open = false;
         loadTeamMembers();
         loadAllPositions();
+        loadAllDepartments();
         toast({ title: 'Success', description: 'Team member deleted successfully.', variant: 'success' });
     } catch (error) {
         console.error('Error deleting team member:', error);
@@ -359,6 +373,7 @@ const clearFilters = () => {
 onMounted(() => {
     loadTeamMembers();
     loadAllPositions();
+    loadAllDepartments();
 });
 </script>
 
@@ -417,23 +432,20 @@ onMounted(() => {
                                 />
                             </div>
                             <div class="space-y-2">
-                                <Label>Category</Label>
+                                <Label>Department</Label>
                                 <Select v-model="filters.category">
                                     <SelectTrigger>
-                                        <SelectValue placeholder="All Categories" />
+                                        <SelectValue placeholder="All Departments" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="">All Categories</SelectItem>
-                                        <SelectItem value="leadership">Leadership</SelectItem>
-                                        <SelectItem value="management">Management</SelectItem>
-                                        <SelectItem value="finance">Finance</SelectItem>
-                                        <SelectItem value="operations">Operations</SelectItem>
-                                        <SelectItem value="technology">Technology</SelectItem>
-                                        <SelectItem value="marketing">Marketing</SelectItem>
-                                        <SelectItem value="human-resources">Human Resources</SelectItem>
-                                        <SelectItem value="sales">Sales</SelectItem>
-                                        <SelectItem value="advisory">Advisory</SelectItem>
-                                        <SelectItem value="other">Other</SelectItem>
+                                        <SelectItem value="">All Departments</SelectItem>
+                                        <SelectItem 
+                                            v-for="department in allDepartments" 
+                                            :key="department.id" 
+                                            :value="department.name_id"
+                                        >
+                                            {{ department.name_id }}
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -489,7 +501,7 @@ onMounted(() => {
                         <CardHeader>
                             <CardTitle>Team Members List</CardTitle>
                             <CardDescription>
-                                Showing {{ teamMembers.meta?.from || 0 }}-{{ teamMembers.meta?.to || 0 }} of {{ teamMembers.meta?.total || 0 }} team members
+                                Showing {{ teamMembers.from || 0 }}-{{ teamMembers.to || 0 }} of {{ teamMembers.total || 0 }} team members
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -512,7 +524,7 @@ onMounted(() => {
                                         <th class="text-left p-4 font-medium">Photo</th>
                                         <th class="text-left p-4 font-medium">Name</th>
                                         <th class="text-left p-4 font-medium">Position</th>
-                                        <th class="text-left p-4 font-medium">Category</th>
+                                        <th class="text-left p-4 font-medium">Department</th>
                                         <th class="text-left p-4 font-medium">Status</th>
                                         <th class="text-left p-4 font-medium">Featured</th>
                                         <th class="text-left p-4 font-medium">Sort Order</th>
@@ -584,7 +596,7 @@ onMounted(() => {
                         <!-- Pagination -->
                         <div v-if="teamMembers.links && teamMembers.links.length > 3" class="flex items-center justify-between mt-6">
                             <div class="text-sm text-muted-foreground">
-                                Showing {{ teamMembers.meta.from }}-{{ teamMembers.meta.to }} of {{ teamMembers.meta.total }} results
+                                Showing {{ teamMembers.from }}-{{ teamMembers.to }} of {{ teamMembers.total }} results
                             </div>
                             <div class="flex items-center gap-1">
                                 <Button
@@ -665,22 +677,19 @@ onMounted(() => {
 
                     <!-- Category -->
                     <div class="space-y-2">
-                        <Label for="category">Category *</Label>
+                        <Label for="category">Department *</Label>
                         <Select v-model="teamMemberForm.category">
                             <SelectTrigger>
-                                <SelectValue placeholder="Select category" />
+                                <SelectValue placeholder="Select department" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="leadership">Leadership</SelectItem>
-                                <SelectItem value="management">Management</SelectItem>
-                                <SelectItem value="finance">Finance</SelectItem>
-                                <SelectItem value="operations">Operations</SelectItem>
-                                <SelectItem value="technology">Technology</SelectItem>
-                                <SelectItem value="marketing">Marketing</SelectItem>
-                                <SelectItem value="human-resources">Human Resources</SelectItem>
-                                <SelectItem value="sales">Sales</SelectItem>
-                                <SelectItem value="advisory">Advisory</SelectItem>
-                                <SelectItem value="other">Other</SelectItem>
+                                <SelectItem 
+                                    v-for="department in allDepartments" 
+                                    :key="department.id" 
+                                    :value="department.name_id"
+                                >
+                                    {{ department.name_id }}
+                                </SelectItem>
                             </SelectContent>
                         </Select>
                     </div>

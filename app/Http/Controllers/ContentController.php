@@ -612,4 +612,60 @@ class ContentController extends Controller
             'updated_count' => $events->count(),
         ]);
     }
+
+    /**
+     * Increment like count for content
+     */
+    public function like(Request $request, $id): JsonResponse
+    {
+        try {
+            $content = Content::findOrFail($id);
+            
+            // Increment like count
+            $content->incrementLikes();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Content liked successfully',
+                'data' => [
+                    'like_count' => $content->fresh()->like_count,
+                    'content_id' => $content->id,
+                    'content_title' => $content->title_id
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to like content: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Increment share count for content
+     */
+    public function share(Request $request, $id): JsonResponse
+    {
+        try {
+            $content = Content::findOrFail($id);
+            
+            // Increment share count
+            $content->incrementShares();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Content shared successfully',
+                'data' => [
+                    'share_count' => $content->fresh()->share_count,
+                    'content_id' => $content->id,
+                    'content_title' => $content->title_id
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to share content: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
 }
