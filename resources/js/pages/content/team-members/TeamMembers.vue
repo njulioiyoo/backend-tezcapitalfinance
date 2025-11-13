@@ -432,24 +432,6 @@ onMounted(() => {
                                 />
                             </div>
                             <div class="space-y-2">
-                                <Label>Department</Label>
-                                <Select v-model="filters.category">
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="All Departments" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="">All Departments</SelectItem>
-                                        <SelectItem 
-                                            v-for="department in allDepartments" 
-                                            :key="department.id" 
-                                            :value="department.name_id"
-                                        >
-                                            {{ department.name_id }}
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div class="space-y-2">
                                 <Label>Position</Label>
                                 <Select v-model="filters.position">
                                     <SelectTrigger>
@@ -675,24 +657,6 @@ onMounted(() => {
                         </div>
                     </div>
 
-                    <!-- Category -->
-                    <div class="space-y-2">
-                        <Label for="category">Department *</Label>
-                        <Select v-model="teamMemberForm.category">
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select department" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem 
-                                    v-for="department in allDepartments" 
-                                    :key="department.id" 
-                                    :value="department.name_id"
-                                >
-                                    {{ department.name_id }}
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
 
 
                     <!-- Testimonial -->
