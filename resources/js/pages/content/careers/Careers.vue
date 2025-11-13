@@ -46,6 +46,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const careers = ref<{ data: Career[], links: any[], from?: number, to?: number, total?: number }>({ data: [], links: [], from: 0, to: 0, total: 0 });
 const allDepartments = ref<{id: number, name_id: string, name_en: string}[]>([]);
+const allLocations = ref<{id: number, name_id: string, name_en: string}[]>([]);
 const isLoading = ref(false);
 const dialogOpen = ref(false);
 const editingCareer = ref<Career | null>(null);
@@ -105,6 +106,15 @@ const loadAllDepartments = async () => {
         allDepartments.value = response.data.data || response.data || [];
     } catch (error) {
         console.error('Error loading departments:', error);
+    }
+};
+
+const loadAllLocations = async () => {
+    try {
+        const response = await axios.get('/master/locations/data');
+        allLocations.value = response.data.data || response.data || [];
+    } catch (error) {
+        console.error('Error loading locations:', error);
     }
 };
 
@@ -179,6 +189,7 @@ const saveCareer = async () => {
         closeDialog();
         loadCareers();
         loadAllDepartments();
+        loadAllLocations();
     } catch (error) {
         if (error.response && error.response.data && error.response.data.errors) {
             const firstError = Object.values(error.response.data.errors)[0][0];
@@ -197,6 +208,7 @@ const deleteCareer = async (careerId: number) => {
         confirmDialog.value.open = false;
         loadCareers();
         loadAllDepartments();
+        loadAllLocations();
     } catch (error) {
         console.error('Error deleting career:', error);
     } finally {
@@ -220,6 +232,7 @@ watch(() => [filters.search, filters.department, filters.status, filters.locatio
 onMounted(() => {
     loadCareers();
     loadAllDepartments();
+    loadAllLocations();
 });
 </script>
 
@@ -317,9 +330,13 @@ onMounted(() => {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="">All Locations</SelectItem>
-                                        <SelectItem value="Jakarta">Jakarta</SelectItem>
-                                        <SelectItem value="Surabaya">Surabaya</SelectItem>
-                                        <SelectItem value="Bandung">Bandung</SelectItem>
+                                        <SelectItem 
+                                            v-for="location in allLocations" 
+                                            :key="location.id" 
+                                            :value="location.name_id"
+                                        >
+                                            {{ location.name_id }}
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -493,22 +510,38 @@ onMounted(() => {
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="space-y-2">
                             <Label for="location_id">Location (Indonesian) *</Label>
-                            <Input
-                                id="location_id"
-                                v-model="careerForm.location_id"
-                                placeholder="e.g., Jakarta"
-                                required
-                            />
+                            <Select v-model="careerForm.location_id">
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select location" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem 
+                                        v-for="location in allLocations" 
+                                        :key="location.id" 
+                                        :value="location.name_id"
+                                    >
+                                        {{ location.name_id }}
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                         
                         <div class="space-y-2">
                             <Label for="location_en">Location (English) *</Label>
-                            <Input
-                                id="location_en"
-                                v-model="careerForm.location_en"
-                                placeholder="e.g., Jakarta"
-                                required
-                            />
+                            <Select v-model="careerForm.location_en">
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select location" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem 
+                                        v-for="location in allLocations" 
+                                        :key="location.id" 
+                                        :value="location.name_en"
+                                    >
+                                        {{ location.name_en }}
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
 

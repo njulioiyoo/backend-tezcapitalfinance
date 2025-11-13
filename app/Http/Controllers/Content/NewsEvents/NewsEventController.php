@@ -40,7 +40,7 @@ class NewsEventController extends Controller
         return Inertia::render('content/news-events/NewsEvents', [
             'newsEvents' => $this->getNewsEventsData($request),
             'categories' => $this->getCategories(),
-            'types' => Content::getTypes(),
+            'types' => $this->getNewsEventTypes(),
             'statuses' => Content::getStatuses(),
             'filters' => $request->only(['search', 'type', 'category', 'status']),
         ]);
@@ -216,6 +216,16 @@ class NewsEventController extends Controller
         return response()->json([
             'message' => "{$count} items {$validated['action']}d successfully",
         ]);
+    }
+
+    private function getNewsEventTypes()
+    {
+        return [
+            'news' => 'News',
+            'event' => 'Event', 
+            'article' => 'Article',
+            'announcement' => 'Announcement',
+        ];
     }
 
     private function getNewsEventsData(?Request $request = null)
