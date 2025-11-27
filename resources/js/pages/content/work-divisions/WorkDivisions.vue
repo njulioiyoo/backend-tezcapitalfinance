@@ -3,6 +3,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref, reactive, computed } from 'vue';
 import { route } from 'ziggy-js';
+import axios from 'axios';
 import { type BreadcrumbItem } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -177,11 +178,16 @@ const populateFormData = (item: WorkDivision) => {
         featured_image: item.featured_image || '',
     });
     
+    // Reset file upload for editing (keep existing image path but clear new file)
+    imageFile.value = null;
+    
     // For existing items, show the image URL as preview
     if (item.featured_image && !item.featured_image.startsWith('data:')) {
         imagePreview.value = `/storage/${item.featured_image}`;
-    } else {
+    } else if (item.featured_image) {
         imagePreview.value = item.featured_image;
+    } else {
+        imagePreview.value = '';
     }
 };
 
@@ -210,48 +216,75 @@ const removeImage = () => {
     if (input) input.value = '';
 };
 
-const submitForm = () => {
-    const formDataObj = new FormData();
-    
-    // Add form fields (excluding featured_image for now)
-    Object.entries(formData).forEach(([key, value]) => {
-        if (key !== 'featured_image' && value !== null && value !== undefined) {
-            if (typeof value === 'boolean') {
-                formDataObj.append(key, value ? '1' : '0');
-            } else {
-                formDataObj.append(key, String(value));
+const submitForm = async () => {
+    try {
+        const formDataObj = new FormData();
+        
+        // Add form fields (excluding featured_image for now)
+        Object.entries(formData).forEach(([key, value]) => {
+            if (key !== 'featured_image' && value !== null && value !== undefined) {
+                if (typeof value === 'boolean') {
+                    formDataObj.append(key, value ? '1' : '0');
+                } else {
+                    formDataObj.append(key, String(value));
+                }
             }
+        });
+        
+        // Add file only if there's a new upload
+        if (imageFile.value) {
+            formDataObj.append('featured_image', imageFile.value);
         }
-    });
-    
-    // Add file only if there's a new upload
-    if (imageFile.value) {
-        formDataObj.append('featured_image', imageFile.value);
-    }
-    
-    formDataObj.append('type', 'work-division');
+        // For edits without new file upload, preserve existing image
+        else if (selectedItem.value && !imageFile.value && formData.featured_image) {
+            // Don't append featured_image field - backend will handle keeping existing image
+        }
+        
+        formDataObj.append('type', 'work-division');
 
-    if (selectedItem.value) {
-        // Update existing item
-        formDataObj.append('_method', 'PUT');
-        router.post(route('content.work-divisions.update', selectedItem.value.id), formDataObj, {
-            onSuccess: () => {
-                closeDialog();
-            },
-            onError: (errors) => {
-                console.error('Update errors:', errors);
-            },
-        });
-    } else {
-        // Create new item
-        router.post(route('content.work-divisions.store'), formDataObj, {
-            onSuccess: () => {
-                closeDialog();
-            },
-            onError: (errors) => {
-                console.error('Create errors:', errors);
-            },
-        });
+        // Debug FormData
+        console.log('🔧 FormData entries:');
+        for (const pair of formDataObj.entries()) {
+            console.log(pair[0] + ': ' + pair[1]);
+        }
+
+        if (selectedItem.value) {
+            // Update existing item
+            formDataObj.append('_method', 'PUT');
+            console.log('🔧 Updating work division ID:', selectedItem.value.id);
+            
+            await axios.post(route('content.work-divisions.update', selectedItem.value.id), formDataObj, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                }
+            });
+        } else {
+            // Create new item
+            console.log('🔧 Creating new work division');
+            
+            await axios.post(route('content.work-divisions.store'), formDataObj, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                }
+            });
+        }
+        
+        closeDialog();
+        // Reload page to show changes
+        window.location.reload();
+    } catch (error) {
+        console.error('🔧 Error saving work division:', error);
+        console.error('🔧 Error response:', error.response);
+        if (error.response && error.response.data && error.response.data.errors) {
+            console.error('🔧 Validation errors:', error.response.data.errors);
+            
+            // Log each validation error in detail
+            Object.entries(error.response.data.errors).forEach(([field, messages]) => {
+                console.error(`🔧 ${field}:`, messages);
+            });
+        }
     }
 };
 
@@ -533,7 +566,7 @@ const getImageUrl = (imagePath: string | null) => {
                     </DialogDescription>
                 </DialogHeader>
                 
-                <form @submit.prevent="submitForm" class="space-y-8">
+                <div class="space-y-8">
                     <!-- Name Fields -->
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8" v-if="bilingualEnabled">
                         <!-- Indonesian Fields -->
@@ -723,7 +756,7 @@ const getImageUrl = (imagePath: string | null) => {
                         </div>
                     </div>
                     
-                </form>
+                </div>
 
                 <DialogFooter>
                     <Button @click="closeDialog" variant="outline">Cancel</Button>
