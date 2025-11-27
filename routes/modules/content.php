@@ -78,5 +78,17 @@ Route::prefix('content')->name('content.')->middleware(['auth', 'verified'])->gr
         Route::delete('/{id}', [ContentController::class, 'destroy'])->middleware('permission:workplace.delete')->name('destroy');
         Route::post('/bulk-action', [ContentController::class, 'bulkAction'])->middleware('permission:workplace.delete')->name('bulk-action');
     });
+    
+    // Work Divisions sub-routes  
+    Route::prefix('work-divisions')->name('work-divisions.')->middleware('permission:work-divisions.view')->group(function () {
+        Route::get('/', [ContentController::class, 'index'])->defaults('type', 'work-division')->name('index');
+        Route::get('/create', [ContentController::class, 'create'])->defaults('type', 'work-division')->middleware('permission:work-divisions.create')->name('create');
+        Route::post('/', [ContentController::class, 'store'])->middleware('permission:work-divisions.create')->name('store');
+        Route::get('/{content}', [ContentController::class, 'show'])->name('show');
+        Route::get('/{content}/edit', [ContentController::class, 'edit'])->middleware('permission:work-divisions.edit')->name('edit');
+        Route::put('/{content}', [ContentController::class, 'update'])->middleware('permission:work-divisions.edit')->name('update');
+        Route::delete('/{content}', [ContentController::class, 'destroy'])->middleware('permission:work-divisions.delete')->name('destroy');
+        Route::post('/bulk-action', [ContentController::class, 'bulkAction'])->middleware('permission:work-divisions.delete')->name('bulk-action');
+    });
 });
 

@@ -111,6 +111,12 @@ class ConfigurationController extends Controller
                         'ceo_message_content_id',
                         'ceo_message_content_en',
                         'ceo_image',
+                        // Our Business configurations
+                        'our_business_title_id',
+                        'our_business_title_en',
+                        'our_business_content_id',
+                        'our_business_content_en',
+                        'our_business_image',
                         'button_join_us_enabled',
                         // Workplace configurations
                         'workplace_working_environment_title_id',

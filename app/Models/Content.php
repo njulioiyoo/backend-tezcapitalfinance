@@ -317,6 +317,7 @@ class Content extends Model implements Auditable
             'career' => 'Career',
             'team-member' => 'Team Member',
             'workplace' => 'Workplace',
+            'work-division' => 'Work Division',
         ];
     }
 
@@ -413,6 +414,24 @@ class Content extends Model implements Auditable
         ];
     }
 
+    public static function getWorkDivisionCategories()
+    {
+        return [
+            'accounting' => 'Accounting',
+            'marketing' => 'Marketing',
+            'analyst' => 'Analyst',
+            'customer-service' => 'Customer Service',
+            'operations' => 'Operations',
+            'it-support' => 'IT Support',
+            'legal' => 'Legal',
+            'hr' => 'Human Resources',
+            'finance' => 'Finance',
+            'compliance' => 'Compliance',
+            'business-development' => 'Business Development',
+            'other' => 'Other',
+        ];
+    }
+
     public static function getStatuses()
     {
         return [
@@ -434,6 +453,7 @@ class Content extends Model implements Auditable
             'career' => self::getCareerCategories(),
             'team-member' => self::getTeamMemberCategories(),
             'workplace' => self::getWorkplaceCategories(),
+            'work-division' => self::getWorkDivisionCategories(),
             default => [],
         };
     }
@@ -508,6 +528,18 @@ class Content extends Model implements Auditable
     public function isTeamMember()
     {
         return $this->type === 'team-member';
+    }
+
+    // Scope for work divisions
+    public function scopeWorkDivisions($query)
+    {
+        return $query->where('type', 'work-division');
+    }
+
+    // Check if content is work division
+    public function isWorkDivision()
+    {
+        return $this->type === 'work-division';
     }
 
     /**

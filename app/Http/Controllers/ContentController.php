@@ -95,14 +95,6 @@ class ContentController extends Controller
 
         $content = Content::create($validated);
 
-        // Return success response for AJAX/Inertia requests
-        if ($request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest' || $request->header('X-Inertia')) {
-            return response()->json([
-                'message' => ucfirst($type) . ' created successfully',
-                'data' => $content
-            ], 201);
-        }
-
         $routeName = $this->getRouteNameForType($type);
         return redirect()->route($routeName)->with('success', ucfirst($type) . ' created successfully');
     }
@@ -188,14 +180,6 @@ class ContentController extends Controller
         // Update event status if it's an event
         if ($content->isEvent()) {
             $content->updateEventStatus();
-        }
-
-        // Return success response for AJAX/Inertia requests
-        if ($request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest' || $request->header('X-Inertia')) {
-            return response()->json([
-                'message' => ucfirst($type) . ' updated successfully',
-                'data' => $content
-            ], 200);
         }
 
         $routeName = $this->getRouteNameForType($type);
@@ -363,6 +347,66 @@ class ContentController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to retrieve workplace data: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * API endpoint for work divisions content
+     */
+    public function workDivisionsApi(Request $request): JsonResponse
+    {
+        try {
+            $startTime = microtime(true);
+            
+            $query = Content::workDivisions()->published();
+            
+            if ($request->filled('category')) {
+                $query->byCategory($request->get('category'));
+            }
+
+            if ($request->filled('featured')) {
+                $query->featured();
+            }
+
+            if ($request->filled('search')) {
+                $search = $request->get('search');
+                $query->where(function ($q) use ($search) {
+                    $q->where('title_id', 'like', "%{$search}%")
+                        ->orWhere('title_en', 'like', "%{$search}%")
+                        ->orWhere('content_id', 'like', "%{$search}%")
+                        ->orWhere('content_en', 'like', "%{$search}%")
+                        ->orWhere('excerpt_id', 'like', "%{$search}%")
+                        ->orWhere('excerpt_en', 'like', "%{$search}%");
+                });
+            }
+
+            $limit = $request->get('per_page', $request->get('limit', 12));
+            $content = $query->orderBy('is_featured', 'desc')
+                ->orderBy('sort_order', 'asc')
+                ->orderBy('published_at', 'desc')
+                ->paginate($limit);
+
+            // Transform the data to include full image URLs
+            $content->getCollection()->transform(function ($item) {
+                $item->featured_image_url = $item->featured_image ? config('app.url') . '/storage/' . $item->featured_image : null;
+                return $item;
+            });
+
+            $endTime = microtime(true);
+            $responseTime = round(($endTime - $startTime) * 1000, 2);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Work divisions data retrieved successfully',
+                'data' => $content,
+                'categories' => Content::getWorkDivisionCategories(),
+                'response_time_ms' => $responseTime
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve work divisions data: ' . $e->getMessage(),
             ], 500);
         }
     }

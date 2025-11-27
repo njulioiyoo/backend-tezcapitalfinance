@@ -40,6 +40,14 @@ const form = reactive({
     ceo_message_content_id: '',
     ceo_message_content_en: '',
     ceo_image: '',
+    
+    // Our Business Section
+    our_business_title_id: '',
+    our_business_title_en: '',
+    our_business_content_id: '',
+    our_business_content_en: '',
+    our_business_image: '',
+    
     career_application_email: '',
     button_join_us_enabled: false, // Default to false
     
@@ -66,6 +74,10 @@ const form = reactive({
 const ceoImageFile = ref<File | null>(null);
 const ceoImagePreview = ref<string>('');
 
+// Our Business image uploads
+const ourBusinessImageFile = ref<File | null>(null);
+const ourBusinessImagePreview = ref<string>('');
+
 // Workplace image uploads
 const workingEnvironmentImageFile = ref<File | null>(null);
 const workingEnvironmentImagePreview = ref<string>('');
@@ -74,12 +86,14 @@ const employeeBenefitsImagePreview = ref<string>('');
 
 // Template refs
 const ceoImageInput = ref<HTMLInputElement | null>(null);
+const ourBusinessImageInput = ref<HTMLInputElement | null>(null);
 const workingEnvironmentImageInput = ref<HTMLInputElement | null>(null);
 const employeeBenefitsImageInput = ref<HTMLInputElement | null>(null);
 
 // Collapse states for all sections
 const isHeroExpanded = ref(false);
 const isCeoMessageExpanded = ref(false);
+const isOurBusinessExpanded = ref(false);
 const isButtonSettingsExpanded = ref(false);
 const isCareerApplicationExpanded = ref(false);
 const isWorkplaceExpanded = ref(false);
@@ -128,6 +142,14 @@ watch(() => props.configurations, (newConfigs) => {
         form.ceo_message_content_id = newConfigs.ceo_message_content_id?.value || '';
         form.ceo_message_content_en = newConfigs.ceo_message_content_en?.value || '';
         form.ceo_image = newConfigs.ceo_image?.value || '/img/profile/1.png';
+        
+        // Our Business configurations
+        form.our_business_title_id = newConfigs.our_business_title_id?.value || 'Bisnis Kami';
+        form.our_business_title_en = newConfigs.our_business_title_en?.value || 'Our Business';
+        form.our_business_content_id = newConfigs.our_business_content_id?.value || '';
+        form.our_business_content_en = newConfigs.our_business_content_en?.value || '';
+        form.our_business_image = newConfigs.our_business_image?.value || '/img/dummy3.jpg';
+        
         form.career_application_email = newConfigs.career_application_email?.value || 'hr@tez-capital.com';
         
         // Simple boolean handling like LanguageSettings
@@ -137,6 +159,7 @@ watch(() => props.configurations, (newConfigs) => {
         form.button_join_us_enabled = dbValue || false;
         
         ceoImagePreview.value = newConfigs.ceo_image?.value || '';
+        ourBusinessImagePreview.value = newConfigs.our_business_image?.value || '';
         
         // Workplace configurations
         form.workplace_working_environment_title_id = newConfigs.workplace_working_environment_title_id?.value || 'Lingkungan Kerja';
@@ -264,6 +287,23 @@ const handleBulkSave = () => {
         changes.push({ key: 'ceo_image', value: ceoImageFile.value, type: 'file' });
     }
     
+    // Our Business changes
+    if (props.configurations.our_business_title_id?.value !== form.our_business_title_id) {
+        changes.push({ key: 'our_business_title_id', value: form.our_business_title_id, type: 'text' });
+    }
+    if (props.configurations.our_business_title_en?.value !== form.our_business_title_en) {
+        changes.push({ key: 'our_business_title_en', value: form.our_business_title_en, type: 'text' });
+    }
+    if (props.configurations.our_business_content_id?.value !== form.our_business_content_id) {
+        changes.push({ key: 'our_business_content_id', value: form.our_business_content_id, type: 'textarea' });
+    }
+    if (props.configurations.our_business_content_en?.value !== form.our_business_content_en) {
+        changes.push({ key: 'our_business_content_en', value: form.our_business_content_en, type: 'textarea' });
+    }
+    if (ourBusinessImageFile.value) {
+        changes.push({ key: 'our_business_image', value: ourBusinessImageFile.value, type: 'file' });
+    }
+    
     // Workplace - Working Environment changes
     if (props.configurations.workplace_working_environment_title_id?.value !== form.workplace_working_environment_title_id) {
         changes.push({ key: 'workplace_working_environment_title_id', value: form.workplace_working_environment_title_id, type: 'text' });
@@ -354,6 +394,7 @@ const handleBulkSave = () => {
         
         // Clear file refs after successful save initiation
         ceoImageFile.value = null;
+        ourBusinessImageFile.value = null;
         workingEnvironmentImageFile.value = null;
         employeeBenefitsImageFile.value = null;
         iconFiles.value = {}; // Clear icon files
@@ -381,6 +422,25 @@ const handleCeoImageUpload = (event: Event) => {
 const clearCeoImage = () => {
     ceoImageFile.value = null;
     ceoImagePreview.value = '';
+};
+
+// Our Business image upload handling
+const handleOurBusinessImageUpload = (event: Event) => {
+    const target = event.target as HTMLInputElement;
+    const file = target.files?.[0];
+    if (file) {
+        ourBusinessImageFile.value = file;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            ourBusinessImagePreview.value = e.target?.result as string;
+        };
+        reader.readAsDataURL(file);
+    }
+};
+
+const clearOurBusinessImage = () => {
+    ourBusinessImageFile.value = null;
+    ourBusinessImagePreview.value = '';
 };
 
 // Working Environment image upload handling
@@ -698,6 +758,155 @@ const handleIconUpload = (event: Event, categoryIndex: number, itemIndex: number
                         </div>
                         <p class="text-sm text-muted-foreground">
                             CEO image displayed in the message section (recommended size: 400x400px)
+                        </p>
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+
+        <!-- Our Business Section Settings -->
+        <Card>
+            <CardHeader>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <CardTitle class="flex items-center gap-2">
+                            Our Business Section
+                        </CardTitle>
+                        <CardDescription>
+                            Configure the Our Business section content, image and description
+                        </CardDescription>
+                    </div>
+                    <Button 
+                        @click="isOurBusinessExpanded = !isOurBusinessExpanded"
+                        size="sm" 
+                        variant="ghost"
+                    >
+                        <ChevronDown v-if="!isOurBusinessExpanded" class="w-4 h-4" />
+                        <ChevronUp v-else class="w-4 h-4" />
+                    </Button>
+                </div>
+            </CardHeader>
+            <CardContent v-if="isOurBusinessExpanded" class="space-y-6">
+                <!-- Our Business Titles -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-2">
+                        <Label for="our_business_title_id">Title (Indonesian) *</Label>
+                        <Input
+                            id="our_business_title_id"
+                            v-model="form.our_business_title_id"
+                            placeholder="Bisnis Kami"
+                            maxlength="40"
+                            :disabled="isLoading"
+                        />
+                        <p class="text-xs text-muted-foreground">
+                            {{ form.our_business_title_id?.length || 0 }}/40 characters
+                        </p>
+                        <p class="text-sm text-muted-foreground">
+                            Title for the Our Business section (Indonesian)
+                        </p>
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <Label for="our_business_title_en">Title (English) *</Label>
+                        <Input
+                            id="our_business_title_en"
+                            v-model="form.our_business_title_en"
+                            placeholder="Our Business"
+                            maxlength="40"
+                            :disabled="isLoading"
+                        />
+                        <p class="text-xs text-muted-foreground">
+                            {{ form.our_business_title_en?.length || 0 }}/40 characters
+                        </p>
+                        <p class="text-sm text-muted-foreground">
+                            Title for the Our Business section (English)
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Our Business Content -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-2">
+                        <Label for="our_business_content_id">Content (Indonesian) *</Label>
+                        <Textarea
+                            id="our_business_content_id"
+                            v-model="form.our_business_content_id"
+                            placeholder="Masukkan konten bisnis kami dalam bahasa Indonesia..."
+                            rows="8"
+                            maxlength="700"
+                            :disabled="isLoading"
+                        />
+                        <p class="text-xs text-muted-foreground">
+                            {{ form.our_business_content_id?.length || 0 }}/700 characters
+                        </p>
+                        <p class="text-sm text-muted-foreground">
+                            Main content of the Our Business section in Indonesian. Use line breaks to separate paragraphs.
+                        </p>
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <Label for="our_business_content_en">Content (English) *</Label>
+                        <Textarea
+                            id="our_business_content_en"
+                            v-model="form.our_business_content_en"
+                            placeholder="Enter the Our Business content in English..."
+                            rows="8"
+                            maxlength="700"
+                            :disabled="isLoading"
+                        />
+                        <p class="text-xs text-muted-foreground">
+                            {{ form.our_business_content_en?.length || 0 }}/700 characters
+                        </p>
+                        <p class="text-sm text-muted-foreground">
+                            Main content of the Our Business section in English. Use line breaks to separate paragraphs.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Our Business Image -->
+                <div class="space-y-4">
+                    <div class="space-y-2">
+                        <Label>Image</Label>
+                        <div class="border-2 border-dashed border-input rounded-lg p-6 dark:border-input">
+                            <div v-if="ourBusinessImagePreview" class="space-y-4">
+                                <div class="flex items-center justify-center">
+                                    <img 
+                                        :src="ourBusinessImagePreview.startsWith('data:') || ourBusinessImagePreview.startsWith('http') ? ourBusinessImagePreview : `/storage/${ourBusinessImagePreview}`" 
+                                        alt="Our Business Image Preview" 
+                                        class="max-h-48 max-w-64 object-contain rounded-lg"
+                                    />
+                                </div>
+                                <div class="flex justify-center gap-2">
+                                    <Button size="sm" variant="outline" @click="clearOurBusinessImage">
+                                        <X class="w-4 h-4 mr-2" />
+                                        Remove
+                                    </Button>
+                                    <Button size="sm" variant="outline" @click="ourBusinessImageInput?.click()">
+                                        <Upload class="w-4 h-4 mr-2" />
+                                        Change
+                                    </Button>
+                                </div>
+                            </div>
+                            <div v-else class="text-center">
+                                <Image class="mx-auto h-12 w-12 text-muted-foreground" />
+                                <div class="mt-2">
+                                    <Button variant="outline" @click="ourBusinessImageInput?.click()">
+                                        <Upload class="w-4 h-4 mr-2" />
+                                        Upload Image
+                                    </Button>
+                                </div>
+                                <p class="text-sm text-muted-foreground mt-2">PNG, JPG up to 5MB</p>
+                            </div>
+                            <input
+                                ref="ourBusinessImageInput"
+                                type="file"
+                                accept="image/*"
+                                class="hidden"
+                                @change="handleOurBusinessImageUpload"
+                            />
+                        </div>
+                        <p class="text-sm text-muted-foreground">
+Image displayed in the Our Business section (recommended size: 400x500px)
                         </p>
                     </div>
                 </div>

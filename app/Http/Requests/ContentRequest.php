@@ -117,6 +117,15 @@ class ContentRequest extends FormRequest
             ];
         }
 
+        if ($type === 'work-division') {
+            return [
+                'title_id' => 'required|string|max:25',
+                'title_en' => 'nullable|string|max:25',
+                'content_id' => 'nullable|string|max:100',
+                'content_en' => 'nullable|string|max:100',
+            ];
+        }
+
         return [];
     }
 

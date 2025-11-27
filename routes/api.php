@@ -61,6 +61,9 @@ Route::prefix('v1')->group(function () {
     // Workplace API
     Route::get('workplace', [ContentController::class, 'workplaceApi'])->name('api.workplace.index');
     
+    // Work Divisions API
+    Route::get('work-divisions', [ContentController::class, 'workDivisionsApi'])->name('api.work-divisions.index');
+    
     // Careers API
     Route::prefix('careers')->name('api.careers.')->group(function () {
         Route::get('/', [ApiCareerController::class, 'index'])->name('index');

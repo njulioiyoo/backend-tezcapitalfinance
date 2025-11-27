@@ -27,6 +27,8 @@ trait ContentHelpers
                 $type = 'service';
             } elseif (str_contains($routeName, 'workplace')) {
                 $type = 'workplace';
+            } elseif (str_contains($routeName, 'work-divisions')) {
+                $type = 'work-division';
             } else {
                 $type = 'news';
             }
@@ -120,6 +122,7 @@ trait ContentHelpers
             'partner' => Content::getPartnerCategories(),
             'service' => Content::getServiceCategories(),
             'workplace' => Content::getWorkplaceCategories(),
+            'work-division' => Content::getWorkDivisionCategories(),
             default => Content::getNewsCategories(),
         };
     }
@@ -153,6 +156,7 @@ trait ContentHelpers
             'partner' => 'content/partners/Partners',
             'service' => 'content/services/Services',
             'workplace' => 'content/workplace/Workplace',
+            'work-division' => 'content/work-divisions/WorkDivisions',
             default => 'content/ContentBasic'
         };
     }
@@ -166,6 +170,7 @@ trait ContentHelpers
             'service' => 'content.services.index',
             'partner' => 'content.partners.index',
             'workplace' => 'content.workplace.index',
+            'work-division' => 'content.work-divisions.index',
             default => 'content.news-events.index'
         };
     }
@@ -183,6 +188,7 @@ trait ContentHelpers
         $folder = match($type) {
             'partner' => 'content/partner',
             'workplace' => 'content/workplace',
+            'work-division' => 'content/work-division',
             default => 'content'
         };
         
