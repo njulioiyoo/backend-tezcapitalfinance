@@ -757,7 +757,7 @@ const handleIconUpload = (event: Event, categoryIndex: number, itemIndex: number
                             />
                         </div>
                         <p class="text-sm text-muted-foreground">
-                            CEO image displayed in the message section (recommended size: 400x400px)
+                            CEO image displayed in the message section (recommended size: 362x443px)
                         </p>
                     </div>
                 </div>
@@ -906,7 +906,7 @@ const handleIconUpload = (event: Event, categoryIndex: number, itemIndex: number
                             />
                         </div>
                         <p class="text-sm text-muted-foreground">
-Image displayed in the Our Business section (recommended size: 400x500px)
+Image displayed in the Our Business section (recommended size: 362x443px)
                         </p>
                     </div>
                 </div>

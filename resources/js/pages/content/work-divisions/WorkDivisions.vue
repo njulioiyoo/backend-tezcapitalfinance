@@ -220,6 +220,9 @@ const submitForm = async () => {
     try {
         const formDataObj = new FormData();
         
+        // Auto-set is_published based on status
+        const isPublished = formData.status === 'published';
+        
         // Add form fields (excluding featured_image for now)
         Object.entries(formData).forEach(([key, value]) => {
             if (key !== 'featured_image' && value !== null && value !== undefined) {
@@ -230,6 +233,14 @@ const submitForm = async () => {
                 }
             }
         });
+        
+        // Override is_published based on status
+        formDataObj.append('is_published', isPublished ? '1' : '0');
+        
+        // Add published_at if publishing for first time
+        if (isPublished && !selectedItem.value?.is_published) {
+            formDataObj.append('published_at', new Date().toISOString());
+        }
         
         // Add file only if there's a new upload
         if (imageFile.value) {
@@ -498,9 +509,16 @@ const getImageUrl = (imagePath: string | null) => {
                                         </div>
                                     </td>
                                     <td class="p-4">
-                                        <Badge :variant="item.status === 'published' ? 'default' : 'outline'">
-                                            {{ statuses[item.status] || item.status }}
-                                        </Badge>
+                                        <div class="flex flex-col gap-1">
+                                            <Badge :variant="item.status === 'published' && item.is_published ? 'default' : 'outline'" 
+                                                   :class="item.status === 'published' && item.is_published ? 'bg-green-500' : 
+                                                          item.status === 'published' && !item.is_published ? 'bg-orange-500' : ''">
+                                                {{ statuses[item.status] || item.status }}
+                                                <span v-if="item.status === 'published' && !item.is_published" class="ml-1">
+                                                    (Not Live)
+                                                </span>
+                                            </Badge>
+                                        </div>
                                     </td>
                                     <td class="p-4">{{ item.view_count || 0 }}</td>
                                     <td class="p-4 text-muted-foreground">
@@ -590,11 +608,11 @@ const getImageUrl = (imagePath: string | null) => {
                                     id="content_id" 
                                     v-model="formData.content_id" 
                                     rows="4" 
-                                    maxlength="100"
+                                    maxlength="250"
                                     placeholder="Describe this work division..." 
                                 />
                                 <p class="text-xs text-muted-foreground">
-                                    {{ formData.content_id?.length || 0 }}/100 characters
+                                    {{ formData.content_id?.length || 0 }}/250 characters
                                 </p>
                             </div>
                         </div>
@@ -619,11 +637,11 @@ const getImageUrl = (imagePath: string | null) => {
                                     id="content_en" 
                                     v-model="formData.content_en" 
                                     rows="4" 
-                                    maxlength="100"
+                                    maxlength="250"
                                     placeholder="Describe this work division..." 
                                 />
                                 <p class="text-xs text-muted-foreground">
-                                    {{ formData.content_en?.length || 0 }}/100 characters
+                                    {{ formData.content_en?.length || 0 }}/250 characters
                                 </p>
                             </div>
                         </div>
@@ -649,11 +667,11 @@ const getImageUrl = (imagePath: string | null) => {
                                 id="content_single" 
                                 v-model="formData.content_id" 
                                 rows="4" 
-                                maxlength="100"
+                                maxlength="250"
                                 placeholder="Describe this work division..." 
                             />
                             <p class="text-xs text-muted-foreground">
-                                {{ formData.content_id?.length || 0 }}/100 characters
+                                {{ formData.content_id?.length || 0 }}/250 characters
                             </p>
                         </div>
                     </div>
@@ -702,6 +720,9 @@ const getImageUrl = (imagePath: string | null) => {
                                         <Label for="is_featured">Featured</Label>
                                     </div>
                                 </div>
+                                <p class="text-xs text-muted-foreground mt-2">
+                                    Note: Items will be automatically published when status is set to "Published"
+                                </p>
                             </div>
                         </div>
                         

@@ -28,6 +28,8 @@ interface TeamMember {
     testimonial_en?: string;
     position_id: string;
     position_en?: string;
+    division_id?: string;
+    division_en?: string;
     featured_image?: string;
     featured_image_url?: string;
     is_published: boolean;
@@ -75,6 +77,8 @@ const teamMemberForm = reactive({
     position_id: '',
     position_en: '',
     category: '',
+    division_id: '',
+    division_en: '',
     featured_image: null as string | null,
     featured_image_file: null as File | null,
     is_published: true,
@@ -139,6 +143,8 @@ const openDialog = (teamMember: TeamMember | null = null) => {
         teamMemberForm.position_id = teamMember.position_id || '';
         teamMemberForm.position_en = teamMember.position_en || '';
         teamMemberForm.category = teamMember.category || '';
+        teamMemberForm.division_id = teamMember.division_id || '';
+        teamMemberForm.division_en = teamMember.division_en || '';
         teamMemberForm.featured_image = teamMember.featured_image ? teamMember.featured_image : null;
         teamMemberForm.featured_image_file = null;
         teamMemberForm.is_published = teamMember.is_published;
@@ -170,6 +176,8 @@ const resetForm = () => {
         position_id: '',
         position_en: '',
         category: '',
+        division_id: '',
+        division_en: '',
         featured_image: null,
         featured_image_file: null,
         is_published: true,
@@ -195,6 +203,8 @@ const saveTeamMember = async () => {
         formData.append('position_id', teamMemberForm.position_id);
         formData.append('position_en', teamMemberForm.position_en || '');
         formData.append('category', teamMemberForm.category);
+        formData.append('division_id', teamMemberForm.division_id || '');
+        formData.append('division_en', teamMemberForm.division_en || '');
         formData.append('is_published', teamMemberForm.is_published ? '1' : '0');
         formData.append('is_featured', teamMemberForm.is_featured ? '1' : '0');
         formData.append('sort_order', teamMemberForm.sort_order.toString());
@@ -506,7 +516,7 @@ onMounted(() => {
                                         <th class="text-left p-4 font-medium">Photo</th>
                                         <th class="text-left p-4 font-medium">Name</th>
                                         <th class="text-left p-4 font-medium">Position</th>
-                                        <th class="text-left p-4 font-medium">Department</th>
+                                        <th class="text-left p-4 font-medium">Division</th>
                                         <th class="text-left p-4 font-medium">Status</th>
                                         <th class="text-left p-4 font-medium">Featured</th>
                                         <th class="text-left p-4 font-medium">Sort Order</th>
@@ -538,7 +548,7 @@ onMounted(() => {
                                             <Badge variant="secondary">{{ member.position_id || '-' }}</Badge>
                                         </td>
                                         <td class="p-4">
-                                            <Badge variant="outline">{{ member.category || '-' }}</Badge>
+                                            <Badge variant="outline">{{ member.division_id || member.division_en || '-' }}</Badge>
                                         </td>
                                         <td class="p-4">
                                             <Badge :variant="member.status === 'published' ? 'default' : 'outline'">
@@ -621,8 +631,12 @@ onMounted(() => {
                                 id="title_id"
                                 v-model="teamMemberForm.title_id"
                                 placeholder="e.g., Arwin Rasyid"
+                                maxlength="20"
                                 required
                             />
+                            <p class="text-xs text-muted-foreground">
+                                {{ teamMemberForm.title_id?.length || 0 }}/20 characters
+                            </p>
                         </div>
                         
                         <div class="space-y-2">
@@ -631,7 +645,11 @@ onMounted(() => {
                                 id="title_en"
                                 v-model="teamMemberForm.title_en"
                                 placeholder="e.g., Arwin Rasyid"
+                                maxlength="20"
                             />
+                            <p class="text-xs text-muted-foreground">
+                                {{ teamMemberForm.title_en?.length || 0 }}/20 characters
+                            </p>
                         </div>
                     </div>
 
@@ -642,9 +660,13 @@ onMounted(() => {
                             <Input
                                 id="position_id"
                                 v-model="teamMemberForm.position_id"
-                                placeholder="e.g., Chairman & Founder"
+                                placeholder="e.g., CEO"
+                                maxlength="10"
                                 required
                             />
+                            <p class="text-xs text-muted-foreground">
+                                {{ teamMemberForm.position_id?.length || 0 }}/10 characters
+                            </p>
                         </div>
                         
                         <div class="space-y-2">
@@ -652,12 +674,43 @@ onMounted(() => {
                             <Input
                                 id="position_en"
                                 v-model="teamMemberForm.position_en"
-                                placeholder="e.g., Chairman & Founder"
+                                placeholder="e.g., CEO"
+                                maxlength="10"
                             />
+                            <p class="text-xs text-muted-foreground">
+                                {{ teamMemberForm.position_en?.length || 0 }}/10 characters
+                            </p>
                         </div>
                     </div>
 
-
+                    <!-- Division -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <Label for="division_id">Division (Indonesian)</Label>
+                            <Input
+                                id="division_id"
+                                v-model="teamMemberForm.division_id"
+                                placeholder="e.g., Teknologi"
+                                maxlength="20"
+                            />
+                            <p class="text-xs text-muted-foreground">
+                                {{ teamMemberForm.division_id?.length || 0 }}/20 characters
+                            </p>
+                        </div>
+                        
+                        <div class="space-y-2">
+                            <Label for="division_en">Division (English)</Label>
+                            <Input
+                                id="division_en"
+                                v-model="teamMemberForm.division_en"
+                                placeholder="e.g., Technology"
+                                maxlength="20"
+                            />
+                            <p class="text-xs text-muted-foreground">
+                                {{ teamMemberForm.division_en?.length || 0 }}/20 characters
+                            </p>
+                        </div>
+                    </div>
 
                     <!-- Testimonial -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -667,11 +720,11 @@ onMounted(() => {
                                 id="testimonial_id"
                                 v-model="teamMemberForm.testimonial_id"
                                 placeholder="Enter testimonial or quote in Indonesian..."
-                                rows="3"
-                                maxlength="101"
+                                rows="4"
+                                maxlength="500"
                             />
                             <p class="text-xs text-muted-foreground">
-                                {{ teamMemberForm.testimonial_id?.length || 0 }}/101 characters
+                                {{ teamMemberForm.testimonial_id?.length || 0 }}/500 characters
                             </p>
                         </div>
                         
@@ -681,11 +734,11 @@ onMounted(() => {
                                 id="testimonial_en"
                                 v-model="teamMemberForm.testimonial_en"
                                 placeholder="Enter testimonial or quote in English..."
-                                rows="3"
-                                maxlength="101"
+                                rows="4"
+                                maxlength="500"
                             />
                             <p class="text-xs text-muted-foreground">
-                                {{ teamMemberForm.testimonial_en?.length || 0 }}/101 characters
+                                {{ teamMemberForm.testimonial_en?.length || 0 }}/500 characters
                             </p>
                         </div>
                     </div>
@@ -732,7 +785,7 @@ onMounted(() => {
                             />
                         </div>
                         <p class="text-sm text-muted-foreground">
-                            Profile photo for the team member (recommended size: 400x400px)
+                            Profile photo for the team member (recommended size: 250x400px)
                         </p>
                     </div>
 

@@ -28,6 +28,8 @@ class Content extends Model implements Auditable
         'testimonial_en',
         'position_id',
         'position_en',
+        'division_id',
+        'division_en',
         'featured_image',
         'gallery',
         'interest_list',
@@ -253,6 +255,11 @@ class Content extends Model implements Auditable
     public function getLocalizedPosition($language = 'id')
     {
         return $language === 'en' ? $this->position_en : $this->position_id;
+    }
+
+    public function getLocalizedDivision($language = 'id')
+    {
+        return $language === 'en' ? $this->division_en : $this->division_id;
     }
 
     // Analytics methods

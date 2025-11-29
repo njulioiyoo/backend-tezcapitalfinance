@@ -26,7 +26,9 @@ class TeamMemberController extends Controller
             $query->where(function($q) use ($search) {
                 $q->where('title_id', 'like', "%{$search}%")
                   ->orWhere('title_en', 'like', "%{$search}%")
-                  ->orWhere('category', 'like', "%{$search}%");
+                  ->orWhere('category', 'like', "%{$search}%")
+                  ->orWhere('division_id', 'like', "%{$search}%")
+                  ->orWhere('division_en', 'like', "%{$search}%");
             });
         }
 
@@ -52,12 +54,14 @@ class TeamMemberController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'title_id' => 'required|string|max:255',
-            'title_en' => 'nullable|string|max:255',
-            'testimonial_id' => 'required|string',
-            'testimonial_en' => 'nullable|string',
-            'position_id' => 'required|string|max:255',
-            'position_en' => 'nullable|string|max:255',
+            'title_id' => 'required|string|max:20',
+            'title_en' => 'nullable|string|max:20',
+            'testimonial_id' => 'nullable|string|max:500',
+            'testimonial_en' => 'nullable|string|max:500',
+            'position_id' => 'required|string|max:10',
+            'position_en' => 'nullable|string|max:10',
+            'division_id' => 'nullable|string|max:20',
+            'division_en' => 'nullable|string|max:20',
             'category' => 'required|string|max:255',
             'featured_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             'is_published' => 'boolean',
@@ -113,12 +117,14 @@ class TeamMemberController extends Controller
         $teamMember = Content::where('type', 'team-member')->findOrFail($id);
 
         $validator = Validator::make($request->all(), [
-            'title_id' => 'required|string|max:255',
-            'title_en' => 'nullable|string|max:255',
-            'testimonial_id' => 'required|string',
-            'testimonial_en' => 'nullable|string',
-            'position_id' => 'required|string|max:255',
-            'position_en' => 'nullable|string|max:255',
+            'title_id' => 'required|string|max:20',
+            'title_en' => 'nullable|string|max:20',
+            'testimonial_id' => 'nullable|string|max:500',
+            'testimonial_en' => 'nullable|string|max:500',
+            'position_id' => 'required|string|max:10',
+            'position_en' => 'nullable|string|max:10',
+            'division_id' => 'nullable|string|max:20',
+            'division_en' => 'nullable|string|max:20',
             'category' => 'required|string|max:255',
             'featured_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             'is_published' => 'boolean',
