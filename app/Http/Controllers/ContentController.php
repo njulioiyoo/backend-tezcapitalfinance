@@ -35,7 +35,7 @@ class ContentController extends Controller
         $contents = $query->orderBy('is_featured', 'desc')
             ->orderBy('sort_order', 'asc')
             ->orderBy($orderBy, $orderDir)
-            ->paginate(15)
+            ->paginate(10)
             ->withQueryString();
 
 
