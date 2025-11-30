@@ -15,12 +15,12 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
 import PlaceholderPattern from '@/components/PlaceholderPattern.vue';
+import { useCsrfToken } from '@/composables/useCsrfToken';
 import axios from 'axios';
 
 interface TeamMember {
     id: number;
     type: string;
-    category: string;
     slug: string;
     title_id: string;
     title_en?: string;
@@ -61,7 +61,6 @@ const confirmDialog = ref({
 
 const filters = reactive({
     search: '',
-    category: '',
     position: '',
     status: '',
     per_page: 10,
@@ -76,7 +75,6 @@ const teamMemberForm = reactive({
     testimonial_en: '',
     position_id: '',
     position_en: '',
-    category: '',
     division_id: '',
     division_en: '',
     featured_image: null as string | null,
@@ -142,15 +140,15 @@ const openDialog = (teamMember: TeamMember | null = null) => {
         teamMemberForm.testimonial_en = teamMember.testimonial_en || '';
         teamMemberForm.position_id = teamMember.position_id || '';
         teamMemberForm.position_en = teamMember.position_en || '';
-        teamMemberForm.category = teamMember.category || '';
         teamMemberForm.division_id = teamMember.division_id || '';
         teamMemberForm.division_en = teamMember.division_en || '';
         teamMemberForm.featured_image = teamMember.featured_image ? teamMember.featured_image : null;
         teamMemberForm.featured_image_file = null;
-        teamMemberForm.is_published = teamMember.is_published;
+        teamMemberForm.status = teamMember.status || 'published';
+        // Sync is_published with status: if status is 'published', then is_published = true
+        teamMemberForm.is_published = (teamMember.status || 'published') === 'published';
         teamMemberForm.is_featured = teamMember.is_featured;
         teamMemberForm.sort_order = teamMember.sort_order || 0;
-        teamMemberForm.status = teamMember.status || 'published';
         
         console.log('🔧 openDialog - teamMemberForm after assignment:', teamMemberForm);
     } else {
@@ -175,12 +173,11 @@ const resetForm = () => {
         testimonial_en: '',
         position_id: '',
         position_en: '',
-        category: '',
         division_id: '',
         division_en: '',
         featured_image: null,
         featured_image_file: null,
-        is_published: true,
+        is_published: true, // Will be synced with status automatically
         is_featured: false,
         sort_order: 0,
         status: 'published'
@@ -188,6 +185,9 @@ const resetForm = () => {
 };
 
 import { toast } from '@/components/ui/toast';
+
+// Get CSRF token
+const { getCsrfToken } = useCsrfToken();
 
 const saveTeamMember = async () => {
     try {
@@ -202,13 +202,17 @@ const saveTeamMember = async () => {
         formData.append('testimonial_en', teamMemberForm.testimonial_en || '');
         formData.append('position_id', teamMemberForm.position_id);
         formData.append('position_en', teamMemberForm.position_en || '');
-        formData.append('category', teamMemberForm.category);
         formData.append('division_id', teamMemberForm.division_id || '');
         formData.append('division_en', teamMemberForm.division_en || '');
-        formData.append('is_published', teamMemberForm.is_published ? '1' : '0');
+        // Sync is_published with status: if status is 'published', then is_published = true
+        const isPublished = teamMemberForm.status === 'published';
+        formData.append('is_published', isPublished ? '1' : '0');
         formData.append('is_featured', teamMemberForm.is_featured ? '1' : '0');
         formData.append('sort_order', teamMemberForm.sort_order.toString());
         formData.append('status', teamMemberForm.status);
+        
+        // Add CSRF token to FormData
+        formData.append('_token', getCsrfToken());
         
         // Add image file if selected
         if (teamMemberForm.featured_image_file) {
@@ -231,8 +235,9 @@ const saveTeamMember = async () => {
             // Use POST with _method=PUT for file uploads (Laravel limitation with PUT + multipart/form-data)
             await axios.post(`/content/team-members/${editingTeamMember.value.id}`, formData, {
                 headers: {
-                    'Content-Type': 'multipart/form-data',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                    'X-CSRF-TOKEN': getCsrfToken(),
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
                 }
             });
             toast({ title: 'Success', description: 'Team member updated successfully.', variant: 'success' });
@@ -240,8 +245,9 @@ const saveTeamMember = async () => {
             console.log('🔧 Creating new team member');
             await axios.post('/content/team-members', formData, {
                 headers: {
-                    'Content-Type': 'multipart/form-data',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                    'X-CSRF-TOKEN': getCsrfToken(),
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
                 }
             });
             toast({ title: 'Success', description: 'Team member created successfully.', variant: 'success' });
@@ -372,13 +378,18 @@ const applyFilters = () => {
 
 const clearFilters = () => {
     filters.search = '';
-    filters.category = '';
     filters.position = '';
     filters.status = '';
     filters.page = 1;
     loadTeamMembers();
 };
 
+
+// Watch status to sync is_published automatically
+watch(() => teamMemberForm.status, (newStatus) => {
+    // Sync is_published with status: if status is 'published', then is_published = true
+    teamMemberForm.is_published = newStatus === 'published';
+});
 
 onMounted(() => {
     loadTeamMembers();
@@ -819,14 +830,6 @@ onMounted(() => {
 
                     <!-- Toggles -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="flex items-center space-x-2">
-                            <Switch 
-                                id="is_published" 
-                                v-model:checked="teamMemberForm.is_published"
-                            />
-                            <Label for="is_published">Published</Label>
-                        </div>
-                        
                         <div class="flex items-center space-x-2">
                             <Switch 
                                 id="is_featured" 
