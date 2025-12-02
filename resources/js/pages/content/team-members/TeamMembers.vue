@@ -702,10 +702,10 @@ onMounted(() => {
                                 id="division_id"
                                 v-model="teamMemberForm.division_id"
                                 placeholder="e.g., Teknologi"
-                                maxlength="20"
+                                maxlength="25"
                             />
                             <p class="text-xs text-muted-foreground">
-                                {{ teamMemberForm.division_id?.length || 0 }}/20 characters
+                                {{ teamMemberForm.division_id?.length || 0 }}/25 characters
                             </p>
                         </div>
                         
@@ -715,10 +715,10 @@ onMounted(() => {
                                 id="division_en"
                                 v-model="teamMemberForm.division_en"
                                 placeholder="e.g., Technology"
-                                maxlength="20"
+                                maxlength="25"
                             />
                             <p class="text-xs text-muted-foreground">
-                                {{ teamMemberForm.division_en?.length || 0 }}/20 characters
+                                {{ teamMemberForm.division_en?.length || 0 }}/25 characters
                             </p>
                         </div>
                     </div>
