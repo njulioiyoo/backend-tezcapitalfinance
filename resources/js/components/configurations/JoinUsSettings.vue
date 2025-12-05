@@ -126,7 +126,9 @@ const valueTypes = [
     { value: 'Years', label: 'Years' },
     { value: 'Times', label: 'Times' },
     { value: 'Week', label: 'Week' },
-    { value: 'Weeks', label: 'Weeks' }
+    { value: 'Weeks', label: 'Weeks' },
+    { value: 'Juta', label: 'Juta' },
+    { value: 'Million', label: 'Million' }
 ];
 
 
@@ -1473,12 +1475,12 @@ Image displayed in the Our Business section (recommended size: 362x443px)
                                                         v-model="item.description_id"
                                                         placeholder="Description in Indonesian"
                                                         rows="3"
-                                                        maxlength="60"
+                                                        maxlength="120"
                                                         :disabled="isLoading"
                                                         @input="markBenefitsChanged"
                                                     />
                                                     <p class="text-xs text-muted-foreground">
-                                                        {{ item.description_id?.length || 0 }}/60 characters
+                                                        {{ item.description_id?.length || 0 }}/120 characters
                                                     </p>
                                                 </div>
                                                 <div class="space-y-2">
@@ -1487,12 +1489,12 @@ Image displayed in the Our Business section (recommended size: 362x443px)
                                                         v-model="item.description_en"
                                                         placeholder="Description in English"
                                                         rows="3"
-                                                        maxlength="60"
+                                                        maxlength="120"
                                                         :disabled="isLoading"
                                                         @input="markBenefitsChanged"
                                                     />
                                                     <p class="text-xs text-muted-foreground">
-                                                        {{ item.description_en?.length || 0 }}/60 characters
+                                                        {{ item.description_en?.length || 0 }}/120 characters
                                                     </p>
                                                 </div>
                                             </div>
