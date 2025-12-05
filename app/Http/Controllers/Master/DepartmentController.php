@@ -59,6 +59,8 @@ class DepartmentController extends Controller
             'slug' => 'nullable|string|max:255|unique:departments,slug',
             'description_id' => 'nullable|string',
             'description_en' => 'nullable|string',
+            'about_team_description_id' => 'nullable|string|max:500',
+            'about_team_description_en' => 'nullable|string|max:500',
             'is_active' => 'boolean',
             'sort_order' => 'nullable|integer|min:0',
         ]);
@@ -114,6 +116,8 @@ class DepartmentController extends Controller
             'slug' => 'nullable|string|max:255|unique:departments,slug,' . $id,
             'description_id' => 'nullable|string',
             'description_en' => 'nullable|string',
+            'about_team_description_id' => 'nullable|string|max:500',
+            'about_team_description_en' => 'nullable|string|max:500',
             'is_active' => 'boolean',
             'sort_order' => 'nullable|integer|min:0',
         ]);

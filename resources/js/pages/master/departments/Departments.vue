@@ -24,6 +24,8 @@ interface Department {
     slug: string;
     description_id: string;
     description_en: string;
+    about_team_description_id: string;
+    about_team_description_en: string;
     is_active: boolean;
     sort_order: number;
     created_at: string;
@@ -61,6 +63,8 @@ const form = reactive({
     slug: '',
     description_id: '',
     description_en: '',
+    about_team_description_id: '',
+    about_team_description_en: '',
     is_active: true,
     sort_order: 0,
     loading: false
@@ -119,15 +123,17 @@ const openCreateDialog = () => {
 const openEditDialog = (department: Department) => {
     resetForm();
     editingDepartment.value = department;
-    
+
     form.name_id = department.name_id;
     form.name_en = department.name_en || '';
     form.slug = department.slug;
     form.description_id = department.description_id || '';
     form.description_en = department.description_en || '';
+    form.about_team_description_id = department.about_team_description_id || '';
+    form.about_team_description_en = department.about_team_description_en || '';
     form.is_active = department.is_active;
     form.sort_order = department.sort_order;
-    
+
     dialogOpen.value = true;
 };
 
@@ -137,6 +143,8 @@ const resetForm = () => {
     form.slug = '';
     form.description_id = '';
     form.description_en = '';
+    form.about_team_description_id = '';
+    form.about_team_description_en = '';
     form.is_active = true;
     form.sort_order = 0;
     form.loading = false;
@@ -634,6 +642,46 @@ const handlePaginationClick = (url: string) => {
                                         :rows="3"
                                         :disabled="form.loading"
                                     />
+                                </div>
+                            </div>
+
+                            <!-- About the Team Description -->
+                            <div class="space-y-4 border-t pt-6">
+                                <div>
+                                    <h3 class="text-base font-semibold mb-2">About the Team</h3>
+                                    <p class="text-sm text-muted-foreground">
+                                        This description will be displayed on career detail pages for jobs in this department.
+                                    </p>
+                                </div>
+                                <div class="grid lg:grid-cols-2 gap-6">
+                                    <div class="space-y-2">
+                                        <Label for="about_team_description_id">About Team (Indonesian)</Label>
+                                        <Textarea
+                                            id="about_team_description_id"
+                                            v-model="form.about_team_description_id"
+                                            placeholder="Bergabunglah dengan tim kami yang berdedikasi dan berkembang pesat..."
+                                            :rows="4"
+                                            maxlength="500"
+                                            :disabled="form.loading"
+                                        />
+                                        <p class="text-xs text-muted-foreground">
+                                            {{ form.about_team_description_id?.length || 0 }}/500 characters
+                                        </p>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <Label for="about_team_description_en">About Team (English)</Label>
+                                        <Textarea
+                                            id="about_team_description_en"
+                                            v-model="form.about_team_description_en"
+                                            placeholder="Join our dedicated and fast-growing team..."
+                                            :rows="4"
+                                            maxlength="500"
+                                            :disabled="form.loading"
+                                        />
+                                        <p class="text-xs text-muted-foreground">
+                                            {{ form.about_team_description_en?.length || 0 }}/500 characters
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
 

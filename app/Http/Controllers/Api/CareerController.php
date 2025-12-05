@@ -154,6 +154,19 @@ class CareerController extends Controller
             // Transform arrays for tags
             $career->tags_array = $career->tags ?: [];
 
+            // Get department about team description
+            if ($career->department_id) {
+                $department = Department::where('name_id', $career->department_id)
+                    ->orWhere('name_en', $career->department_id)
+                    ->select(['about_team_description_id', 'about_team_description_en'])
+                    ->first();
+
+                if ($department) {
+                    $career->about_team_description_id = $department->about_team_description_id;
+                    $career->about_team_description_en = $department->about_team_description_en;
+                }
+            }
+
             // Increment view count
             $career->incrementViews();
 

@@ -24,6 +24,8 @@ class Department extends Model implements Auditable
         'slug',
         'description_id',
         'description_en',
+        'about_team_description_id',
+        'about_team_description_en',
         'is_active',
         'sort_order',
     ];

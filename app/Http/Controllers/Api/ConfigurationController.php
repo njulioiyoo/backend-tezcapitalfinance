@@ -118,6 +118,9 @@ class ConfigurationController extends Controller
                         'our_business_content_en',
                         'our_business_image',
                         'button_join_us_enabled',
+                        // About TEZ Capital descriptions
+                        'about_tez_capital_description_id',
+                        'about_tez_capital_description_en',
                         // Workplace configurations
                         'workplace_working_environment_title_id',
                         'workplace_working_environment_title_en',

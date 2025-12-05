@@ -50,7 +50,11 @@ const form = reactive({
     
     career_application_email: '',
     button_join_us_enabled: false, // Default to false
-    
+
+    // About TEZ Capital descriptions
+    about_tez_capital_description_id: '',
+    about_tez_capital_description_en: '',
+
     // Explore Our Workplace - Working Environment
     workplace_working_environment_title_id: '',
     workplace_working_environment_title_en: '',
@@ -153,13 +157,17 @@ watch(() => props.configurations, (newConfigs) => {
         form.our_business_image = newConfigs.our_business_image?.value || '/img/dummy3.jpg';
         
         form.career_application_email = newConfigs.career_application_email?.value || 'hr@tez-capital.com';
-        
+
         // Simple boolean handling like LanguageSettings
         const dbValue = newConfigs.button_join_us_enabled?.value;
-        
+
         // Simple assignment with fallback (like LanguageSettings)
         form.button_join_us_enabled = dbValue || false;
-        
+
+        // About TEZ Capital descriptions
+        form.about_tez_capital_description_id = newConfigs.about_tez_capital_description_id?.value || 'TEZ Capital & Finance adalah perusahaan pembiayaan terkemuka yang berkomitmen memberikan solusi finansial terbaik bagi mitra bisnis kami. Dengan fokus pada inovasi, integritas, dan layanan unggul, kami terus berkembang dan mencari talenta terbaik untuk bergabung dalam perjalanan pertumbuhan kami.';
+        form.about_tez_capital_description_en = newConfigs.about_tez_capital_description_en?.value || 'TEZ Capital & Finance is a leading financing company committed to providing the best financial solutions for our business partners. With a focus on innovation, integrity, and excellent service, we continue to grow and look for the best talent to join our growth journey.';
+
         ceoImagePreview.value = newConfigs.ceo_image?.value || '';
         ourBusinessImagePreview.value = newConfigs.our_business_image?.value || '';
         
@@ -280,11 +288,19 @@ const handleBulkSave = () => {
 
     // Simple boolean comparison like LanguageSettings
     const currentButtonValue = props.configurations.button_join_us_enabled?.value || false;
-    
+
     if (currentButtonValue !== form.button_join_us_enabled) {
         changes.push({ key: 'button_join_us_enabled', value: form.button_join_us_enabled, type: 'boolean' });
     }
-    
+
+    // About TEZ Capital descriptions
+    if (props.configurations.about_tez_capital_description_id?.value !== form.about_tez_capital_description_id) {
+        changes.push({ key: 'about_tez_capital_description_id', value: form.about_tez_capital_description_id, type: 'textarea' });
+    }
+    if (props.configurations.about_tez_capital_description_en?.value !== form.about_tez_capital_description_en) {
+        changes.push({ key: 'about_tez_capital_description_en', value: form.about_tez_capital_description_en, type: 'textarea' });
+    }
+
     if (ceoImageFile.value) {
         changes.push({ key: 'ceo_image', value: ceoImageFile.value, type: 'file' });
     }
@@ -991,6 +1007,45 @@ Image displayed in the Our Business section (recommended size: 362x443px)
                     <p class="text-sm text-muted-foreground">
                         Email address where career applications will be sent. This email will be used when users submit job applications through the career detail pages.
                     </p>
+                </div>
+
+                <!-- About TEZ Capital Description -->
+                <div class="space-y-4 p-4 border rounded-lg">
+                    <h3 class="text-base font-semibold">About TEZ Capital Section</h3>
+                    <p class="text-sm text-muted-foreground">
+                        Configure the "About TEZ Capital" description shown on career detail pages.
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-2">
+                            <Label for="about_tez_capital_description_id">Description (Indonesian) *</Label>
+                            <Textarea
+                                id="about_tez_capital_description_id"
+                                v-model="form.about_tez_capital_description_id"
+                                placeholder="TEZ Capital & Finance adalah perusahaan pembiayaan terkemuka..."
+                                rows="5"
+                                maxlength="500"
+                                :disabled="isLoading"
+                            />
+                            <p class="text-xs text-muted-foreground">
+                                {{ form.about_tez_capital_description_id?.length || 0 }}/500 characters
+                            </p>
+                        </div>
+
+                        <div class="space-y-2">
+                            <Label for="about_tez_capital_description_en">Description (English) *</Label>
+                            <Textarea
+                                id="about_tez_capital_description_en"
+                                v-model="form.about_tez_capital_description_en"
+                                placeholder="TEZ Capital & Finance is a leading financing company..."
+                                rows="5"
+                                maxlength="500"
+                                :disabled="isLoading"
+                            />
+                            <p class="text-xs text-muted-foreground">
+                                {{ form.about_tez_capital_description_en?.length || 0 }}/500 characters
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </CardContent>
         </Card>
