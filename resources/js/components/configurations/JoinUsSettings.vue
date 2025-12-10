@@ -1432,12 +1432,12 @@ Image displayed in the Our Business section (recommended size: 362x443px)
                                                     <Input
                                                         v-model="item.title_id"
                                                         placeholder="e.g., Annual Holiday"
-                                                        maxlength="25"
+                                                        maxlength="40"
                                                         :disabled="isLoading"
                                                         @input="markBenefitsChanged"
                                                     />
                                                     <p class="text-xs text-muted-foreground">
-                                                        {{ item.title_id?.length || 0 }}/25 characters
+                                                        {{ item.title_id?.length || 0 }}/40 characters
                                                     </p>
                                                 </div>
                                                 <div class="space-y-2">
@@ -1445,12 +1445,12 @@ Image displayed in the Our Business section (recommended size: 362x443px)
                                                     <Input
                                                         v-model="item.title_en"
                                                         placeholder="e.g., Annual Holiday"
-                                                        maxlength="25"
+                                                        maxlength="40"
                                                         :disabled="isLoading"
                                                         @input="markBenefitsChanged"
                                                     />
                                                     <p class="text-xs text-muted-foreground">
-                                                        {{ item.title_en?.length || 0 }}/25 characters
+                                                        {{ item.title_en?.length || 0 }}/40 characters
                                                     </p>
                                                 </div>
                                             </div>
