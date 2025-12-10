@@ -95,6 +95,15 @@ class ContentController extends Controller
 
         $content = Content::create($validated);
 
+        // Return JSON for AJAX requests
+        if ($request->wantsJson() || $request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => ucfirst($type) . ' created successfully',
+                'data' => $content
+            ], 201);
+        }
+
         $routeName = $this->getRouteNameForType($type);
         return redirect()->route($routeName)->with('success', ucfirst($type) . ' created successfully');
     }
@@ -180,6 +189,15 @@ class ContentController extends Controller
         // Update event status if it's an event
         if ($content->isEvent()) {
             $content->updateEventStatus();
+        }
+
+        // Return JSON for AJAX requests
+        if ($request->wantsJson() || $request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => ucfirst($type) . ' updated successfully',
+                'data' => $content->fresh()
+            ]);
         }
 
         $routeName = $this->getRouteNameForType($type);

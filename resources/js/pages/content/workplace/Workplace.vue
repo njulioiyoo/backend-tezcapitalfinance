@@ -91,6 +91,7 @@ const form = reactive({
     loading: false
 });
 
+const formErrors = ref<Record<string, string>>({});
 const imageFile = ref<File | null>(null);
 const imagePreview = ref<string>('');
 
@@ -201,7 +202,8 @@ const resetForm = () => {
     form.is_featured = false;
     form.sort_order = 0;
     form.loading = false;
-    
+
+    formErrors.value = {};
     imageFile.value = null;
     imagePreview.value = '';
 };
@@ -238,27 +240,31 @@ const getCsrfToken = () => {
 
 // Submit form
 const handleSubmit = async () => {
+    // Clear previous errors
+    formErrors.value = {};
+
     // Validate required fields
     if (!form.title_id?.trim()) {
+        formErrors.value.title_id = 'Workplace name (Indonesian) is required';
         toast({
-            title: 'Error',
-            description: 'Workplace name (Indonesian) is required',
+            title: 'Validation Error',
+            description: 'Please check the form for errors',
             variant: 'error'
         });
         return;
     }
-    
+
     form.loading = true;
-    
+
     try {
-        const url = editingWorkplace.value 
+        const url = editingWorkplace.value
             ? route('content.workplace.update', editingWorkplace.value.id)
             : route('content.workplace.store');
-        
+
         const method = editingWorkplace.value ? 'PUT' : 'POST';
-        
+
         const formData = new FormData();
-        
+
         // Add form fields (excluding loading and featured_image)
         Object.keys(form).forEach(key => {
             if (key !== 'loading' && key !== 'featured_image') {
@@ -266,7 +272,7 @@ const handleSubmit = async () => {
                 if (key === 'source_url' && !form[key]) {
                     return;
                 }
-                
+
                 // Handle boolean fields properly
                 if (key === 'is_published' || key === 'is_featured') {
                     formData.append(key, form[key] ? '1' : '0');
@@ -278,18 +284,18 @@ const handleSubmit = async () => {
                 }
             }
         });
-        
+
         // Add file only if there's a new upload
         if (imageFile.value) {
             formData.append('featured_image', imageFile.value);
         }
         // Don't send existing image path as featured_image - let backend keep existing image if no new upload
-        
+
         // Add method for Laravel method spoofing
         if (method === 'PUT') {
             formData.append('_method', 'PUT');
         }
-        
+
         const response = await fetch(url, {
             method: 'POST',
             headers: {
@@ -300,13 +306,28 @@ const handleSubmit = async () => {
             credentials: 'include',
             body: formData,
         });
-        
-        const data = await response.json();
-        
+
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        const isJson = contentType && contentType.includes('application/json');
+
+        // Handle successful response (2xx status codes)
         if (response.ok) {
+            let message = 'Workplace saved successfully';
+
+            // Try to get message from JSON response
+            if (isJson) {
+                try {
+                    const data = await response.json();
+                    message = data.message || message;
+                } catch (e) {
+                    // Ignore JSON parse errors on success
+                }
+            }
+
             toast({
                 title: 'Success',
-                description: data.message,
+                description: message,
                 variant: 'success'
             });
             dialogOpen.value = false;
@@ -314,16 +335,47 @@ const handleSubmit = async () => {
                 window.location.reload();
             }, 1000);
         } else {
-            toast({
-                title: 'Error',
-                description: data.message || 'An error occurred',
-                variant: 'error'
-            });
+            // Try to parse error response as JSON
+            if (isJson) {
+                const data = await response.json();
+
+                // Handle validation errors
+                if (response.status === 422 && data.errors) {
+                    // Laravel validation errors
+                    formErrors.value = data.errors;
+
+                    // Get first error message
+                    const firstError = Object.values(data.errors)[0];
+                    const errorMessage = Array.isArray(firstError) ? firstError[0] : firstError;
+
+                    toast({
+                        title: 'Validation Error',
+                        description: errorMessage || 'Please check the form for errors',
+                        variant: 'error'
+                    });
+                } else {
+                    // Other errors
+                    toast({
+                        title: 'Error',
+                        description: data.message || 'An error occurred while saving',
+                        variant: 'error'
+                    });
+                }
+            } else {
+                // Non-JSON error response
+                toast({
+                    title: 'Error',
+                    description: `Server error: ${response.status} ${response.statusText}`,
+                    variant: 'error'
+                });
+            }
+            // Keep modal open so user can see and fix errors
         }
     } catch (error) {
+        console.error('Error saving workplace:', error);
         toast({
             title: 'Error',
-            description: 'An error occurred while saving',
+            description: 'An error occurred while saving. Please try again.',
             variant: 'error'
         });
     } finally {
@@ -646,6 +698,9 @@ const hasFilters = computed(() => {
                                 :disabled="form.loading"
                                 required
                             />
+                            <div v-if="formErrors.title_id" class="text-red-500 text-sm">
+                                {{ Array.isArray(formErrors.title_id) ? formErrors.title_id[0] : formErrors.title_id }}
+                            </div>
                         </div>
                         <div class="space-y-2">
                             <Label for="title_en">Workplace Name (English) *</Label>
@@ -656,6 +711,9 @@ const hasFilters = computed(() => {
                                 :disabled="form.loading"
                                 required
                             />
+                            <div v-if="formErrors.title_en" class="text-red-500 text-sm">
+                                {{ Array.isArray(formErrors.title_en) ? formErrors.title_en[0] : formErrors.title_en }}
+                            </div>
                         </div>
                     </div>
                     <div v-else class="space-y-2">
@@ -667,6 +725,9 @@ const hasFilters = computed(() => {
                             :disabled="form.loading"
                             required
                         />
+                        <div v-if="formErrors.title_id" class="text-red-500 text-sm">
+                            {{ Array.isArray(formErrors.title_id) ? formErrors.title_id[0] : formErrors.title_id }}
+                        </div>
                     </div>
 
                     <!-- Category & Status -->
@@ -683,8 +744,11 @@ const hasFilters = computed(() => {
                                     </SelectItem>
                                 </SelectContent>
                             </Select>
+                            <div v-if="formErrors.category" class="text-red-500 text-sm">
+                                {{ Array.isArray(formErrors.category) ? formErrors.category[0] : formErrors.category }}
+                            </div>
                         </div>
-                        
+
                         <div class="space-y-2">
                             <Label for="status">Status</Label>
                             <Select v-model="form.status">
@@ -697,6 +761,9 @@ const hasFilters = computed(() => {
                                     </SelectItem>
                                 </SelectContent>
                             </Select>
+                            <div v-if="formErrors.status" class="text-red-500 text-sm">
+                                {{ Array.isArray(formErrors.status) ? formErrors.status[0] : formErrors.status }}
+                            </div>
                         </div>
                     </div>
 
@@ -710,6 +777,9 @@ const hasFilters = computed(() => {
                             placeholder="https://example.com"
                             :disabled="form.loading"
                         />
+                        <div v-if="formErrors.source_url" class="text-red-500 text-sm">
+                            {{ Array.isArray(formErrors.source_url) ? formErrors.source_url[0] : formErrors.source_url }}
+                        </div>
                     </div>
 
                     <!-- Description -->
@@ -723,6 +793,9 @@ const hasFilters = computed(() => {
                                 :rows="3"
                                 :disabled="form.loading"
                             />
+                            <div v-if="formErrors.excerpt_id" class="text-red-500 text-sm">
+                                {{ Array.isArray(formErrors.excerpt_id) ? formErrors.excerpt_id[0] : formErrors.excerpt_id }}
+                            </div>
                         </div>
                         <div class="space-y-2">
                             <Label for="excerpt_en">Description (English)</Label>
@@ -733,6 +806,9 @@ const hasFilters = computed(() => {
                                 :rows="3"
                                 :disabled="form.loading"
                             />
+                            <div v-if="formErrors.excerpt_en" class="text-red-500 text-sm">
+                                {{ Array.isArray(formErrors.excerpt_en) ? formErrors.excerpt_en[0] : formErrors.excerpt_en }}
+                            </div>
                         </div>
                     </div>
                     <div v-else class="space-y-2">
@@ -744,6 +820,9 @@ const hasFilters = computed(() => {
                             :rows="3"
                             :disabled="form.loading"
                         />
+                        <div v-if="formErrors.excerpt_id" class="text-red-500 text-sm">
+                            {{ Array.isArray(formErrors.excerpt_id) ? formErrors.excerpt_id[0] : formErrors.excerpt_id }}
+                        </div>
                     </div>
 
                     <!-- Sort Order -->
@@ -758,6 +837,9 @@ const hasFilters = computed(() => {
                             :disabled="form.loading"
                         />
                         <p class="text-sm text-gray-500">Lower numbers appear first</p>
+                        <div v-if="formErrors.sort_order" class="text-red-500 text-sm">
+                            {{ Array.isArray(formErrors.sort_order) ? formErrors.sort_order[0] : formErrors.sort_order }}
+                        </div>
                     </div>
 
                     <!-- Checkboxes -->
@@ -798,7 +880,7 @@ const hasFilters = computed(() => {
                                     {{ imageFile.name }}
                                 </span>
                             </div>
-                            
+
                             <!-- Current Image -->
                             <div v-if="editingWorkplace?.featured_image && !imagePreview" class="relative inline-block">
                                 <img
@@ -808,7 +890,7 @@ const hasFilters = computed(() => {
                                 />
                                 <p class="text-xs text-muted-foreground mt-1">Current image</p>
                             </div>
-                            
+
                             <!-- New Image Preview -->
                             <div v-if="imagePreview" class="relative inline-block">
                                 <img
@@ -827,6 +909,9 @@ const hasFilters = computed(() => {
                                 </Button>
                                 <p class="text-xs text-muted-foreground mt-1">New image</p>
                             </div>
+                        </div>
+                        <div v-if="formErrors.featured_image" class="text-red-500 text-sm">
+                            {{ Array.isArray(formErrors.featured_image) ? formErrors.featured_image[0] : formErrors.featured_image }}
                         </div>
                     </div>
                 </form>
